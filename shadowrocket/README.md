@@ -1,4 +1,4 @@
-# Shadowrocket 通用分流配置
+# Shadowrocket 通用分流配置 v5
 
 一份面向 **订阅制节点、手动切换** 场景的通用优化配置，iOS / iPadOS / macOS（Catalyst）三端通用。
 
@@ -14,7 +14,8 @@
 - `dns-direct-fallback-proxy` 在直连解析失败时自动回退代理，规避「能解析但被投毒」的场景。
 
 ### 3. 长连接稳定性
-- `block-quic = all-proxy`：仅对走代理的连接屏蔽 QUIC / HTTP3，强制回退到 TCP 上的 HTTP/2，显著改善 SSE 长连接（流式对话类应用）经代理时的断流重连问题。
+- `block-quic = all-proxy`：仅对走代理的连接屏蔽 QUIC / HTTP3，令相关请求回退到 TCP；可减少部分节点 UDP / 443 不稳定导致的流式连接中断；
+- 该参数不能修复节点出口 IP 被 OpenAI / Cloudflare 拒绝的问题。若 Codex / ChatGPT 仍需反复重连，应优先更换美国节点，而不是增加 Google URL Rewrite。
 
 ### 4. 分流规则分层（每日更新）
 - 规则集采用 `blackmatrix7/ios_rule_script` 体系，经 jsDelivr CDN 加速分发，国内可达性经实测优于直连 GitHub；
@@ -23,6 +24,30 @@
 
 ### 5. 本地保底
 - `GEOIP,CN → DIRECT` + `FINAL → PROXY` 兜底，即使远程规则集全部不可达，仍能正确分流，不依赖任何外部资源即可工作。
+
+### 6. 出差与局域网兼容
+- 保留系统 DNS 最终兜底，优先保证机场、酒店和认证门户可用；
+- IPv6 保持启用但不优先，并排除 ULA、链路本地和组播网段，兼容 Bonjour、AirPlay 与局域网设备；
+- Apple / iCloud 直连域名使用当前网络的系统 DNS，避免境外出差时被调度到不合适的 CDN；
+- `100.64.0.0/10` 默认排除以兼容运营商 CGNAT；若同时使用 Tailscale，应从 `tun-excluded-routes` 删除该网段。
+
+## 节点选择与 Codex / ChatGPT 排查
+
+本配置不内置节点，也不自动按地区选线。订阅更新后先测速，再手动选择当前用途对应的节点：
+
+- Codex / ChatGPT / Gemini：优先选择实际可访问 OpenAI 服务的美国节点；
+- 视频和日常娱乐：可选择延迟更低的新加坡或台湾节点；
+- 延迟低不代表出口信誉良好。若三个 OpenAI 站点同时返回 HTTP 403，说明该节点出口更可能被网络层拒绝，应换节点。
+
+可以在 macOS 终端执行以下无凭据测试：
+
+```bash
+curl -L -sS -o /dev/null -w 'HTTP %{http_code}\n' https://api.openai.com/v1/models
+curl -L -sS -o /dev/null -w 'HTTP %{http_code}\n' https://chatgpt.com/
+curl -L -sS -o /dev/null -w 'HTTP %{http_code}\n' https://developers.openai.com/
+```
+
+API 返回未认证响应表示已经到达 OpenAI；如果三项统一返回 Cloudflare / VPN 相关的 403，切换节点通常比反复重连更有效。
 
 ## 使用
 
@@ -39,6 +64,18 @@
 | `block-quic` | all-proxy | 代理流量禁 QUIC，稳长连接 |
 | `ipv6` / `prefer-ipv6` | true / false | 支持 IPv6 节点但不优先 |
 | `dns-direct-fallback-proxy` | true | 直连解析失败回退代理 |
+| `tun-excluded-routes` | IPv4 私网 + IPv6 本地网段 | 保留局域网、认证门户和设备发现 |
+| `*.apple.com` / `*.icloud.com` | `server:system` | Apple 直连使用所在地 DNS / CDN |
+
+## v5 更新
+
+- 删除已废弃的 `bypass-system`；
+- 补充 `fc00::/7`、`fe80::/10`、`ff00::/8` IPv6 本地路由排除；
+- Apple、WeChat、China、Global 全部切换为 Shadowrocket 原生规则格式；
+- 大类兜底改为 China 直连优先、Global 代理随后；
+- PayPal 改为直连，减少共享代理出口触发账户安全验证；
+- 删除与 Codex / ChatGPT 无关、且在未启用 HTTPS 解密时不能完整工作的 Google URL Rewrite；
+- 保留 `block-quic = all-proxy`、`GEOIP,CN,DIRECT` 和 `FINAL,PROXY`。
 
 ## 目录
 
