@@ -7,7 +7,7 @@
 - 微信、知乎、抖音、番茄小说（含图文/视频 CDN）和 DeepSeek 在广告规则之前优先 `DIRECT`；
 - ChatGPT、Gemini、Google、GitHub、YouTube、Twitch、Pixiv 等海外服务按类别 `PROXY`；
 - Apple 系统服务、私网、回环地址和国内常用服务 `DIRECT`；
-- Quantumult X 宽规则覆盖长尾域名，Shadowrocket 原生规则提高常用服务的明确命中率；
+- Shadowrocket `DOMAIN-SET` 覆盖长尾域名，`RULE-SET` 处理关键词、IP 与 User-Agent；
 - `GEOIP,CN → DIRECT` 与 `FINAL → PROXY` 处理未被远程规则集命中的请求；
 - 路由器和本地私网由私网地址规则直接处理，无需逐个写入域名。
 
@@ -20,7 +20,7 @@
 | 使用场景 | 处理逻辑 | 作用 |
 |---|---|---|
 | 微信、抖音、知乎、番茄小说 | 细分规则及番茄图文/视频 CDN 置于广告和大类规则之前，优先 `DIRECT` | 减少代理中转、跨境等待和登录/内容预取卡顿 |
-| 国内网页与国内 CDN | China 宽规则、原生 China 规则与 `GEOIP,CN` 共同直连 | 减少国内网站误走代理的延迟 |
+| 国内网页与国内 CDN | China 域名集合、非域名规则与 `GEOIP,CN` 共同直连 | 减少国内网站误走代理的延迟 |
 | ChatGPT、Gemini、Google、GitHub | 显式 `PROXY` | Mac 与 iPhone 访问海外服务时使用当前节点 |
 | YouTube、Netflix、Twitch、Pixiv 等 | 流媒体/内容服务显式 `PROXY` | 与国内 App 直连策略互不干扰 |
 | 蜂窝网络 DNS | `dns-direct-fallback-proxy = false`，直连解析失败不跨境重试 | 避免国内 App 在 DNS 回退时额外等待 |
@@ -35,14 +35,15 @@
 
 ### 2. DNS 防污染与移动端回退控制
 - 腾讯 / 阿里 DoH 优先，普通国内 DNS 补充，系统 DNS 最后兜底；
-- `hijack-dns` 仅劫持硬编码 Google DNS 请求，避免 `*:53` 全量劫持干扰局域网设备发现；
+- `hijack-dns` 仅劫持硬编码 Google / Cloudflare DNS 请求，避免 `*:53` 全量劫持干扰局域网设备发现；
 - `dns-direct-fallback-proxy = false`：直连域名解析失败不经代理重试，减少 iPhone 蜂窝网络下国内 App 的回退等待和跨境解析路径。
 
 ### 3. 长连接稳定性
 - `block-quic = all-proxy`：仅对走代理的连接屏蔽 QUIC / HTTP3，强制回退到 TCP 上的 HTTP/2，显著改善 SSE 长连接（流式对话类应用）经代理时的断流重连问题。
 
 ### 4. 分流规则分层（每日更新）
-- 规则集采用 `blackmatrix7/ios_rule_script` 体系，经 jsDelivr CDN 加速分发，国内可达性经实测优于直连 GitHub；
+- 主规则采用 `blackmatrix7/ios_rule_script` 的 Shadowrocket 格式，经 jsDelivr CDN 加速分发；AI 服务额外引用 `iab0x00/ProxyRules` 的 `AI.txt`；
+- Global、China 与 Apple 使用上游建议的 `DOMAIN-SET + RULE-SET` 组合，分别加载域名集合与关键词、IP、User-Agent 规则；
 - 分层：局域网直连 → 移动核心 App 直连 → 国内常用服务直连 → 去广告 → AI 服务 → 流媒体 → 社交通讯 → 购物 → 游戏 → 开发云服务 → Apple/TikTok → 大类域名规则 → 本地保底；
 - 规则集由上游每日自动更新，本地零维护。
 
@@ -61,7 +62,7 @@
 | 参数 | 值 | 作用 |
 |---|---|---|
 | `dns-server` | doh.pub + alidns + 223.5.5.5 + 119.29.29.29 | DNS 防污染 |
-| `hijack-dns` | 8.8.8.8:53, 8.8.4.4:53 | 防硬编码 DNS 绕过 |
+| `hijack-dns` | Google + Cloudflare 明文 DNS | 防常见硬编码 DNS 绕过，同时不干扰局域网 DNS |
 | `block-quic` | all-proxy | 代理流量禁 QUIC，稳长连接 |
 | `ipv6` / `prefer-ipv6` | true / false | 支持 IPv6 节点但不优先 |
 | `dns-direct-fallback-proxy` | false | 直连解析失败不经代理重试，优先保证国内 App 的访问路径 |
