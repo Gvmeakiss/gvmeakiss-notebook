@@ -1,0 +1,90 @@
+{
+  "_comment": "回归测试配置：从原图重跑，结果应与手工改出的 po_edited.png 一致",
+  "output": "test_output.png",
+  "edits": [
+    {
+      "name": "行项目 净价 9.17 -> 10",
+      "x": 776,
+      "bottom": 397,
+      "old_len": 4,
+      "new": "10",
+      "pitch": 8,
+      "bg": [234, 237, 240],
+      "glyph_y": [386, 400],
+      "glyphs": {
+        "1": {"type": "clone", "x": 210, "width": 8},
+        "0": {"type": "clone", "x": 218, "width": 8}
+      }
+    },
+    {
+      "name": "行项目 净价值 990.83 -> 1080",
+      "x": 853,
+      "bottom": 397,
+      "old_len": 6,
+      "new": "1080",
+      "pitch": 8,
+      "bg": [234, 237, 240],
+      "glyph_y": [386, 400],
+      "glyphs": {
+        "1": {"type": "clone", "x": 210, "width": 8},
+        "0": {"type": "clone", "x": 218, "width": 8},
+        "8": {"type": "clone", "x": 226, "width": 8}
+      }
+    },
+    {
+      "name": "抬头 金额 990.83 -> 1080",
+      "x": 572,
+      "bottom": 156,
+      "old_len": 6,
+      "new": "1080",
+      "pitch": 8,
+      "bg": [236, 236, 236],
+      "glyphs": {
+        "1": {"type": "clone", "x": 210, "y_top": 386, "y_bottom": 400, "width": 8},
+        "0": {"type": "clone", "x": 218, "y_top": 386, "y_bottom": 400, "width": 8},
+        "8": {"type": "clone", "x": 226, "y_top": 386, "y_bottom": 400, "width": 8}
+      }
+    },
+    {
+      "name": "列标题 净价 -> 单价",
+      "x": 686,
+      "bottom": 378,
+      "old_len": 2,
+      "new": "单价",
+      "pitch": 12,
+      "bg": [229, 229, 229],
+      "glyphs": {
+        "单": {"type": "clone", "x": 172, "y_top": 366, "y_bottom": 380, "width": 11},
+        "价": {"type": "clone", "x": 698, "y_top": 366, "y_bottom": 380, "width": 11}
+      }
+    },
+    {
+      "name": "列标题 净价值 -> 总金额",
+      "x": 819,
+      "bottom": 378,
+      "old_len": 3,
+      "new": "总金额",
+      "pitch": 12,
+      "bg": [229, 229, 229],
+      "glyphs": {
+        "总": {"type": "clone_light", "x": 108, "y_top": 256, "y_bottom": 273, "width": 13},
+        "金": {"type": "render"},
+        "额": {"type": "render"}
+      }
+    },
+    {
+      "name": "抬头字段名 净价值 -> 总金额",
+      "x": 329,
+      "bottom": 158,
+      "old_len": 3,
+      "new": "总金额",
+      "pitch": 12,
+      "bg": [255, 255, 255],
+      "glyphs": {
+        "总": {"type": "clone_light", "x": 108, "y_top": 256, "y_bottom": 273, "width": 13},
+        "金": {"type": "render"},
+        "额": {"type": "render"}
+      }
+    }
+  ]
+}
