@@ -89,6 +89,12 @@ def main():
     ap.add_argument("--font-size", type=int, default=12)
     ap.add_argument("--x0", type=int, default=11, help="首列左起始 x")
     ap.add_argument("--measure", help="只测量列宽，传 CSV 路径")
+    # 画布重构：输出尺寸与原图不一致时使用，避免拉伸变形
+    ap.add_argument("--canvas", help="输出画布尺寸，如 1920x1080")
+    ap.add_argument("--top-h", type=int, default=148,
+                    help="顶部保留高度（菜单栏/标题/筛选区，原样保留）")
+    ap.add_argument("--bottom-src-y", type=int, default=0,
+                    help="原图底部区域起始 y（状态栏，原样保留并贴到画布底部）")
     args = ap.parse_args()
 
     if args.measure:
@@ -101,6 +107,10 @@ def main():
 
     im = Image.open(args.ref).convert("RGB")
     W, H = im.size
+    # 保留原图元数据（DPI / sRGB / gamma / XMP）。
+    # 陷阱：PIL 保存 PNG 时不会自动带出 DPI，若原图是 95.96 这类非标准 DPI，
+    # 输出的像素尺寸虽一致，但显示尺寸会与原图不符——务必原样保留。
+    src_info = dict(im.info)
     d = ImageDraw.Draw(im)
     px = im.load()
     print("参考图 %dx%d，按原尺寸输出（不做缩放/锐化/模糊）" % (W, H))
@@ -113,8 +123,35 @@ def main():
     bg = cnt.most_common(1)[0][0]
     print("背景色: %s" % (bg,))
 
-    d.rectangle([0, args.head_top, W, args.erase_bottom], fill=bg)
-    print("已擦除列表区 y %d~%d" % (args.head_top, args.erase_bottom))
+    erase_bottom = args.erase_bottom
+    draw_bottom = args.draw_bottom or (args.erase_bottom - 4)
+
+    # 画布重构（可选）：输出尺寸与原图不一致时，保留顶部与底部状态栏，
+    # 高度差从数据区里让出 —— 不缩放、不拉伸，避免文字变形或发虚。
+    if args.canvas:
+        if not args.bottom_src_y:
+            ap.error("用 --canvas 时必须同时指定 --bottom-src-y（状态栏起始 y）")
+        CW, CH = [int(v) for v in args.canvas.lower().split("x")]
+        src_w = min(W, CW)
+        bot = im.crop((0, args.bottom_src_y, src_w, H))
+        canvas = Image.new("RGB", (CW, CH), bg)
+        canvas.paste(im.crop((0, 0, src_w, args.top_h)), (0, 0))   # 顶部原样
+        canvas.paste(bot, (0, CH - bot.height))                    # 状态栏贴底
+        if src_w < CW:                       # 宽度差：复制最右列补齐，避免留黑边
+            for x in range(src_w, CW):
+                for y in range(CH):
+                    canvas.putpixel((x, y), canvas.getpixel((src_w - 1, y)))
+        im = canvas
+        W, H = im.size
+        d = ImageDraw.Draw(im)
+        px = im.load()
+        erase_bottom = CH - bot.height
+        draw_bottom = erase_bottom - 4
+        print("画布重构 %dx%d：顶部 0~%d 与状态栏原样保留，高度差由数据区让出"
+              % (W, H, args.top_h))
+
+    d.rectangle([0, args.head_top, W, erase_bottom], fill=bg)
+    print("已擦除列表区 y %d~%d" % (args.head_top, erase_bottom))
 
     with open(args.data, encoding="utf-8-sig") as f:
         rows = list(csv.reader(f))
@@ -143,7 +180,8 @@ def main():
     # 数据行
     y, shown = args.data_top, 0
     for r in body:
-        if y + args.font_size + 2 > draw_bottom:
+        # 按「文字实际占用」判定，保证数据纵向填满、底部不留空白行
+        if y + args.font_size > erase_bottom:
             break
         for v, hx, h, w in zip(r, xs, header, widths):
             if is_num_col(h):
@@ -155,7 +193,26 @@ def main():
         shown += 1
 
     print("绘制 %d 行（数据共 %d 行，超出可视区截断）" % (shown, len(body)))
-    im.save(args.out)
+
+    # 按原图元数据保存，保证输出与原图的显示尺寸一致
+    save_kw = {}
+    if src_info.get("dpi"):
+        save_kw["dpi"] = src_info["dpi"]
+    text_meta = {k: v for k, v in src_info.items()
+                 if k != "dpi" and isinstance(v, (str, bytes))}
+    if text_meta:
+        from PIL import PngImagePlugin
+        pnginfo = PngImagePlugin.PngInfo()
+        for k, v in text_meta.items():
+            if isinstance(v, bytes):
+                pnginfo.add_text(k, v, zip=False)
+            else:
+                pnginfo.add_text(k, v)
+        save_kw["pnginfo"] = pnginfo
+
+    im.save(args.out, **save_kw)
+    if src_info.get("dpi"):
+        print("已沿用原图 DPI: %s" % (src_info["dpi"],))
     print("✓ 已保存: %s (%dx%d)" % (args.out, W, H))
     return 0
 
