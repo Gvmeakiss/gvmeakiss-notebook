@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' file:; script-src 'self' file:; style-src 'self' file: 'unsafe-inline'; img-src 'self' file: data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>稽核工作进度看板</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="config.js"></script>
+  <script defer src="vendor/xlsx.full.min.js"></script>
+  <script defer src="core.js"></script>
+  <script defer src="excel.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">稽</span><div>稽核工作台<small>某保险公司 · 部门工作管理</small></div></div>
+    <p class="nav-caption">日常工作</p>
+    <button class="nav-item active" id="current-view"><span aria-hidden="true">▦</span> 部门看板</button>
+    <button class="nav-item" id="my-view"><span aria-hidden="true">◎</span> 我的工作</button>
+    <button class="nav-item" id="history-button"><span aria-hidden="true">◷</span> 历史周报 <span id="snapshot-count" class="nav-count">0</span></button>
+    <div class="sidebar-divider"></div><p class="nav-caption">工作模块</p><div id="module-nav"></div>
+    <div class="sidebar-bottom"><button id="export-button" class="nav-item">备份与恢复</button><button class="nav-item" id="help-button">使用帮助</button><div class="local-note"><span class="connection-dot"></span>无需联网 · 本机保存<p>填写后下载文件<br>交给部门汇总同事</p></div></div>
+  </aside>
+  <main>
+    <header class="topline"><span>部门工作管理 <span class="slash">/</span> <span id="breadcrumb">部门看板</span></span><span id="today"></span></header>
+    <section class="page-heading"><div><p class="eyebrow">某保险公司 · 稽核管理</p><h1 id="page-title">稽核工作进度看板</h1><p id="page-subtitle">汇总五类工作进展，跟进交付与下一步安排。</p></div><button class="primary" id="add-button">＋ 新增工作</button></section>
+    <section id="workflow-guide" class="workflow-guide"><div><span class="step-number">1</span><strong>更新我的工作</strong><span>填写进度与下一步</span></div><div><span class="step-number">2</span><strong>下载提交文件</strong><span>交给部门汇总同事</span></div><div><span class="step-number">3</span><strong>汇总后看全貌</strong><span>经理查看 · 每周留档</span></div></section>
+    <div id="personal-strip" class="personal-strip" hidden><div><strong id="personal-label"></strong><span>只显示你负责的工作；保存后还需下载文件提交。</span></div><button id="change-person" class="text-button">更换姓名</button></div>
+    <div id="storage-warning" class="notice danger" hidden><strong id="storage-message"></strong><div class="notice-actions"><button id="emergency-export">下载未保存的工作</button><button id="raw-export">下载原数据副本</button><button id="retry-save">重试保存</button></div></div>
+    <div id="message" role="status" aria-live="polite" hidden></div>
+    <div id="history-panel" class="history-panel" hidden><label>选择历史周报 <select id="snapshot-select"><option value="">请选择周报</option></select></label><button id="delete-snapshot" class="danger-text">删除此周报</button><button id="return-current">返回当前台账</button><p id="snapshot-info"></p></div>
+    <section id="stats" class="stats" aria-label="统计概览"></section>
+    <section class="workspace">
+      <div class="section-heading"><div><h2 id="board-title">工作台账</h2><span id="result-count"></span></div><div class="tools"><button id="submit-button" class="primary">下载我的提交文件</button><button id="import-button">汇总同事进展</button><button id="snapshot-button">本周留档</button><button id="download-view">下载当前列表</button></div></div>
+      <div class="filter-bar"><label class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="搜索工作名称、进展、编号…" aria-label="搜索工作"></label><select id="module-filter" aria-label="模块筛选"></select><select id="status-filter" aria-label="状态筛选"></select><select id="owner-filter" aria-label="负责人筛选"></select><button id="clear-filters" class="text-button">重置</button></div>
+      <div class="view-toolbar"><span id="view-hint">点击工作名称看详情，点击“更新进展”填写。</span><div class="view-switch" role="group" aria-label="显示方式"><button id="list-view" aria-pressed="true">列表</button><button id="card-view" aria-pressed="false">卡片</button></div></div>
+      <div id="overdue-notice" class="overdue-notice" hidden></div>
+      <div id="board"></div>
+    </section>
+    <footer><span id="save-status">准备本机存储…</span><span>状态按交付日期自动计算 · 当天到期不算逾期</span></footer>
+  </main>
+  <dialog id="editor-dialog" aria-labelledby="editor-title"><form id="editor-form"><div class="dialog-heading"><div><p class="eyebrow">工作台账</p><h2 id="editor-title">新增工作</h2></div><button type="button" class="close" data-close="editor-dialog" aria-label="关闭">×</button></div><p class="muted">更新进度、说明和下一步安排，完成后点击“保存工作”。</p><details class="record-info"><summary>记录信息</summary><p id="record-meta" class="muted"></p></details><label>模块 <span class="required">*</span><select id="record-module" name="module" required></select></label><div id="record-fields" class="form-grid"></div><div id="editor-error" class="inline-error" role="alert" hidden></div><div class="dialog-actions"><button id="editor-delete" type="button" class="danger-text" hidden>删除这项工作</button><button type="button" data-close="editor-dialog">取消</button><button type="submit" class="primary">保存工作</button></div></form></dialog>
+  <dialog id="import-dialog" class="wide-dialog" aria-labelledby="import-title"><div class="dialog-heading"><div><p class="eyebrow">文件汇总</p><h2 id="import-title">汇总同事进展</h2></div><button class="close" data-close="import-dialog" aria-label="关闭">×</button></div><p class="muted">选择同事提交的文件。有不同内容时，请逐项选择采用哪一版；其他工作和历史周报会保留。</p><div class="import-guide"><span>同事习惯用 Excel 填写？</span><button id="template-button">下载填写模板</button></div><label class="file-zone">选择同事提交的文件（Excel 或备份文件）<input id="import-file" type="file" accept=".xlsx,.json"></label><div id="import-errors" class="inline-error" role="alert" hidden></div><div id="import-summary"></div><div id="import-preview"></div><label id="duplicate-ack-wrap" class="check-label" hidden><input id="duplicate-ack" type="checkbox">已核对同名工作，确认这些是不同的工作事项</label><div class="dialog-actions"><button data-close="import-dialog">取消</button><button id="commit-import" class="primary" disabled>确认汇总</button></div></dialog>
+  <dialog id="export-dialog" aria-labelledby="export-title"><div class="dialog-heading"><h2 id="export-title">备份与恢复</h2><button class="close" data-close="export-dialog" aria-label="关闭">×</button></div><div class="action-card"><h3>工作列表（Excel）</h3><p>将工作列表保存为 Excel，方便会议查看或留存。</p><label>导出范围<select id="export-scope"><option value="all">当前视图的全部记录</option><option value="filtered">仅当前筛选结果</option></select></label><button id="export-xlsx" class="primary">导出 Excel</button></div><div class="action-card"><h3>全部工作备份</h3><p>包含所有工作和历史周报。定期下载保存，换电脑或移动文件夹前也请备份。</p><button id="export-json">下载全部工作备份</button></div><div class="action-card"><h3>从备份恢复</h3><p>替换本机全部台账和快照。先检查备份，再保存并校验当前数据的副本。</p><button id="restore-button" class="danger-text">选择恢复文件</button></div></dialog>
+  <dialog id="restore-dialog" aria-labelledby="restore-title"><div class="dialog-heading"><h2 id="restore-title">从备份找回工作</h2><button class="close" data-close="restore-dialog" aria-label="关闭">×</button></div><label class="file-zone">1. 选择之前保存的备份文件<input id="restore-file" type="file" accept=".json"></label><p id="restore-summary" class="muted"></p><div id="restore-error" class="inline-error" role="alert" hidden></div><button id="pre-restore-export" disabled>2. 下载当前数据备份</button><label class="file-zone">3. 选择刚下载的文件，确认备份已保存<input id="verify-backup-file" type="file" accept=".json,.txt" disabled></label><p id="backup-verified" class="muted"></p><div class="dialog-actions"><button data-close="restore-dialog">取消</button><button id="confirm-restore" class="primary" disabled>确认替换全部数据</button></div></dialog>
+  <dialog id="snapshot-dialog" aria-labelledby="snapshot-title"><form id="snapshot-form"><div class="dialog-heading"><h2 id="snapshot-title">本周工作留档</h2><button type="button" class="close" data-close="snapshot-dialog" aria-label="关闭">×</button></div><p class="muted">保存全部门当前工作，方便以后回看。本周多次保存也会分别保留。</p><label>所属周（周一）<input id="snapshot-week" type="date" required></label><div id="snapshot-error" class="inline-error" role="alert" hidden></div><div class="dialog-actions"><button type="button" data-close="snapshot-dialog">取消</button><button class="primary" type="submit">确认留档</button></div></form></dialog>
+  <dialog id="help-dialog" class="wide-dialog" aria-labelledby="help-title">
+    <div class="dialog-heading"><h2 id="help-title">使用帮助</h2><button class="close" data-close="help-dialog" aria-label="关闭">×</button></div>
+    <p class="muted">按你的工作选择下面的步骤；详细说明包含字段示例、错误处理和完整演练。</p>
+    <p><a class="help-manual-link" href="使用说明.html" target="_blank" rel="noopener">打开详细使用说明与案例 ↗</a></p>
+    <div class="help-topics">
+      <details open><summary>1. 填报同事：新增、更新、提交</summary><ol><li>进入“我的工作”，填写与台账一致的姓名。</li><li>新事项点“新增工作”，原事项点“更新进展”，每周沿用原记录。</li><li>进度填 0–100 的整数，说明现阶段进展，未完成时填写下一步。</li><li>保存成功后点“下载我的提交文件”，确认下载完成，交给汇总人。文件包含本人全部工作，不受筛选影响。</li></ol><p class="help-example">例：专项由 60 更新为 85，进展写“样本复核结束，报告待确认”，下一步写“周五前确认并归档”。只有整项结束才勾选“是否完成”。</p><p>当前未保存的输入会在退出编辑时丢失，请先保存再关闭。</p></details>
+      <details><summary>2. Excel 填写：模板、字段、注意事项</summary><ol><li>到“部门看板 → 汇总同事进展 → 下载填写模板”。已有事项使用个人工作表，在原行更新。</li><li>保留“工作台账”表名、表头和已有编号，一行一项工作。</li><li>日期填 2026-09-11 这样的有效日期；是否完成填是／否；完成时进度填 100。</li><li>保存为 .xlsx 后交给汇总人，数据区不要保留公式。</li></ol><p class="help-example">当前版本进度直接填数字 60 表示 60%，不要填 60% 或使用 Excel 百分比格式；100% 可能被误读成 1。新记录编号可留空，旧记录编号请保留。</p></details>
+      <details><summary>3. 汇总人：检查文件与不同版本</summary><ol><li>在“部门看板”点击“汇总同事进展”，每次选择一份文件。</li><li>先看新增、相同跳过、冲突数量，预览阶段不会改动台账。</li><li>对变化项比较完整内容，逐条选择保留当前版或采用导入版；未选择默认保留。</li><li>同名提醒需核对是否重复创建；有错误则按行号修正文件并重新选择。</li><li>检查后点击“确认汇总”，确认完成提示。</li></ol><p class="help-example">例：台账 85%，同事误发旧文件 60%，应保留当前版。应用不会按更新时间自动覆盖；采用导入版会替换该条整项内容。</p><p>普通合并不删除未提及的工作，也不改变已有周报。</p></details>
+      <details><summary>4. 经理：筛选重点、看详情和导出</summary><ol><li>进入“部门看板”，点“重置”回到部门全部范围。</li><li>点“已逾期”等统计卡，再按模块、负责人和关键词筛选。</li><li>列表便于比较，卡片便于阅读；点名称查看完整文字。</li><li>“下载当前列表”导出当前筛选结果。</li></ol><p>统计随筛选更新。绿色＝未逾期，红色＝已逾期，蓝色＝整项已完成；当天到期不算逾期。橙色进度条仅表示填报百分比。</p></details>
+      <details><summary>5. 每周留档：保存与回看</summary><ol><li>本周文件汇总完成后，点“本周留档”，选择所属周的周一并确认。</li><li>保存的是全部门当前工作，不受筛选影响，同周可有多个版本。</li><li>进入“历史周报”选择版本，查看冻结的进度与状态；需要修改请返回当前台账。</li><li>留档后另行下载完整备份。</li></ol><p class="help-example">例：周一留档时未逾期，周三当前工作已逾期，周一历史仍保留绿色。选择旧周日期不会自动还原过去数据。</p></details>
+      <details><summary>6. 备份恢复、换电脑与保存失败</summary><ol><li>日常在“备份与恢复”下载全部工作备份，确认 .json 下载完成。它包含当前工作和所有周报。</li><li>完整恢复先选择旧备份，再下载当前数据备份，并回选刚下载的文件进行校验。</li><li>核对数量、校验通过后再确认替换全部数据。日常同事提交使用普通合并。</li></ol><p>复制应用文件夹不等于复制台账。换电脑、浏览器、路径或清理浏览器前请备份。保存失败时先下载未保存的工作，不要直接刷新或清理数据。</p></details>
+    </div>
+    <p class="notice">保存不等于提交，留档不等于外部备份。各副本不会自动同步；下载文件后仍需按部门约定方式交接。</p>
+  </dialog>
+  <dialog id="person-dialog" aria-labelledby="person-title"><form id="person-form"><div class="dialog-heading"><h2 id="person-title">你是哪位同事？</h2><button type="button" class="close" data-close="person-dialog" aria-label="关闭">×</button></div><p class="muted">填写工作台账中的负责人姓名，之后会自动显示你负责的工作。无需注册账号。</p><label>负责人姓名<input id="person-name" type="text" maxlength="100" required list="person-options" placeholder="例如：张三" autocomplete="off"></label><datalist id="person-options"></datalist><div class="dialog-actions"><button type="button" data-close="person-dialog">取消</button><button type="submit" class="primary">确定</button></div></form></dialog>
+  <dialog id="detail-dialog" class="wide-dialog" aria-labelledby="detail-title"><div class="dialog-heading"><h2 id="detail-title">工作详情</h2><button class="close" data-close="detail-dialog" aria-label="关闭">×</button></div><div id="detail-body"></div><div class="dialog-actions"><button data-close="detail-dialog">关闭</button><button id="detail-edit" class="primary">更新进展</button></div></dialog>
+
+</body>
+</html>

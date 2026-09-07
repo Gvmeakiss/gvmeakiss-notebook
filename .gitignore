@@ -1,0 +1,26 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# 依赖 / 缓存
+node_modules/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+
+# 数据文件红线：客户/业务数据一律不入库
+*.xlsx
+*.xls
+*.csv
+*.tsv
+*.pdf
+*.zip
+*.pkl
+*.db
+outputs/
+logs/
+tmp/
