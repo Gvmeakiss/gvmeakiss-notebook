@@ -20,6 +20,7 @@
 |---|---|---|
 | [audit-kanban](./audit-kanban) | 演示应用 · Demo | 离线「稽核工作进度看板」演示版（纯前端，双击即用；脱敏泛化，含虚构演示数据与构建/使用文档） |
 | [shadowrocket](./shadowrocket) | 配置 · Config | Shadowrocket 通用分流配置（国内外分流 / 去广告 / 长连接优化） |
+| [mini-app-spec](./mini-app-spec) | 技术规范 · Spec | 企业级「AI Agent 驱动轻应用平台」技术规范（脱敏方法论版）：静态导出 + BFF 中介 + SQL 预定义 + 原子替换部署，含 Agent 开发约定 |
 | [skills/screenshot-text-edit](./skills/screenshot-text-edit) | AI Skill | 截图文字/数字高保真修改（字形克隆法），含 4 个 CLI 脚本 |
 
 ---
@@ -80,6 +81,7 @@
 |---|---|---|
 | [audit-kanban](./audit-kanban) | Demo app | Offline “audit work-progress kanban” demo (pure front-end, run by double-clicking index.html; desensitized & generic, with fabricated demo data and build/usage docs) |
 | [shadowrocket](./shadowrocket) | Config | Shadowrocket general-purpose routing rules (CN/global split, ad-block, long-connection tuning) |
+| [mini-app-spec](./mini-app-spec) | Tech spec | Enterprise “AI-Agent-driven light-app platform” technical spec (desensitized methodology edition): static export + BFF mediation + predefined SQL + atomic-swap deployment, with Agent dev conventions |
 | [skills/screenshot-text-edit](./skills/screenshot-text-edit) | AI Skill | High-fidelity text/digit editing inside screenshots (glyph-cloning method), incl. 4 CLI scripts |
 
 ---
