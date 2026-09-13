@@ -18,6 +18,7 @@
 
 | 目录 | 类型 | 说明 |
 |---|---|---|
+| [audit-workbench](./audit-workbench) | 工程演示 · Demo | 稽核看板增强工程：团队分区、长期阶段、挽损成果、归档与快捷填报；可本机运行，平台接口为未接入桩 |
 | [audit-kanban](./audit-kanban) | 演示应用 · Demo | 离线「稽核工作进度看板」演示版（纯前端，双击即用；脱敏泛化，含虚构演示数据与构建/使用文档） |
 | [shadowrocket](./shadowrocket) | 配置 · Config | Shadowrocket 通用分流配置（国内外分流 / 去广告 / 长连接优化） |
 | [mini-app-spec](./mini-app-spec) | 技术规范 · Spec | 企业级「AI Agent 驱动轻应用平台」技术规范（脱敏方法论版）：静态导出 + BFF 中介 + SQL 预定义 + 原子替换部署，含 Agent 开发约定 |
@@ -55,6 +56,7 @@ Shadowrocket 通用分流规则：国内外分流、去广告、长连接优化�
 
 | Path | Type | Description |
 |---|---|---|
+| [audit-workbench](./audit-workbench) | Engineering demo | Enhanced audit workbench with team workspaces, phase history, recovery outcomes, archiving and quick updates; local demo with an unconfigured platform boundary |
 | [audit-kanban](./audit-kanban) | Demo app | Offline “audit work-progress kanban” demo (pure front-end, run by double-clicking index.html; desensitized & generic, with fabricated demo data and build/usage docs) |
 | [shadowrocket](./shadowrocket) | Config | Shadowrocket general-purpose routing rules (CN/global split, ad-block, long-connection tuning) |
 | [mini-app-spec](./mini-app-spec) | Tech spec | Enterprise “AI-Agent-driven light-app platform” technical spec (desensitized methodology edition): static export + BFF mediation + predefined SQL + atomic-swap deployment, with Agent dev conventions |

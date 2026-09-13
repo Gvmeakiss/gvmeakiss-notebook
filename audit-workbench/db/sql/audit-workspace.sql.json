@@ -1,0 +1,4 @@
+{
+  "getWorkspace": "SELECT revision, payload FROM audit_workspace WHERE id = ?",
+  "saveWorkspace": "UPDATE audit_workspace SET payload = ?, updated_at = ?, revision = revision + 1 WHERE id = ? AND revision = ?"
+}

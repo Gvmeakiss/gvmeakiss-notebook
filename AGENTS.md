@@ -19,6 +19,7 @@ skills/<name>/
 
 - `audit-kanban/`：纯前端离线「稽核工作进度看板」演示应用（脱敏），双击 `index.html` 即可运行；
   用途为演示「同事填报 → 专人汇总 → 经理看板」的部门工作台账，不含任何真实业务数据。
+- `audit-workbench/`：稽核看板增强工程演示版，独立于 audit-kanban；默认本机存储，平台接口未接入，详见该目录 README。
 - `shadowrocket/`：Shadowrocket 通用分流配置。
 
 ## 使用流程
