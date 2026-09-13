@@ -1,0 +1,17 @@
+/* 全局基础样式（本地壳）。业务样式见 styles/audit.css（作用域 .audit-workspace）。 */
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+body {
+  font-family:
+    -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  color: #1f2329;
+  background: #f5f6f7;
+  -webkit-font-smoothing: antialiased;
+}

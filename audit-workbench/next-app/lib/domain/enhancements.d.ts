@@ -1,0 +1,15 @@
+import type { AuditRecord, StageHistoryEntry } from '@/types/audit';
+import type { FieldConfig } from './config';
+export const collaborationStatuses: string[];
+export const enhancementFields: FieldConfig[];
+export const outcomeLabels: Record<string, string[]>;
+export const stageKeys: string[];
+export function setArchived(record: AuditRecord, archived: boolean, now?: string): AuditRecord;
+export function combineHistory(a?: StageHistoryEntry[], b?: StageHistoryEntry[]): StageHistoryEntry[];
+export function retainHistory(previous: AuditRecord | undefined, next: AuditRecord, makeId: () => string, now?: string, reason?: string): AuditRecord;
+export function advanceStage(record: AuditRecord, date: string, makeId: () => string, now?: string): AuditRecord;
+export function actualAmount(record: AuditRecord): number | null;
+export function validateEnhancements(record: AuditRecord, validDate: (v: string) => boolean, validTime: (v: string) => boolean): string[];
+export function recoveryStats(records: AuditRecord[], period?: string, method?: string): { count:number; expected:number; actual:number; expectedCount:number; actualCount:number; pairedCount:number; ratio:number|null; remaining:number; periodAmount:number; undatedCount:number };
+export function compareSnapshot(current: AuditRecord[], baseline: AuditRecord[]): Record<'added'|'completed'|'dueChanged'|'updated'|'absent', AuditRecord[]>;
+export function attentionReasons(record: AuditRecord, today: string): string[];
