@@ -24,3 +24,10 @@ venv/
 outputs/
 logs/
 tmp/
+
+# 私有网络配置：仅本地使用，不公开订阅、节点、备份或书签
+private-output/
+Fancyss_conf_backup_*.json
+bookmarks_*.html
+*.private.conf
+*.private.json

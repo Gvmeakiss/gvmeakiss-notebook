@@ -1,82 +1,92 @@
-# Shadowrocket 双端优化配置
+# Shadowrocket Mac / iPhone 通用分流配置
 
-一份面向 **订阅制节点、手动切换** 场景的分流配置，适用于 iOS / iPadOS / macOS（Catalyst）。配置重点是让国内移动 App 和局域网服务优先直连，让 AI、海外内容、社交及开发服务按类别走当前代理节点。
+更新日期：2026-09-23。
 
-## 核心功能
+面向「家庭梅林代理 + 外出大陆热点或蜂窝网络」的同一份分流配置。Mac 与 iPhone 分别导入使用，节点和订阅由各自客户端管理；配置不含订阅地址、账号或节点凭据。本文的“SSR”使用场景指 Shadowrocket 客户端，不表示此文件可导入任意 ShadowsocksR 软件。
 
-- 微信、知乎、抖音、番茄小说（含图文/视频 CDN）和 DeepSeek 在广告规则之前优先 `DIRECT`；
-- ChatGPT、Gemini、Google、GitHub、YouTube、Twitch、Pixiv 等海外服务按类别 `PROXY`；
-- Apple 系统服务、私网、回环地址和国内常用服务 `DIRECT`；
-- Shadowrocket `DOMAIN-SET` 覆盖长尾域名，`RULE-SET` 处理关键词、IP 与 User-Agent；
-- `GEOIP,CN → DIRECT` 与 `FINAL → PROXY` 处理未被远程规则集命中的请求；
-- 路由器和本地私网由私网地址规则直接处理，无需逐个写入域名。
+- [下载完整配置](./shadowrocket-optimized.conf)
+- [导入、日常使用、排错与回滚](./使用指南.md)
+- [梅林配套方案](../merlin/README.md) · [梅林使用指南](../merlin/使用指南.md)
 
-> 关键前提：导入后，在 Shadowrocket 首页将「全局路由」设为「**配置**」。若设为「代理」，所有 `DIRECT` / `PROXY` 分流规则都会被全局代理覆盖。
+## 使用场景
 
-> 金融类 App 不设置专属域名规则。使用银行、支付、证券等金融 App 前，请先关闭 Shadowrocket，使用完成后再按需开启。
+| 场景 | 操作 | 分流与出口 |
+| --- | --- | --- |
+| 在家日常浏览 | 关闭 Shadowrocket，连接梅林 | 由路由器按大陆白名单分流，国内直连、海外使用香港主节点 |
+| 在家使用 GPT 等服务 | 开启 Shadowrocket，选择能正常访问目标服务的节点 | 客户端规则接管；所有命中 `PROXY` 的服务使用当前节点 |
+| 外出连接大陆手机热点或使用蜂窝网络 | 在需要代理的设备上开启 Shadowrocket | 客户端独立完成分流，无需家庭路由器或固定家庭 DNS |
 
-## 分流逻辑
+Shadowrocket 首页“全局路由”必须设为“配置”，并选中本文件使用。选成“代理”会覆盖文件内的直连分流。
 
-| 使用场景 | 处理逻辑 | 作用 |
-|---|---|---|
-| 微信、抖音、知乎、番茄小说 | 细分规则及番茄图文/视频 CDN 置于广告和大类规则之前，优先 `DIRECT` | 减少代理中转、跨境等待和登录/内容预取卡顿 |
-| 国内网页与国内 CDN | China 域名集合、非域名规则与 `GEOIP,CN` 共同直连 | 减少国内网站误走代理的延迟 |
-| ChatGPT、Gemini、Google、GitHub | 显式 `PROXY` | Mac 与 iPhone 访问海外服务时使用当前节点 |
-| YouTube、Netflix、Twitch、Pixiv 等 | 流媒体/内容服务显式 `PROXY` | 与国内 App 直连策略互不干扰 |
-| 蜂窝网络 DNS | `dns-direct-fallback-proxy = false`，直连解析失败不跨境重试 | 避免国内 App 在 DNS 回退时额外等待 |
-| 长连接与流式响应 | `block-quic = all-proxy`，仅代理流量回落 TCP/HTTP2 | 降低代理侧 QUIC/HTTP3 断流和重连概率 |
-| 局域网、路由器、Apple 系统服务 | 私网、回环、Apple 网段和系统域名直连 | 保持 AirPlay、局域网发现、推送和路由器管理可用 |
+开启 Shadowrocket 后，不是只有 GPT 改变出口、其他海外网页仍自动走家庭香港节点。Viu 等地区内容也会随客户端所选节点变化。Mac 与 iPhone 使用同一规则文件，但节点选择和连接开关彼此独立；手机开启代理也不代表其热点下的其他设备自动使用该代理。
 
-## 设计要点
+## 功能与规则顺序
 
-### 1. 配置与节点完全解耦
-- 规则目标仅使用 `PROXY` / `DIRECT` / `REJECT` 三种策略，`PROXY` 始终指向「当前启用的节点」；
-- 节点来自订阅、随时增删更新，本配置无需任何改动，节点切到哪，代理流量就跟到哪。
+规则按顺序匹配，先命中的策略生效。
 
-### 2. DNS 防污染与移动端回退控制
-- 腾讯 / 阿里 DoH 优先，普通国内 DNS 补充，系统 DNS 最后兜底；
-- `hijack-dns` 仅劫持硬编码 Google / Cloudflare DNS 请求，避免 `*:53` 全量劫持干扰局域网设备发现；
-- `dns-direct-fallback-proxy = false`：直连域名解析失败不经代理重试，减少 iPhone 蜂窝网络下国内 App 的回退等待和跨境解析路径。
+| 层次 | 配置逻辑 | 作用 |
+| --- | --- | --- |
+| 局域网优先 | 本地名称直连；前置私网 IP 规则带 `no-resolve`；`[Host]` 将本地名称交给系统 DNS | 访问路由器、NAS 和局域网服务，避免为可按域名分流的请求提前解析 |
+| 国内 App 与常用服务 | 微信、抖音、知乎、番茄、DeepSeek、Kimi，以及办公、NAS、国内视频/CDN、镜像等先于广告规则直连 | 减少国内服务误走代理及广告大类规则误伤核心请求的机会 |
+| OpenAI 核心连接 | 登录、静态资源、文件、验证与实时连接相关域名先于广告规则代理 | 让这些请求使用同一客户端节点，并提供显式域名保底 |
+| 广告与海外服务 | 保留广告拦截，以及 AI、流媒体、社交、购物、开发等分类规则 | 按服务区分 `REJECT`、`DIRECT` 和 `PROXY` |
+| 游戏 | `SteamCN` 先直连，随后 `Game` 代理 | 优先处理下载/CDN 与连接管理请求，商店和社区按后续游戏规则处理 |
+| Apple 与大类 | Apple IP 规则放在 AI 例外之后；Apple、Global、China 使用原生 `DOMAIN-SET` 与 `RULE-SET` 组合 | 域名集合与关键词、IP、User-Agent 等规则互补 |
+| 最后兜底 | 允许解析的私网 IP 规则 → `GEOIP,CN,DIRECT` → `FINAL,PROXY` | 处理自定义私网别名与未被前面规则覆盖的请求 |
 
-### 3. 长连接稳定性
-- `block-quic = all-proxy`：仅对走代理的连接屏蔽 QUIC / HTTP3，强制回退到 TCP 上的 HTTP/2，显著改善 SSE 长连接（流式对话类应用）经代理时的断流重连问题。
+金融类 App 不新增专属规则，按使用习惯在启动前关闭 Shadowrocket。关闭客户端不会同时关闭梅林代理；若需要完全不经过代理，应另行确认路由器或所用网络的状态。配置不使用书签栏 Work 文件夹中的专用域名，也不固定某台 NAS 或某个家庭路由器的私有地址。
 
-### 4. 分流规则分层（每日更新）
-- 主规则采用 `blackmatrix7/ios_rule_script` 的 Shadowrocket 格式，经 jsDelivr CDN 加速分发；AI 服务额外引用 `iab0x00/ProxyRules` 的 `AI.txt`；
-- Global、China 与 Apple 使用上游建议的 `DOMAIN-SET + RULE-SET` 组合，分别加载域名集合与关键词、IP、User-Agent 规则；
-- 分层：局域网直连 → 移动核心 App 直连 → 国内常用服务直连 → 去广告 → AI 服务 → 流媒体 → 社交通讯 → 购物 → 游戏 → 开发云服务 → Apple/TikTok → 大类域名规则 → 本地保底；
-- 规则集由上游每日自动更新，本地零维护。
+## DNS、传输与隐私边界
 
-### 5. 本地保底
-- `GEOIP,CN → DIRECT` + `FINAL → PROXY` 兜底，即使远程规则集全部不可达，仍能正确分流，不依赖任何外部资源即可工作。
+| 参数 | 设置 | 含义与限制 |
+| --- | --- | --- |
+| `dns-server` | 腾讯、阿里两个 DoH | 主解析器；列表顺序不等于严格逐个串行尝试 |
+| `fallback-dns-server` | 国内普通 DNS 与 `system` | 主解析失败或超时时回退；不固定家庭 DNS，便于外出使用 |
+| `dns-direct-fallback-proxy` | `false` | 直连解析失败不改经代理重试；必要时应排查当地 DNS 可达性 |
+| `hijack-dns` | Google / Cloudflare 常见明文 DNS 地址的 53 端口 | 不使用 `*:53` 全量劫持；不涵盖所有硬编码 DNS 或 DoH |
+| `block-quic` | `all-proxy` | 仅限制代理 QUIC，让支持回退的客户端改用 TCP；国内 QUIC 保持可用 |
+| `ipv6` / `prefer-ipv6` | `true` / `false` | 允许 IPv6，不优先选择 IPv6；不改变家庭路由器的 IPv6 代理设置 |
 
-## 使用
+`block-quic` 是代理传输兼容性设置，不保证回退协议一定是 HTTP/2，也不保证修复所有 SSE、WebSocket、实时语音或 App 连接问题。代理目标默认由代理端解析；局域网名称通过 `[Host]` 中的系统 DNS 映射单独处理。
 
-1. Shadowrocket →「配置」→ 右上角 `+` → 从文件导入本 `.conf`；
-2. 首页「全局路由」选择「配置」，然后启用并断开重连一次；
-3. 依次测试微信、抖音、知乎、番茄小说与常用海外服务；金融类 App 请关闭 Shadowrocket 后使用；
-4. 若某 App 异常，在 Shadowrocket 日志确认命中策略：`REJECT` 通常为广告规则误伤，临时注释 `[Rule]` 中 `Advertising` 那一行后重试；`PROXY` 则为该 App 仍需补充 `DIRECT` 规则。
+配置不启用 MITM 或 HTTPS 解密。Google 中国入口的 URL Rewrite 保留，但不能据此保证 HTTPS 请求一定被重写。`localhost.weixin.qq.com` 的回环映射保留，不将其改成家庭设备地址。
 
-## 参数速览
+## 规则来源与更新
 
-| 参数 | 值 | 作用 |
-|---|---|---|
-| `dns-server` | doh.pub + alidns + 223.5.5.5 + 119.29.29.29 | DNS 防污染 |
-| `hijack-dns` | Google + Cloudflare 明文 DNS | 防常见硬编码 DNS 绕过，同时不干扰局域网 DNS |
-| `block-quic` | all-proxy | 代理流量禁 QUIC，稳长连接 |
-| `ipv6` / `prefer-ipv6` | true / false | 支持 IPv6 节点但不优先 |
-| `dns-direct-fallback-proxy` | false | 直连解析失败不经代理重试，优先保证国内 App 的访问路径 |
+公开配置的 `[Rule]` 有 150 个条目：107 个内联规则和 43 个远程引用。远程引用包括：
 
-## 自定义域名
+- [blackmatrix7/ios_rule_script 的 Shadowrocket 原生规则](https://github.com/blackmatrix7/ios_rule_script/tree/master/rule/Shadowrocket)，通过 jsDelivr 分发。
+- [iab0x00/ProxyRules 的 AI.txt](https://github.com/iab0x00/ProxyRules/blob/main/Rule/AI.txt)，补充 AI 服务域名；国内 AI 的显式直连规则先匹配。
 
-如需让家用 NAS 或其他私有域名始终直连，可在第 3 层末尾添加规则，例如：
+上游更新不等于设备缓存已更新。导入或调整配置后，应在客户端刷新远程规则并确认加载情况，具体操作见[使用指南](./使用指南.md#6-更新配置与远程规则)。远程不可用时，内联规则、GeoIP 与最终策略仍可处理请求，但不能保证等价于完整分类覆盖。DeepSeek 等显式域名仍需在服务变化时维护，不应理解为“永久零维护”。
 
-```ini
-DOMAIN-SUFFIX,example.internal,DIRECT
+## 验证记录与适用边界
+
+在仓库根目录可运行离线配置回归：
+
+```sh
+node --test shadowrocket/tests/config.test.mjs
 ```
 
-请勿将真实企业域名、内网地址、节点订阅链接、账号或密钥推送到此公开仓库。
+测试检查规则顺序、DNS、远程引用集合和名单格式，不模拟客户端匹配或证明远程内容可达。
 
-## 目录
+2026-09-23 的本地实例验证包括：
 
-- [shadowrocket-optimized.conf](./shadowrocket-optimized.conf)
+- Mac Shadowrocket 已导入并启用当时的本地文件，全局路由为“配置”，43/43 个远程规则集 URL 加载完成。
+- 原生规则测试结果为 `chatgpt.com → PROXY`、`kimi.com → DIRECT`。
+- Mac 访问 ChatGPT `robots.txt`、GitHub、百度收到 HTTP 200；显式使用 Shadowrocket 本地 HTTP 代理访问 ChatGPT `robots.txt` 也收到 200。
+- 本地已核对排除 Work 后的书签首页主机，并做关键域名/IP 静态检查；这不代表网页内全部 CDN 和功能均已逐一测试。
+
+本仓库公开版移除了本地实例中的一条私人 API 精确主机规则，其余分流逻辑一致。不能把本地实例的加载记录表述为这个脱敏版本已在设备上加载。iPhone 与外出热点尚未实测；HTTP 200 仅证明相应请求基础可达，不证明账号登录、长时间流式输出、语音或所有 App 功能均正常。
+
+## 本地私有规则
+
+如有自用 API，可在本地文件第 10 层的注释占位处添加精确主机规则：
+
+```ini
+DOMAIN,api.example.com,PROXY
+```
+
+对确定需要直连的私有服务，可在广告规则之前添加精确的 `DIRECT` 规则；局域网别名还应确认系统 DNS 能解析。优先使用 `DOMAIN` 限定主机，不要随意扩大为整个云平台的 `DOMAIN-SUFFIX`。
+
+私人规则、节点入口绕过清单、订阅、账号、完整梅林备份和书签原文件均应只保存在本地。更新公开版前先备份本地改动；导入新版后再按需合并，不要上传私有版本。
