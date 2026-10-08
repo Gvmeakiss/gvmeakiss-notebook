@@ -115,18 +115,22 @@ $results = New-Object System.Collections.Generic.List[object]
 function Record { param([string]$Name, [bool]$Ok, [string]$Detail = '')
     $script:results.Add([pscustomobject]@{ Phase = $Name; Result = $(if ($Ok) { 'PASS' } else { 'FAIL' }); Detail = $Detail })
 }
-function Invoke-Step { param([string]$File, [string[]]$Args, [string]$What)
+# NOTE: the parameter must NOT be named $Args - that shadows the automatic variable and
+# silently drops every argument passed to the child script.
+function Invoke-Step { param([string]$File, [string[]]$Arguments, [string]$What)
     $p = Join-Path $here $File
     if (-not (Test-Path $p)) { Bad "$File not found"; return $false }
     Step $What
-    $out = & $pwshExe -NoProfile -File $p @Args 2>&1
+    $out = & $pwshExe -NoProfile -File $p @Arguments 2>&1
     $out | ForEach-Object { Write-Host "       $_" -ForegroundColor DarkGray }
     return ($LASTEXITCODE -eq 0)
 }
+# scoop list writes its table through the host stream, so it cannot be captured reliably.
+# Ask the filesystem instead: an installed app has scoop\apps\<name>\current.
+function Test-ScoopApp { param([string]$Name) Test-Path (Join-Path $env:USERPROFILE "scoop\apps\$Name\current") }
 function Get-ScoopInstalled {
-    @(& scoop list 2>$null |
-        Where-Object { $_ -match '^\S+\s+\S' -and $_ -notmatch '^(Name|Installed|Results|-{3,})' } |
-        ForEach-Object { ($_ -split '\s+')[0] })
+    Get-ChildItem (Join-Path $env:USERPROFILE 'scoop\apps') -Directory -ErrorAction SilentlyContinue |
+        Select-Object -ExpandProperty Name
 }
 function Scoop-Install { param([string[]]$Packages, [switch]$Bucket)
     $scoop = Get-Command 'scoop' -ErrorAction SilentlyContinue
@@ -143,7 +147,7 @@ function Scoop-Install { param([string[]]$Packages, [switch]$Bucket)
     $missing = @()
     foreach ($p in $Packages) {
         $leaf = ($p -split '/')[-1]
-        if ($installed -notcontains $leaf) { $missing += $p }
+        if (-not (Test-ScoopApp $leaf)) { $missing += $p }
     }
     if (-not $missing.Count) { Ok "already installed: $($Packages -join ', ')"; return $true }
     # In -WhatIf the change is simply not made; that is not a failure.
@@ -151,8 +155,7 @@ function Scoop-Install { param([string[]]$Packages, [switch]$Bucket)
     Step "scoop install $($missing -join ' ')"
     & scoop install @missing 2>&1 | ForEach-Object { Write-Host "       $_" -ForegroundColor DarkGray }
     Reset-Path
-    $now = Get-ScoopInstalled
-    $still = @($missing | Where-Object { $now -notcontains ($_ -split '/')[-1] })
+    $still = @($missing | Where-Object { -not (Test-ScoopApp ($_ -split '/')[-1]) })
     if ($still.Count) { Bad "still missing: $($still -join ', ')"; return $false }
     return $true
 }

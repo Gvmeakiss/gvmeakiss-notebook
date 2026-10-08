@@ -76,6 +76,27 @@ pwsh -File ...\scripts\reset-failed-devices.ps1 [-Reset]
 
 **明确不做**（这几项是用户取舍，不是"无效配置"）：禁用任何服务、关 UAC、改 DPI/分辨率、关 Windows 更新、关休眠/快速启动。
 
+### 接手一台"已经被优化过"的机器时
+
+如果前一个优化脚本顺手关掉了更新策略 / UWP 后台 / 搜索索引，按需恢复（均需管理员）：
+
+```powershell
+# 恢复 Windows 更新管线（恢复后会自动开始下载积压的补丁，可能多次重启）
+Remove-ItemProperty 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate' -Name 'SetDisableUXWUAccess' -ErrorAction SilentlyContinue
+Remove-ItemProperty 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' -Name 'NoAutoUpdate' -ErrorAction SilentlyContinue
+Get-ScheduledTask -TaskPath '\Microsoft\Windows\UpdateOrchestrator\' | Where-Object State -eq Disabled | Enable-ScheduledTask
+sc.exe config wuauserv start= demand ; sc.exe start wuauserv
+
+# 放宽 UWP 后台应用（恢复邮件/日历同步、磁贴、UWP 通知）
+Remove-ItemProperty 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy' -Name 'LetAppsRunInBackground' -ErrorAction SilentlyContinue
+Set-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications' -Name 'GlobalUserDisabled' -Value 0 -Type DWord
+
+# 搜索索引改回 Windows 默认
+sc.exe config WSearch start= delayed-auto ; sc.exe start WSearch
+```
+
+> 实测：一台被"关闭更新"工具处理过的机器上，这三项都处于被关闭状态；恢复更新后系统会自行下载积压的补丁。
+
 ## 唯一入口
 
 ```powershell
