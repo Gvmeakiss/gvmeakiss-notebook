@@ -1,0 +1,39 @@
+{
+  "_comment": "Portable app manifest for scripts/install-portable.ps1, driven by scripts/setup.ps1. Every sha256 below is a real value measured from the official release asset. 'assoc' lists the file types this app should be offered for (used by the link phase; Windows still requires one manual click per type to set a DEFAULT - see SKILL.md).",
+  "version": 1,
+  "apps": [
+    {
+      "name": "JPEGView",
+      "url": "https://github.com/sylikc/jpegview/releases/download/v1.3.46/JPEGView_1.3.46.zip",
+      "sha256": "ba71d5983b6c9e2dc55abbec0da53be54e67cf3251d6e9d2d8be82fe7d85bbe5",
+      "exe": "JPEGView.exe",
+      "assoc": [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".tif", ".tiff"],
+      "notes": "Image viewing. Starts instantly, handles huge folders. Launched with no argument it opens its own NavPanel.png - normal. Put strings_zh.txt in place for a Chinese UI."
+    },
+    {
+      "name": "MPC-BE",
+      "url": "https://github.com/Aleksoid1978/MPC-BE/releases/download/1.9.1/MPC-BE.1.9.1.x64.7z",
+      "sha256": "d9ef12c0492e420f5c5650a8102d01f7a2dcf34d2151ca3e2fb8323d0984c74a",
+      "exe": "mpc-be64.exe",
+      "addToPath": ".",
+      "assoc": [".mp4", ".mkv", ".avi", ".mov", ".webm", ".mp3", ".flac", ".wav", ".m4a"],
+      "notes": "Video and audio with a normal player UI: playlist, Ctrl+Up/Down speed, Ctrl+L subtitles. Needs 7-Zip available for the .7z asset (scoop has it)."
+    },
+    {
+      "name": "MarkText",
+      "url": "https://github.com/marktext/marktext/releases/download/v0.21.1/marktext-win-x64-0.21.1.zip",
+      "sha256": "35235c7576af8a2aa54a64e057738b52150dca37ac09e444311e2868cab96208",
+      "exe": "MarkText.exe",
+      "assoc": [".md", ".markdown"],
+      "notes": "Markdown with live preview. Electron build, so first launch may raise SmartScreen (unsigned) - choose Run anyway."
+    },
+    {
+      "name": "rclone",
+      "url": "https://github.com/rclone/rclone/releases/download/v1.75.1/rclone-v1.75.1-windows-amd64.zip",
+      "sha256": "200eb602c126d82aa38b51e0f6b9ae837473ff99b51278d3f6f837574c494d6e",
+      "exe": "rclone.exe",
+      "addToPath": ".",
+      "notes": "Command-line sync/backup to a NAS over SMB or WebDAV. `rclone mount` needs WinFsp (elevation) - map the drive with the OS instead."
+    }
+  ]
+}

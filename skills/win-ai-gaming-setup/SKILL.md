@@ -1,0 +1,128 @@
+---
+name: win-ai-gaming-setup
+description: 把一台新的 Windows 电脑一条命令配置成「AI 开发 + 游戏」机器，并在优化出故障时回滚。当出现"新电脑怎么配""帮我装开发环境""装 Python/Node/Go/dotnet""装些好用的小软件""优化一下打游戏""优化后输入法没了/某个功能坏了""想关服务但不知道后果"等诉求时使用。唯一入口是 scripts/setup.ps1（check/dev/apps/tune/link/verify 六个阶段，幂等、可 -WhatIf）；核心纪律只有三条：不碰按需启动的服务、动系统前先拍快照、改完必须重启再验证。
+agent_created: true
+---
+
+# Windows 新机配置：AI 开发 + 游戏
+
+## 目标（什么叫"配好了"）
+
+一台新机器跑完 `setup.ps1` 后应当满足：
+
+| 维度 | 完成标准 |
+|---|---|
+| 开发 | `scoop` 可用的语言工具链（python/node/go/cmake/dotnet/mingw），PATH 与 Store 存根已修好，**新开终端**里敲 `python --version` 有输出 |
+| 软件 | 便携软件就位（图片/播放器/Markdown/NAS 工具），逐个能启动，SHA256 已校验 |
+| 游戏 | GameDVR 关闭、MMCSS 优先级已调；**没有禁用任何服务** |
+| 系统 | 改动前有快照，能逐项对比、能回滚 |
+| 输入法 | 中文能打、`Win+空格` 能切（这条最容易被"优化"搞坏） |
+
+## 唯一入口
+
+```powershell
+pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1              # 全部阶段，按顺序
+pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1 -Phase check # 只做前置检查
+pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1 -Phase dev,apps
+pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1 -Phase tune -WhatIf
+```
+
+| 阶段 | 做什么 | 需要管理员 |
+|---|---|---|
+| `check` | 前置检查：scoop / git / 7z / 网络 / 磁盘 / 提权 / 系统版本（按 UBR 判断补丁级别） | 否 |
+| `dev` | Scoop 装语言与构建工具 + 国内镜像；修 PATH、Store 存根、凭据助手 | 部分需要 |
+| `apps` | 按 `apps.json` 装便携软件：下载 → **校验 SHA256** → 解压 → 折叠单层目录 → 快捷方式/PATH | 否 |
+| `tune` | **先快照**，再应用安全改动：GameDVR 关、MMCSS 调优；（可选）高性能电源计划 | 是 |
+| `link` | 注册文件关联让 Windows 能选到这些程序；报告哪些类型还需手动点一次 | 否 |
+| `verify` | 验收：开发环境 / 软件清单 / 输入法健康 / 服务基线漂移 | 否 |
+
+配套工具箱（同一目录，可单独调用）：
+
+```
+snapshot-services.ps1     -OutDir <dir>               改动前拍照（只读）
+compare-services.ps1      -Snapshot <csv> [-Restore] [-Only X]   对比 / 按基线回滚
+diagnose-ime.ps1          [-Repair]                   输入法故障诊断（含 ctfmon 退出码、语言栏模式、IFEO）
+reset-failed-devices.ps1  [-Reset] [-Class X]         设备故障码分诊与复位
+install-portable.ps1      -Manifest <json>            清单式便携安装
+check-software.ps1        [-Json]                     便携软件盘点（不进系统应用列表）
+set-app-associations.ps1  [-Register -Apps @{}]       关联注册 / 现状报告
+clean-orphan-associations.ps1 [-Clean]                卸载后的关联残留清理
+audit-env.ps1 / fix-env.ps1 / setup-langs.ps1 / verify-env.ps1     开发环境四件套
+```
+
+## 三条纪律（违反就会被坑）
+
+### 1. 绝不按"显示名"去禁用服务
+
+**按需启动（Manual）的服务禁用后省不到任何性能，只会在某天爆发。** 实测代价表：
+
+| 服务 | 显示名让你以为 | 禁掉的真实后果 |
+|---|---|---|
+| `TabletInputService` | 触屏键盘 | **中文输入法消失**、`Win+空格` 无反应、`ctfmon` 退出码 1 |
+| `stisvc` | 图像采集 | 手机/相机/扫描仪**导不了照片** |
+| `XboxGipSvc` | Xbox 配件 | **手柄**不工作 |
+| `XblAuthManager` / `XblGameSave` / `XboxNetApiSvc` | Xbox | 商店游戏/Game Pass 登录、云存档、联机 |
+| `WSearch` | 搜索索引 | 开始菜单/资源管理器搜文件不完整 |
+| `Spooler` | 打印后台 | 打印全废 |
+
+反过来：`RemoteRegistry` / `DiagTrack` / `SysMain` / `Fax` / `RetailDemo` 在很多机器上**出厂就是禁用**，
+别把它们当成自己的"加固成果"，回滚时也别顺手打开。
+
+### 2. 动系统前先拍快照
+
+```powershell
+pwsh -File scripts/snapshot-services.ps1 -OutDir C:\backup\before-tweak
+```
+没有基线就无法回答关键问题：*这个设置是我改的，还是本来就这样？*
+`setup.ps1 -Phase tune` 会自动做这一步。快照目录含自启项导出，**属私有数据，不要提交公开仓库**。
+
+### 3. 改完必须重启再验证
+
+服务启动类型、网卡电源、输入法栈**都要重启才暴露问题**。真实案例：服务已经 `Running`，
+`ctfmon` 仍然起不来、输入法仍然不能用；**重启后一切正常**。坏掉的登录会话不会自愈。
+
+## 陷阱速查（每条都实测过）
+
+| 现象 | 真相 |
+|---|---|
+| 改了注册表里服务的 `Start`，`Start-Service` 仍失败 | SCM 有缓存，必须 `sc.exe config <名> start= demand`（**等号后有空格**）通知它 |
+| 命令返回成功，设置却没生效 | 回读验证。例：`Disable-NetAdapterPowerManagement` 报成功但值没变 |
+| `Win+空格` 按下去毫无反应 | 语言栏处于**旧版切换模式**（该模式下热键被禁用）：`Set-WinLanguageBarOption`（不带参数=现代模式） |
+| PS7 里 `Get-WinUserLanguageList` 抛 marshalling 错误 | PS7 的已知问题，改用 `powershell.exe`（5.1） |
+| Windows PowerShell 5.1 跑脚本中文乱码/语法错 | 脚本文件缺 **UTF-8 BOM** |
+| 默认程序改不掉 | `UserChoice` 有 `Deny SetValue` + Hash 保护；官方 COM API 在 Win10 返回 `0x80070002` 且不生效。**只能手动点一次**，脚本能做的只是"让它出现在候选里" |
+| 关联指向已删程序 | 卸载后必须跑 `clean-orphan-associations.ps1`；修法是**把 ProgID 重定向到幸存程序**，不是删键（删了 Windows 会重建并可能指到第三个程序） |
+| `TrustedInstaller` 启动类型变过 | 是 **Windows 更新自己**切的（事件 7040 有记录），不是优化脚本 |
+| 快照里某服务 `StartMode=Unknown` | 受保护服务读不到注册表，**不是被改了** |
+| `Get-HotFix` 说系统停在 2023 | 它不列累积更新；用 `UBR` 判断真实补丁级别 |
+| 某设备显示 Error（如蓝牙 Code 43） | 通常**与优化无关**，是驱动问题。先"完全关机"断电（不是重启），再装厂商驱动 |
+| 开机日志 `7026 ... dam` / `DCOM 10016` | 良性噪音，不用管 |
+| CPU 显示 100% | 用增量采样，别信 `LoadPercentage` 瞬时值 |
+
+## 验收
+
+```powershell
+pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1 -Phase verify
+```
+
+`setup.ps1` 末尾输出 PASS/FAIL 表；**新开一个终端**再看 PATH 类结果。剩下三件脚本做不了的事：
+
+1. **重启**，然后开新终端
+2. 逐个文件类型**手动点一次**默认程序（右键 → 打开方式 → 选择其他应用 → 勾"始终"）
+3. 设备有故障码 → `reset-failed-devices.ps1 -Reset`（管理员）
+
+## 边界
+
+| 限制 | 原因 |
+|---|---|
+| 默认程序无法脚本设置 | `UserChoice` 的 Deny ACL + Hash；官方 API 在 Win10 失效 |
+| `rclone mount` 需要 WinFsp | 驱动安装需提权；改用系统盘符映射 |
+| 便携软件不进系统"应用列表" | 天生如此，盘点必须扫目录 |
+| 本方案不关 UAC、不改 DPI、不动更新策略 | 这些是用户取舍，不是"优化" |
+| 需要重启才算验证完成 | 登录会话状态不会自愈 |
+
+## 安全纪律
+
+- 清单里的 `sha256` **必须**是发布页的真实值（脚本默认拒绝无哈希条目）
+- 只从官方发布页下载；第三方"绿色版/破解版"是恶意软件主要载体
+- 公开仓库不出现：真实主机名 / 内网 IP / NAS 地址 / 用户名 / `C:\Users\<真名>` / 自启项导出

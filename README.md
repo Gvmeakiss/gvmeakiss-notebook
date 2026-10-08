@@ -24,9 +24,7 @@
 | [merlin](./merlin) | 配置与工具 · Config / Tools | 梅林 fancyss 香港日常出口、分流名单与全部美国节点入口绕过生成工具 |
 | [mini-app-spec](./mini-app-spec) | 技术规范 · Spec | 企业级「AI Agent 驱动轻应用平台」技术规范（脱敏方法论版）：静态导出 + BFF 中介 + SQL 预定义 + 原子替换部署，含 Agent 开发约定 |
 | [skills/screenshot-text-edit](./skills/screenshot-text-edit) | AI Skill | 截图文字/数字高保真修改（字形克隆法），含 4 个 CLI 脚本 |
-| [skills/win-dev-environment](./skills/win-dev-environment) | AI Skill | Windows 开发环境审计 / 修复 / 验证（非管理员账户）：识别 Store 存根、PATH 陈旧、区域编码等「假缺失」陷阱，含 4 个 PowerShell 脚本 |
-| [skills/win-portable-apps](./skills/win-portable-apps) | AI Skill | Windows 便携软件安装与盘点（非管理员账户）：免安装、免提权、删文件夹即卸载；含软件清单扫描、带 SHA256 校验的清单式安装器、文件关联边界说明 |
-| [skills/win-system-tweaks-safety](./skills/win-system-tweaks-safety) | AI Skill | 安全地做 Windows 系统调优并在出故障后回滚：调优前快照 → 逐项对比 → 按基线恢复；含「服务显示名≠职责」风险清单与输入法故障诊断修复 |
+| [skills/win-ai-gaming-setup](./skills/win-ai-gaming-setup) | AI Skill | **新机一条命令配成「AI 开发 + 游戏」机**：check → dev（Scoop 工具链+国内镜像）→ apps（SHA256 校验的便携软件）→ tune（先快照再改 GameDVR/MMCSS）→ link（关联注册）→ verify（验收）；出故障可按基线回滚。含输入法/服务/设备三类故障的诊断与修复脚本 |
 | [docs/windows-environment-setup](./docs/windows-environment-setup.md) | 记录 · Notes | 一台 Windows 10 非管理员机器的环境与软件配置全过程：11 类踩坑、14 个问题总表、可复现命令 |
 
 ---
@@ -77,9 +75,7 @@ Mac / iPhone 共用的 Shadowrocket 分流配置：国内 App 与局域网直连
 | [merlin](./merlin) | Config / Tools | Merlin fancyss routing lists, daily Hong Kong egress and a local US-node endpoint bypass generator |
 | [mini-app-spec](./mini-app-spec) | Tech spec | Enterprise “AI-Agent-driven light-app platform” technical spec (desensitized methodology edition): static export + BFF mediation + predefined SQL + atomic-swap deployment, with Agent dev conventions |
 | [skills/screenshot-text-edit](./skills/screenshot-text-edit) | AI Skill | High-fidelity text/digit editing inside screenshots (glyph-cloning method), incl. 4 CLI scripts |
-| [skills/win-dev-environment](./skills/win-dev-environment) | AI Skill | Audit / repair / verify a Windows dev environment on a non-admin account: catches “phantom missing tool” traps (Store alias stubs, stale PATH, regional code page), incl. 4 PowerShell scripts |
-| [skills/win-portable-apps](./skills/win-portable-apps) | AI Skill | Install and inventory portable apps on a non-admin Windows account: no installer, no elevation, uninstall by deleting a folder; incl. software inventory, a manifest installer with SHA256 verification, and the file-association boundary |
-| [skills/win-system-tweaks-safety](./skills/win-system-tweaks-safety) | AI Skill | Tweak Windows safely and roll back when it breaks: snapshot before → diff after → restore from baseline; incl. a “a service's display name is not its job” risk table and IME-failure diagnosis/repair |
+| [skills/win-ai-gaming-setup](./skills/win-ai-gaming-setup) | AI Skill | **One command turns a fresh Windows box into an AI-development + gaming machine**: check → dev (Scoop toolchain + mirrors) → apps (SHA256-verified portable apps) → tune (snapshot first, then GameDVR/MMCSS) → link (associations) → verify. Roll back from the baseline when something breaks; ships diagnostics/repair for IME, services and devices |
 | [docs/windows-environment-setup](./docs/windows-environment-setup.md) | Notes | Full record of setting up a Windows 10 non-admin machine: 11 pitfall classes, a 14-item problem table, and reproducible commands |
 
 ---

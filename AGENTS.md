@@ -26,7 +26,7 @@ skills/<name>/
 - `merlin/`：梅林 fancyss 分流名单、使用指南、美国节点入口绕过生成工具；账号与节点备份仅在本地使用。
 - `docs/`：过程与踩坑记录。`windows-environment-setup.md` 是在一台 Windows 10 非管理员机器上
   把开发环境与常用软件从零配置到可用的实测记录（14 项问题总表 + Windows 专属陷阱）。
-  与两个 `win-*` Skill 配套：**Skill 是可执行的方法，docs 是为什么这么做、以及踩过的坑**。
+  与 `win-ai-gaming-setup` 配套：**Skill 是可执行的方法，docs 是为什么这么做、以及踩过的坑**。
 
 ## 使用流程
 
@@ -39,18 +39,15 @@ skills/<name>/
 | Skill | 触发场景 | 入口 |
 |---|---|---|
 | `screenshot-text-edit` | 把图片/截图里的文字或数字改成别的内容（金额、日期、编号、字段名）。核心是字形克隆法，保真度远高于字体重绘 | [skills/screenshot-text-edit/SKILL.md](./skills/screenshot-text-edit/SKILL.md) |
-| `win-dev-environment` | 在 Windows（尤其非管理员账户）上审计/修复/验证开发环境：装编程语言、配国内镜像、排查「工具明明装了却找不到」。核心是区分「真缺失」与 Store 存根 / PATH 陈旧 / 区域编码造成的「假缺失」 | [skills/win-dev-environment/SKILL.md](./skills/win-dev-environment/SKILL.md) |
-| `win-portable-apps` | 在 Windows 非管理员账户上安装与盘点便携软件：装 md / 图片 / 视频查看器、NAS 工具，排查「软件装哪了」「默认打开程序改不掉」。核心是便携版路线、便携软件不进系统应用列表、默认程序受 UserChoice 的 Deny ACL + Hash 保护 | [skills/win-portable-apps/SKILL.md](./skills/win-portable-apps/SKILL.md) |
-| `win-system-tweaks-safety` | 安全地做 Windows 系统调优并在出故障后回滚：优化后输入法消失 / 某功能坏了 / 想关服务但不知后果 / 游戏随机掉线。核心是「服务的显示名≠它的职责」、命令报成功≠生效、调优前必须先拍快照 | [skills/win-system-tweaks-safety/SKILL.md](./skills/win-system-tweaks-safety/SKILL.md) |
+| `win-ai-gaming-setup` | 把一台新 Windows 机器一条命令配成「AI 开发 + 游戏」机：前置检查 → 装开发工具链 → 装便携软件 → 安全调优（先快照）→ 注册关联 → 验收，出故障能按基线回滚。唯一入口 `scripts/setup.ps1`。核心纪律三条：不碰按需启动的服务、动系统前先拍快照、改完必须重启再验证 | [skills/win-ai-gaming-setup/SKILL.md](./skills/win-ai-gaming-setup/SKILL.md) |
 
 ## 环境
 
 - 部分脚本依赖 macOS Vision OCR，**仅 macOS 可用**
 - 依赖：`pyobjc-framework-Vision` `pyobjc-framework-Quartz` `pillow`
-- `skills/win-dev-environment/`、`skills/win-portable-apps/` 与
-  `skills/win-system-tweaks-safety/` 下的脚本**仅 Windows 可用**，依赖 PowerShell 7+
-- 其中 `win-system-tweaks-safety` 的 `-Restore` / `-Repair` 需管理员权限；
-  它的快照目录含自启项导出（可能含本机路径），**属私有数据，不要提交**
+- `skills/win-ai-gaming-setup/` 下的脚本**仅 Windows 可用**，依赖 PowerShell 7+
+- 其中 `-Restore` / `-Repair` / `-Reset` 与 `-Phase tune` 需管理员权限；
+  快照目录含自启项导出（可能含本机路径），**属私有数据，不要提交**
 
 ## 内容红线
 
