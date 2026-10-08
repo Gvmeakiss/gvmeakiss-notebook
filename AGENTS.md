@@ -19,6 +19,9 @@ skills/<name>/
 
 - `audit-kanban/`：纯前端离线「稽核工作进度看板」演示应用（脱敏），双击 `index.html` 即可运行；
   用途为演示「同事填报 → 专人汇总 → 经理看板」的部门工作台账，不含任何真实业务数据。
+- `audit-workbench/`：同主题的 Next.js / React / TypeScript 工程版（脱敏），需 `npm ci` 后构建，
+  不是双击 HTML 的离线版；含团队分区、长期阶段历史、挽损分批明细、归档恢复与 SQLite DDL。
+  运行 `npm test`（Node 内置测试运行器 + Python 3）、`npm run typecheck`、`npm run build` 验证。
 - `shadowrocket/`：Mac / iPhone 通用分流配置、使用指南与离线配置检查。
 - `merlin/`：梅林 fancyss 分流名单、使用指南、美国节点入口绕过生成工具；账号与节点备份仅在本地使用。
 
