@@ -111,7 +111,7 @@ pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1 -Phase tune -WhatIf
 | `check` | **前置检查 + 引导安装**：PowerShell 7 / Scoop / git / 7-Zip / 长路径 / 开发者模式 / 网络 / 磁盘 / 提权 / 系统版本（按 UBR 判断补丁级别） | 部分需要 |
 | `dev` | Scoop 装语言与构建工具 + **VS Code / Windows Terminal** + 国内镜像（pip/npm/go/cargo/**HF**）；修 PATH、Store 存根、凭据助手 | 部分需要 |
 | `apps` | 按 `apps.json` 装便携软件：下载 → **校验 SHA256** → 解压 → 折叠单层目录 → 快捷方式/PATH | 否 |
-| `tune` | **先快照**，再应用：游戏调优（GameDVR/MMCSS）+ **关闭无效配置**（广告推荐/开始菜单联网搜索/遥测）；可选电源计划与鼠标加速 | 是 |
+| `drivers` | 列出故障设备（含故障码）；查询 **Windows 更新里的驱动更新**，`-InstallDrivers` 可安装；厂商驱动缺失时给出正确检索路径 | 是 | 否 |游戏调优（GameDVR/MMCSS）+ **关闭无效配置**（广告推荐/开始菜单联网搜索/遥测）；可选电源计划与鼠标加速 | 是 |
 | `link` | 注册文件关联让 Windows 能选到这些程序；报告哪些类型还需手动点一次 | 否 |
 | `verify` | 验收：开发环境 / 软件清单 / 输入法健康 / 服务基线漂移 | 否 |
 
@@ -174,7 +174,7 @@ pwsh -File scripts/snapshot-services.ps1 -OutDir C:\backup\before-tweak
 | `TrustedInstaller` 启动类型变过 | 是 **Windows 更新自己**切的（事件 7040 有记录），不是优化脚本 |
 | 快照里某服务 `StartMode=Unknown` | 受保护服务读不到注册表，**不是被改了** |
 | `Get-HotFix` 说系统停在 2023 | 它不列累积更新；用 `UBR` 判断真实补丁级别 |
-| 某设备显示 Error（如蓝牙 Code 43） | 通常**与优化无关**，是驱动问题。可以先试 `reset-failed-devices.ps1 -Reset`，但要认清它的上限：**实测 Code 43 的蓝牙适配器复位后只短暂恢复为 OK，约 40 秒后又因"适配器命令超时"回到 Error 43** —— 复位只能清状态，治不了根因。真正的解法是**完全关机断电**（不是重启）+ 安装厂商驱动 |
+| 某设备显示 Error / Code 43 | **与优化无关，是缺厂商驱动**。`reset-failed-devices.ps1 -Reset` 只能清状态（实测 Code 43 蓝牙约 40 秒后复发）。**实测解法**：装厂商/UWD 驱动 —— 微软通用驱动加载不了设备固件（MT7921 蓝牙就是这样：通用驱动 → "适配器命令超时" → Code 43；装上 MediaTek UWD 驱动（含 7MB 固件）后整套蓝牙协议栈立刻 OK）。找不到驱动时用 **Microsoft Update Catalog** 检索，**装前必须确认 INF 里含你的硬件 ID**（如 `USB\VID_0489&PID_E0CD&MI_00`） |
 | 开机日志 `7026 ... dam` / `DCOM 10016` | 良性噪音，不用管 |
 | CPU 显示 100% | 用增量采样，别信 `LoadPercentage` 瞬时值 |
 | 用 `-File` 调用脚本时 `-Only A,B` 只收到一个元素 | **`-File` 模式不拆逗号数组**（`-Command` 会拆）。要么脚本内部自己 `-split ','`，要么改用 `&` 在进程内调用传数组 |

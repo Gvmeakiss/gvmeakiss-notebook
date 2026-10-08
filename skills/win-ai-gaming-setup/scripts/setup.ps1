@@ -81,6 +81,7 @@ param(
     [switch]$NoEditor,
     [switch]$HighPerformancePowerPlan,
     [switch]$DisableMouseAcceleration,
+    [switch]$InstallDrivers,
     [switch]$RegisterAssociations,
     [switch]$SkipTweaks,
     [switch]$Help
@@ -161,14 +162,14 @@ function Scoop-Install { param([string[]]$Packages, [switch]$Bucket)
 }
 
 $phases = @($Phase | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim().ToLower() } | Where-Object { $_ })
-$validPhase = @('check', 'dev', 'apps', 'tune', 'link', 'verify', 'all')
+$validPhase = @('check', 'dev', 'apps', 'drivers', 'tune', 'link', 'verify', 'all')
 $badPhase = @($phases | Where-Object { $validPhase -notcontains $_ })
 if ($badPhase.Count) {
     Write-Host "unknown phase(s): $($badPhase -join ', ')" -ForegroundColor Red
     Write-Host "valid: $($validPhase -join ', ')" -ForegroundColor Gray
     exit 2
 }
-if ($phases -contains 'all') { $phases = @('check', 'dev', 'apps', 'tune', 'link', 'verify') }
+if ($phases -contains 'all') { $phases = @('check', 'dev', 'apps', 'drivers', 'tune', 'link', 'verify') }
 if (-not $Manifest) { $Manifest = Join-Path (Split-Path $here -Parent) 'apps.json' }
 if (-not $SnapshotDir) { $SnapshotDir = Join-Path $Destination '_backup' }
 
@@ -263,7 +264,12 @@ if ($phases -contains 'dev') {
     $ok = $true
 
     if (-not (Scoop-Install @('git', '7zip'))) { $ok = $false }
-    if (-not (Invoke-Step 'setup-langs.ps1' @('-Packages', ($Languages -join ',')) "scoop packages: $($Languages -join ', ')")) { $ok = $false }
+    # Do NOT pass the package list through -File as a comma string: -File does not split
+    # comma lists, so setup-langs would see one bogus package name and skip everything.
+    # Install the requested packages here (array binding works in-process), then let
+    # setup-langs.ps1 add its defaults plus the mirror configuration.
+    if (-not (Scoop-Install $Languages)) { $ok = $false }
+    if (-not (Invoke-Step 'setup-langs.ps1' @() 'languages (defaults) + mirrors + rust')) { $ok = $false }
 
     if (-not $NoEditor) {
         Scoop-Install @('extras') -Bucket | Out-Null
@@ -297,6 +303,48 @@ if ($phases -contains 'apps') {
     }
 }
 
+# ------------------------------------------------------------------ drivers
+if ($phases -contains 'drivers') {
+    Say '--- drivers: problem devices + Windows Update driver updates ---' White
+    $bad = @(Get-PnpDevice -ErrorAction SilentlyContinue | Where-Object { $_.Status -ne 'OK' -and $_.Status -ne 'Unknown' })
+    foreach ($d in $bad) {
+        $code = (Get-PnpDeviceProperty -InstanceId $d.InstanceId -KeyName 'DEVPKEY_Device_ProblemCode' -ErrorAction SilentlyContinue).Data
+        Warn "$($d.FriendlyName) [$($d.Class)] status=$($d.Status) problemCode=$code"
+    }
+    if ($bad.Count) {
+        Warn 'a device in a failed state is usually a MISSING VENDOR DRIVER, not an optimizer side effect'
+        Warn '  1) reset-failed-devices.ps1 -Reset clears the state (it may come back)'
+        Warn '  2) a GENERIC Microsoft driver that cannot load the device firmware looks exactly like broken hardware.'
+        Warn '     Example: MT7921 Bluetooth + Microsoft generic driver => Code 43, "adapter command timed out".'
+        Warn '     The vendor/UWD driver ships the firmware and fixes it.'
+        Warn '  3) hard-to-find drivers: search the Microsoft Update Catalog, then CHECK THE INF lists your'
+        Warn '     hardware ID (USB\VID_xxxx&PID_xxxx) before installing - never install blind.'
+    }
+    else { Ok 'no device is in a failed state' }
+
+    try {
+        $session = New-Object -ComObject Microsoft.Update.Session
+        $searcher = $session.CreateUpdateSearcher()
+        $res = $searcher.Search("IsInstalled=0 and Type='Driver'")
+        Ok "Windows Update offers $($res.Updates.Count) driver update(s)"
+        for ($i = 0; $i -lt $res.Updates.Count; $i++) { Write-Host "       + $($res.Updates.Item($i).Title)" -ForegroundColor DarkGray }
+        if ($res.Updates.Count -and $InstallDrivers) {
+            if ($PSCmdlet.ShouldProcess("$($res.Updates.Count) driver update(s)", 'download and install')) {
+                $coll = New-Object -ComObject Microsoft.Update.UpdateColl
+                for ($i = 0; $i -lt $res.Updates.Count; $i++) {
+                    $u = $res.Updates.Item($i); if (-not $u.EulaAccepted) { $u.AcceptEula() }; $coll.Add($u) | Out-Null
+                }
+                $dl = $session.CreateUpdateDownloader(); $dl.Updates = $coll; $null = $dl.Download()
+                $inst = $session.CreateUpdateInstaller(); $inst.Updates = $coll
+                $r = $inst.Install()
+                Ok "installed: ResultCode=$($r.ResultCode) (2 = success)  RebootRequired=$($r.RebootRequired)"
+            }
+        }
+        elseif ($res.Updates.Count) { Warn 'pass -InstallDrivers to install them (a reboot may be required)' }
+        Record 'drivers' $true "failed devices: $($bad.Count) / WU driver updates: $($res.Updates.Count)"
+    }
+    catch { Bad "driver search failed: $($_.Exception.Message)"; Record 'drivers' $false 'WU driver search failed' }
+}
 # ------------------------------------------------------------------ tune
 if ($phases -contains 'tune') {
     Say '--- tune: snapshot, then gaming tweaks + turning off useless stuff ---' White

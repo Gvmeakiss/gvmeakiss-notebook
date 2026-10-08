@@ -18,7 +18,7 @@ pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1
 | `check` | **引导安装 + 检查**：PowerShell 7 / Scoop / git / 7-Zip / 长路径 / 开发者模式 / github 连通 / 磁盘 / 提权 / build+UBR | 部分 | — |
 | `dev` | Scoop 装 `python node go cmake dotnet mingw uv` + **VS Code / Windows Terminal** + 国内镜像（pip/npm/go/cargo/HF）；修 PATH、Store 存根、凭据助手 | 部分 | 是（Scoop 卸载） |
 | `apps` | 按 `apps.json` 装便携软件：下载 → **SHA256 校验** → 解压 → 折叠目录 → 快捷方式 / PATH | 否 | 是（删目录） |
-| `tune` | **先快照**，再改：GameDVR 关闭、MMCSS 调优、**关闭广告推荐/开始菜单联网搜索/遥测**；（可选）高性能电源计划、鼠标加速 | 是 | 是（`compare-services.ps1 -Restore`） |
+| `drivers` | 故障设备清单（含故障码）+ Windows 更新里的驱动更新；`-InstallDrivers` 直接装 | 是 | 驱动可回滚 |、MMCSS 调优、**关闭广告推荐/开始菜单联网搜索/遥测**；（可选）高性能电源计划、鼠标加速 | 是 | 是（`compare-services.ps1 -Restore`） |
 | `link` | 注册关联（`-RegisterAssociations`）+ 报告哪些类型需手动点一次 + 孤儿关联检查 | 否 | 是（有注册表备份） |
 | `verify` | dev 环境 / 软件清单 / 输入法健康 / 服务基线漂移，四项验收 | 否 | — |
 
@@ -32,6 +32,7 @@ pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1
 | `-SnapshotDir` | `<Destination>\_backup` | 快照与关联备份位置 |
 | `-Languages` | `python,node,go,cmake,dotnet,mingw,uv` | 开发阶段要装的 Scoop 包 |
 | `-NoEditor` | 关 | 跳过 VS Code + Windows Terminal |
+| `-InstallDrivers` | 关 | `drivers` 阶段实际安装 Windows 更新提供的驱动 |
 | `-DisableMouseAcceleration` | 关 | 把鼠标加速曲线清零（FPS 习惯） |
 | `-HighPerformancePowerPlan` | 关 | 打开才切高性能（笔记本费电） |
 | `-RegisterAssociations` | 关 | 打开才写关联注册（只写 HKCU） |
