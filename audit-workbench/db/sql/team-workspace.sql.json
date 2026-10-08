@@ -1,0 +1,6 @@
+{
+  "listTeams": "SELECT team_id, name FROM audit_team_workspace ORDER BY name, team_id",
+  "createTeam": "INSERT INTO audit_team_workspace (team_id, name, revision, payload, updated_at) VALUES (?, ?, 0, ?, ?)",
+  "getWorkspace": "SELECT revision, payload FROM audit_team_workspace WHERE team_id = ?",
+  "saveWorkspace": "UPDATE audit_team_workspace SET payload = ?, updated_at = ?, revision = revision + 1 WHERE team_id = ? AND revision = ?"
+}
