@@ -1,0 +1,18 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {CONFIG} from '../next-app/lib/domain/config.js';
+import {createCore} from '../next-app/lib/domain/legacy-core.js';
+import {createExcel} from '../next-app/lib/domain/legacy-excel.js';
+import {setArchived,advanceStage,recoveryStats} from '../next-app/lib/domain/enhancements.js';
+const K=createCore({CONFIG,crypto:globalThis.crypto});
+const require=createRequire(import.meta.url),X=require('../next-app/public/vendor/xlsx.full.min.js');
+const E=createExcel({CONFIG,KanbanCore:K,XLSX:X});
+const record=(extra={})=>({id:'archive-test',module:'loss-recovery',name:'虚构已完成项目',owner:'验证甲',dueDate:'2026-09-30',completed:true,updatedAt:'2026-09-12T00:00:00.000Z',currentStageTask:'确认成果',progress:'已结项',recoveryExpected:1000,recoveryActual:500,recoveryKey:'ARCH-001',recoveryMethod:'资金追回',confirmedDate:'2026-09-12',evidence:'虚构确认单',...extra});
+const state=records=>({schemaVersion:2,records,snapshots:[]});
+test('仅已完成工作可归档，旧数据未归档默认可用',()=>{assert.throws(()=>setArchived(record({completed:false}),true),/已完成/);assert.ok(K.validateRecord(record({completed:false,archivedAt:'2026-09-12T01:00:00.000Z'})).length);assert.ok(K.validateRecord(record({archivedAt:'bad'})).length);assert.equal(K.validateBackup(state([record()])).records[0].archivedAt,undefined);});
+test('归档与恢复保留阶段历史成果编号，重复归档不改时间',()=>{const r={...advanceStage(record({completed:false}),'2026-09-12',K.id),completed:true};const archived=setArchived(r,true,'2026-09-12T01:00:00.000Z');assert.equal(archived.id,r.id);assert.deepEqual(archived.stageHistory,r.stageHistory);assert.equal(archived.recoveryActual,500);assert.equal(r.archivedAt,undefined);assert.equal(setArchived(archived,true).archivedAt,archived.archivedAt);const back=setArchived(archived,false);assert.equal(back.archivedAt,'');assert.equal(back.completed,true);assert.deepEqual(back.stageHistory,r.stageHistory);});
+test('归档不改此前周报，日常数量排除而累计贡献保留',()=>{const r=record(),s=K.snapshot([r],'2026-09-07');const rows=[setArchived(r,true),record({id:'active',module:'project',completed:false,recoveryKey:''})];assert.equal(rows.filter(r=>!r.archivedAt).length,1);assert.equal(rows.filter(r=>!!r.archivedAt).length,1);assert.equal(s.records[0].archivedAt,undefined);assert.equal(s.records[0].completed,true);assert.equal(recoveryStats(rows).actual,500);});
+test('归档数据Excel与完整备份往返，恢复至空工作区仍在归档',()=>{const r=setArchived(record({teamId:'default'}),true);const got=E.read(X.write(E.workbook([r],{teamId:'default'}),{type:'array',bookType:'xlsx'}),{teamId:'default'})[0];assert.equal(got.archivedAt,r.archivedAt);assert.equal(K.validateBackup(state([got])).records[0].archivedAt,r.archivedAt);assert.equal(K.applyMerge([],K.prepareMerge([],[got]))[0].archivedAt,r.archivedAt);});
+test('旧Excel或归档前提交不取消当前归档，恢复后旧档不重新归档',()=>{const r=record(),archived=setArchived(r,true);for(const value of [undefined,'']){const plan=K.prepareMerge([archived],[{...r,archivedAt:value,name:'手工补充'}]);assert.equal(K.applyMerge([archived],plan,{[r.id]:'incoming'})[0].archivedAt,archived.archivedAt);}const back=setArchived(archived,false);const plan=K.prepareMerge([back],[{...archived,name:'旧档补充'}]);assert.equal(K.applyMerge([back],plan,{[r.id]:'incoming'})[0].archivedAt,'');});
+test('旧未完成提交不能使归档项目进入未完成状态',()=>{const archived=setArchived(record(),true);const plan=K.prepareMerge([archived],[record({completed:false})]);assert.equal(K.applyMerge([archived],plan)[0].completed,true);assert.throws(()=>K.applyMerge([archived],plan,{[archived.id]:'incoming'}),/仅已完成/);});

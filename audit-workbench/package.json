@@ -1,0 +1,26 @@
+{
+  "name": "audit-workbench-mini-app",
+  "version": "3.1.1",
+  "private": true,
+  "description": "Generic audit workbench demo with team workspaces, phase history and Excel exchange",
+  "workspaces": [
+    "next-app"
+  ],
+  "engines": {
+    "node": ">=22.7.0"
+  },
+  "scripts": {
+    "dev": "npm run dev -w next-app",
+    "build": "npm run build -w next-app",
+    "typecheck": "npm run typecheck -w next-app",
+    "test": "npm run test -w next-app",
+    "predev": "node scripts/generate-help.mjs && node scripts/generate-demo.mjs",
+    "prebuild": "node scripts/generate-help.mjs && node scripts/generate-demo.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.5.0"
+  }
+}
