@@ -95,9 +95,11 @@ pwsh -File scripts/snapshot-services.ps1 -OutDir C:\backup\before-tweak
 | `TrustedInstaller` 启动类型变过 | 是 **Windows 更新自己**切的（事件 7040 有记录），不是优化脚本 |
 | 快照里某服务 `StartMode=Unknown` | 受保护服务读不到注册表，**不是被改了** |
 | `Get-HotFix` 说系统停在 2023 | 它不列累积更新；用 `UBR` 判断真实补丁级别 |
-| 某设备显示 Error（如蓝牙 Code 43） | 通常**与优化无关**，是驱动问题。先"完全关机"断电（不是重启），再装厂商驱动 |
+| 某设备显示 Error（如蓝牙 Code 43） | 通常**与优化无关**，是驱动问题。可以先试 `reset-failed-devices.ps1 -Reset`，但要认清它的上限：**实测 Code 43 的蓝牙适配器复位后只短暂恢复为 OK，约 40 秒后又因"适配器命令超时"回到 Error 43** —— 复位只能清状态，治不了根因。真正的解法是**完全关机断电**（不是重启）+ 安装厂商驱动 |
 | 开机日志 `7026 ... dam` / `DCOM 10016` | 良性噪音，不用管 |
 | CPU 显示 100% | 用增量采样，别信 `LoadPercentage` 瞬时值 |
+| 用 `-File` 调用脚本时 `-Only A,B` 只收到一个元素 | **`-File` 模式不拆逗号数组**（`-Command` 会拆）。要么脚本内部自己 `-split ','`，要么改用 `&` 在进程内调用传数组 |
+| 遍历 `HKCU\Software\Classes` 慢到几分钟 | PowerShell 逐键读实测 **281 秒**；改用原生 `reg query /s` 全量 dump 后内存过滤约 **18 秒**。注意 `/f` **不能跨反斜杠匹配键名**（`shell\open\command` 要 `/s` dump 后自己过滤） |
 
 ## 验收
 
