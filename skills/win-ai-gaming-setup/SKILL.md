@@ -111,7 +111,8 @@ pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1 -Phase tune -WhatIf
 | `check` | **前置检查 + 引导安装**：PowerShell 7 / Scoop / git / 7-Zip / 长路径 / 开发者模式 / 网络 / 磁盘 / 提权 / 系统版本（按 UBR 判断补丁级别） | 部分需要 |
 | `dev` | Scoop 装语言与构建工具 + **VS Code / Windows Terminal** + 国内镜像（pip/npm/go/cargo/**HF**）；修 PATH、Store 存根、凭据助手 | 部分需要 |
 | `apps` | 按 `apps.json` 装便携软件：下载 → **校验 SHA256** → 解压 → 折叠单层目录 → 快捷方式/PATH | 否 |
-| `drivers` | 列出故障设备（含故障码）；查询 **Windows 更新里的驱动更新**，`-InstallDrivers` 可安装；厂商驱动缺失时给出正确检索路径 | 是 | 否 |游戏调优（GameDVR/MMCSS）+ **关闭无效配置**（广告推荐/开始菜单联网搜索/遥测）；可选电源计划与鼠标加速 | 是 |
+| `drivers` | 列出故障设备（含故障码）；查询 **Windows 更新里的驱动更新**（`-InstallDrivers` 安装）；厂商驱动缺失时给出检索路径（Microsoft Update Catalog + 装前校验 INF 硬件 ID） | 是 |
+| `tune` | **先快照**，再应用：游戏调优（GameDVR/MMCSS）+ **关闭无效配置**（广告推荐/开始菜单联网搜索/遥测）；可选电源计划与鼠标加速 | 是 |
 | `link` | 注册文件关联让 Windows 能选到这些程序；报告哪些类型还需手动点一次 | 否 |
 | `verify` | 验收：开发环境 / 软件清单 / 输入法健康 / 服务基线漂移 | 否 |
 
