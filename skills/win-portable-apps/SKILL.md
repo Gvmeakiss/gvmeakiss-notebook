@@ -1,6 +1,6 @@
 ---
 name: win-portable-apps
-description: 在 Windows 上为非管理员账户安装与盘点便携软件（免安装、免提权、删文件夹即卸载）。当出现"帮我装些好用的软件""电脑没有 winget/装不了软件""装个打开 md/图片/视频的软件""便携版软件""软件装在哪个目录了""为什么我的默认打开程序改不掉""右键打开方式里没有这个程序"等诉求时使用。核心是三条判断：便携版是非管理员账户的可行路线、便携软件不出现在系统应用列表所以必须目录扫描、默认程序受 UserChoice 的 Deny ACL + Hash 保护因而无法脚本设置。
+description: 在 Windows 上为非管理员账户安装、盘点与清理便携软件（免安装、免提权、删文件夹即卸载）。当出现"帮我装些好用的软件""电脑没有 winget/装不了软件""装个打开 md/图片/视频的软件""便携版软件""软件装在哪个目录了""为什么我的默认打开程序改不掉""右键打开方式里没有这个程序""删了软件但打开方式里还在"等诉求时使用。核心是四条判断：便携版是非管理员账户的可行路线、便携软件不出现在系统应用列表所以必须目录扫描、默认程序受 UserChoice 的 Deny ACL + Hash 保护因而无法脚本设置、删程序后注册表关联不会自动清理。
 agent_created: true
 ---
 
@@ -158,19 +158,33 @@ Access 规则:
 >
 > **B)** 设置 → 应用 → 默认应用 → 按文件类型选择默认应用（注册过的程序按名字出现在这里）
 
-**必须把这句说明清楚**，否则用户会以为安装失败。
+**手动设置确实有效且持久**（实测 `.md` → MarkText、`.png`/`.jpg` → JPEGView 均成功保持），
+只是无法由脚本代劳。**必须把这句说明清楚**，否则用户会以为安装失败。
 
-**手动设置确实有效且持久**（实测 `.md` → Notepad++、`.png` → JPEGView、`.webp` → ImageGlass
-均成功保持），只是无法由脚本代劳。**必须把这句说明清楚**，否则用户会以为安装失败。
+### 5) 卸载后要检查关联残留
+
+便携版"删文件夹即卸载"，但**注册表不会跟着消失**。三类残留，严重性差别很大：
+
+| 残留 | 后果 | 严重性 |
+|---|---|---|
+| `UserChoice` 指向已删程序 | **默认打开方式失效**，双击文件没反应或报错 | **高，必须修** |
+| ProgID 指向已删程序且无扩展名引用 | 无害，但已删程序仍出现在"打开方式"列表 | 低，可清理 |
+| `RegisteredApplications` / `Capabilities` 指向已删程序 | 设置页显示没装的程序 | 低，可清理 |
+
+**所以"删程序"这个动作后面必须跟一次关联检查** —— 用
+`scripts/clean-orphan-associations.ps1`。这是最容易被漏掉的一步。
+
+反过来注意：如果把关联**重定向**到仍在的程序（把原 ImageGlass 的扩展名改指 JPEGView），
+那些 ProgID 就**不是**孤儿，应判为健康。
 
 ### 怎么判断"已经是好的关联"
 
 ProgId 以 `AppX` 开头表示当前是**系统商店应用**，通常正是需要改掉的那种：
 
 ```
-.md  → Notepad++_md                            ← 已手动关联成功
-.png → Applications\JPEGView.exe               ← 已手动关联成功
-.jpg → AppX43hnxtbyyps62jhe9sqpdzxn1790zetc    ← 商店"照片"，待改
+.md  → MarkText.md                             ← 已关联成功
+.png → JPEGView.png                            ← 已关联成功
+.mp4 → AppX6eg8h5sxqq90pv53845wmnbewywdqq5h    ← 商店"电影和电视"，待改
 ```
 
 ## Windows 专属陷阱
@@ -193,7 +207,6 @@ $wanted = @($Only | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim(
 
 GUI / agent 父进程的环境可能早于当前配置，子进程继承后会把已装的 Scoop、
 7-Zip 报成缺失。**脚本必须自行从注册表重建 PATH**：
-
 ```powershell
 $env:PATH = (@(
     [Environment]::GetEnvironmentVariable('Path','Machine'),
@@ -214,6 +227,22 @@ $env:PATH = (@(
 CreateObject("WScript.Shell").Run "powershell -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File ""C:\path\to\script.ps1""", 0, False
 ```
 
+### 5. 枚举注册表：用 `reg query`，别用 PowerShell
+
+清理关联残留要遍历 `HKCU\Software\Classes`（实测 853 个子键、333 个 ProgID）：
+
+| 方法 | 耗时 |
+|---|---|
+| PowerShell 逐键 `Get-ItemProperty` | **281 秒** |
+| 原生 `reg query /s` 全量 dump + 内存过滤 | **17.7 秒** |
+
+> ⚠️ **`reg query /f` 不能跨反斜杠匹配键名。**
+> `reg query 'HKCU\Software\Classes' /s /f 'shell\open\command' /k` **永远返回 0 条**，
+> 因为 `/f` 只匹配**单层**键名。正确做法是 `/s` 全量 dump（约 25k 行）后按
+> `\shell\open\command$` 在内存里过滤。
+
+**规则**：注册表全量扫描一律优先 `reg query`；只在访问单个已知键时才用 PowerShell cmdlet。
+
 ## 边界
 
 | 限制 | 原因 |
@@ -223,6 +252,7 @@ CreateObject("WScript.Shell").Run "powershell -NoProfile -WindowStyle Hidden -Ex
 | **便携软件不出现在系统应用列表** | 天生如此，必须目录扫描盘点 |
 | **首次运行可能被 SmartScreen 拦** | 未签名程序，属正常，需手动允许 |
 | **不能操作提权窗口** | Windows 既定边界 |
+| **卸载后注册表残留不会自动清** | 便携版无卸载程序，须主动跑关联残留检查 |
 
 ## 安全纪律
 

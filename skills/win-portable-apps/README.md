@@ -101,6 +101,43 @@ pwsh -File scripts/set-app-associations.ps1 -Register -Apps @{
 
 写这个脚本前要先明白：**默认程序无法由脚本设置。** 见下节。
 
+### `scripts/clean-orphan-associations.ps1` — 卸载后的关联残留
+
+```powershell
+pwsh -File scripts/clean-orphan-associations.ps1            # 只报告
+pwsh -File scripts/clean-orphan-associations.ps1 -Clean     # 清理死 ProgID
+```
+
+**便携版"删文件夹即卸载"很方便，但注册表不会跟着消失。** 会留下三类残留，严重性差别很大：
+
+| 残留 | 后果 | 严重性 |
+|---|---|---|
+| `UserChoice` 指向已删程序 | **默认打开方式失效** —— 双击文件没反应或报错 | **高，必须修** |
+| ProgID 指向已删程序且无扩展名引用 | 无害，但已删程序仍出现在"打开方式"列表 | 低，可清理 |
+| `RegisteredApplications` / `Capabilities` 指向已删程序 | 设置页显示一个没装的程序 | 低，可清理 |
+
+所以**删程序后应主动检查关联**，而不是等用户发现双击打不开。
+
+脚本做三件事：报告真正**坏掉**的默认关联、列出死 ProgID、列出指向缺失 exe 的
+已注册应用（`-Clean` 可删除后两类）。
+
+#### 性能陷阱：枚举注册表用 `reg query`，不要用 PowerShell
+
+这是实际踩过的坑 —— 遍历 `HKCU\Software\Classes`（本机 853 个子键 + 333 个 ProgID）：
+
+| 方法 | 耗时 |
+|---|---|
+| PowerShell 逐键 `Get-ItemProperty` | **281 秒** |
+| 原生 `reg query /s` 全量 dump + 内存过滤 | **17.7 秒** |
+
+> ⚠️ **`reg query /f` 无法跨反斜杠匹配键名。**
+> `reg query 'HKCU\Software\Classes' /s /f 'shell\open\command' /k` **永远返回 0 条** ——
+> 因为 `/f` 只匹配**单层**键名，而目标模式含反斜杠。
+> 正确做法是 `/s` 全量 dump（约 25k 行）后在内存里按 `\shell\open\command$` 过滤。
+
+> **卸载≠清理干净**：删掉程序后要跑一次本脚本。反过来，如果你把关联**重定向**到仍在的
+> 程序（例如把原 ImageGlass 的扩展名改指 JPEGView），那就不是孤儿，脚本会正确判定为健康。
+
 ---
 
 ## 必须知道的限制：默认程序无法脚本化
@@ -295,11 +332,20 @@ pwsh -File scripts/install-portable.ps1 -Manifest apps.json -WhatIf
 # 3) 正式安装
 pwsh -File scripts/install-portable.ps1 -Manifest apps.json
 
-# 4) 看哪些关联需要手动确认（同时自动备份注册表）
+# 4) 注册应用，让 Windows 主动提供它们（默认只报告 + 备份）
 pwsh -File scripts/set-app-associations.ps1
+pwsh -File scripts/set-app-associations.ps1 -Register -Apps @{ ... }
 
 # 5) 开新终端，验证 CLI 工具已在 PATH
 rclone version
+```
+
+### 卸载 / 精简之后
+
+```powershell
+# 删掉程序文件夹后，检查并清理关联残留
+pwsh -File scripts/clean-orphan-associations.ps1
+pwsh -File scripts/clean-orphan-associations.ps1 -Clean
 ```
 
 ---

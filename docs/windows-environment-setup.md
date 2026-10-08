@@ -365,6 +365,54 @@ $new | Stop-Process -Force                             # 测试后清理
 
 注意要先清掉可能已运行的同一程序（单实例应用会把测试"吞掉"，产生假阴性）。
 
+### 5.13 卸载便携程序后，关联会断
+
+便携版"删文件夹即卸载"很方便，但**注册表里的关联不会跟着消失**，会留下三种残留：
+
+| 残留 | 后果 | 严重性 |
+|---|---|---|
+| `UserChoice` 指向已删程序 | **默认打开方式失效**，双击文件没反应或报错 | 高，必须修 |
+| ProgID 指向已删程序，但已无扩展名引用 | 无害，但会出现在"打开方式"列表里 | 低，可清理 |
+| `RegisteredApplications` / `Capabilities` 指向已删程序 | 设置页里显示一个不存在的程序 | 低，可清理 |
+
+**因此删程序后应主动检查关联**，而不是等用户发现双击打不开：
+
+```powershell
+# 对每个关心的扩展名，看它的默认 ProgID 指向的 exe 是否还存在
+foreach ($ext in '.md','.png','.mp4') {
+    $uc  = (Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\$ext\UserChoice" -ErrorAction SilentlyContinue).ProgId
+    $cls = (Get-ItemProperty "HKCU:\Software\Classes\$ext" -ErrorAction SilentlyContinue).'(default)'
+    $progId = if ($uc) { $uc } else { $cls }
+    $cmd = (Get-ItemProperty "HKCU:\Software\Classes\$progId\shell\open\command" -ErrorAction SilentlyContinue).'(default)'
+    "{0,-8} {1,-30} {2}" -f $ext, $progId, $cmd
+}
+```
+
+### 5.14 枚举注册表：`reg query` 比 PowerShell 快两个数量级
+
+**这是我在实际操作中踩的坑，代价是 281 秒。**
+
+清理关联残留需要遍历 `HKCU\Software\Classes`（本机 853 个子键）。用 PowerShell：
+
+```powershell
+# 慢：853 个键逐一 Get-ItemProperty，实测 281 秒
+foreach ($s in Get-ChildItem 'HKCU:\Software\Classes') {
+    try { $c = (Get-ItemProperty "$($s.PSPath)\shell\open\command" -ErrorAction Stop).'(default)' } catch { continue }
+}
+```
+
+改用原生 `reg query` 是**秒级**：
+
+```powershell
+# 快：原生 exe，同样的信息
+reg query 'HKCU\Software\Classes' /s /ve
+```
+
+> **注意 `reg query /f` 无法跨反斜杠匹配键名** —— `/f 'shell\open\command' /k` 只匹配
+> **单层**键名，永远返回 0 条。要按路径匹配必须逐层查，或直接读全量输出再过滤。
+
+**结论**：注册表全量扫描一律优先 `reg query`；只在需要类型化访问单个已知键时才用 PowerShell cmdlet。
+
 ---
 
 ## 6. 已固化为 Skill
