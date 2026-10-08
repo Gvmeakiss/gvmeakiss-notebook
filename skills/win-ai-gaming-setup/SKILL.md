@@ -18,6 +18,64 @@ agent_created: true
 | 系统 | 改动前有快照，能逐项对比、能回滚 |
 | 输入法 | 中文能打、`Win+空格` 能切（这条最容易被"优化"搞坏） |
 
+## 四类覆盖（核对清单）
+
+### ① 需要配置的环境
+
+| 项 | 怎么做 | 阶段 |
+|---|---|---|
+| PowerShell 7 | 缺就用 Scoop 装（`scoop install pwsh`）；脚本在 5.1 下也能跑，会自动改用 `powershell.exe` 调子脚本 | `check` |
+| Scoop | 缺就按官方式安装（用户级，免提权） | `check` |
+| git / 7-Zip | `scoop install git 7zip`（bucket 需要 git，`.7z` 资产需要 7z） | `check` |
+| **长路径** | `git config --global core.longpaths true` + `HKLM\...\FileSystem\LongPathsEnabled=1`（AI 仓库嵌套极深） | `check` |
+| **开发者模式** | `AppModelUnlock\AllowDevelopmentWithoutDevLicense=1`（HF 缓存 / pnpm 要建符号链接） | `check` |
+| 执行策略 | 当前用户 `RemoteSigned`（Scoop 安装所需） | `check` |
+| 国内镜像 | **pip**=清华、**npm**=npmmirror、**go**=goproxy.cn、**cargo**=rsproxy.cn、**HuggingFace**=`HF_ENDPOINT=hf-mirror.com` | `dev` |
+| PATH / Store 存根 / 凭据助手 | `fix-env.ps1` 修"装了却找不到"、别名劫持 | `dev` |
+| GPU 驱动 + CUDA/torch | **不自动化**（厂商相关、体积大）：先装驱动，再按 CUDA 版本选 torch 构建 | 手动 |
+
+### ② 安装的软件
+
+| 类别 | 内容 | 来源 |
+|---|---|---|
+| 语言与构建工具 | python / nodejs / go / cmake / dotnet-sdk / mingw / **uv**（+ rust 由 `setup-langs.ps1` 处理） | Scoop main |
+| 编辑器与终端 | **VS Code**、**Windows Terminal** | Scoop extras（`-NoEditor` 可跳过） |
+| 便携软件 | **JPEGView**（图片）、**MPC-BE**（音视频）、**MarkText**（Markdown）、**rclone**（NAS 同步） | `apps.json`，SHA256 校验 |
+| 可选 | GPU 栈、WSL2 / Docker（AI 常见需求，需提权与虚拟化） | 手动 |
+
+### ③ 执行的命令
+
+```powershell
+# 全部（新机器就这一条）
+pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1
+# 分阶段（-File 模式下逗号列表会被脚本自行拆分）
+pwsh -File ...\setup.ps1 -Phase check
+pwsh -File ...\setup.ps1 -Phase dev,apps
+pwsh -File ...\setup.ps1 -Phase tune -WhatIf
+pwsh -File ...\setup.ps1 -Phase verify
+# 单件工具
+pwsh -File ...\scripts\diagnose-ime.ps1 [-Repair]
+pwsh -File ...\scripts\compare-services.ps1 -Snapshot <csv> [-Restore -Only X]
+pwsh -File ...\scripts\reset-failed-devices.ps1 [-Reset]
+```
+
+### ④ 关闭的无效配置
+
+`tune` 阶段一次做完（**每一条都是单个注册表写入，逐条报告**；`-WhatIf` 可先看清单）：
+
+| 关闭项 | 好处 |
+|---|---|
+| GameDVR（策略 + 用户） | 去掉后台录制，直接换帧数 |
+| MMCSS `SystemResponsiveness=10` / `NetworkThrottlingIndex=off` | 游戏线程优先级、去掉网络限流 |
+| 消费级广告与推荐（`DisableWindowsConsumerFeatures` + CDM 9 项） | 不再静默装推广 App、开始菜单无推荐、无锁屏广告 |
+| 资源管理器"同步提供程序"广告 | 去掉 OneDrive/Office 推广横幅 |
+| 开始菜单 Bing 联网搜索 | 搜索只搜本机 |
+| 遥测 `AllowTelemetry=0`（策略，**不是**去杀服务） | 少上报 |
+| （可选）`-DisableMouseAcceleration` | 指针 1:1，FPS 习惯 |
+| （可选）`-HighPerformancePowerPlan` | 高性能电源计划，笔记本费电所以默认关 |
+
+**明确不做**（这几项是用户取舍，不是"无效配置"）：禁用任何服务、关 UAC、改 DPI/分辨率、关 Windows 更新、关休眠/快速启动。
+
 ## 唯一入口
 
 ```powershell
@@ -29,10 +87,10 @@ pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1 -Phase tune -WhatIf
 
 | 阶段 | 做什么 | 需要管理员 |
 |---|---|---|
-| `check` | 前置检查：scoop / git / 7z / 网络 / 磁盘 / 提权 / 系统版本（按 UBR 判断补丁级别） | 否 |
-| `dev` | Scoop 装语言与构建工具 + 国内镜像；修 PATH、Store 存根、凭据助手 | 部分需要 |
+| `check` | **前置检查 + 引导安装**：PowerShell 7 / Scoop / git / 7-Zip / 长路径 / 开发者模式 / 网络 / 磁盘 / 提权 / 系统版本（按 UBR 判断补丁级别） | 部分需要 |
+| `dev` | Scoop 装语言与构建工具 + **VS Code / Windows Terminal** + 国内镜像（pip/npm/go/cargo/**HF**）；修 PATH、Store 存根、凭据助手 | 部分需要 |
 | `apps` | 按 `apps.json` 装便携软件：下载 → **校验 SHA256** → 解压 → 折叠单层目录 → 快捷方式/PATH | 否 |
-| `tune` | **先快照**，再应用安全改动：GameDVR 关、MMCSS 调优；（可选）高性能电源计划 | 是 |
+| `tune` | **先快照**，再应用：游戏调优（GameDVR/MMCSS）+ **关闭无效配置**（广告推荐/开始菜单联网搜索/遥测）；可选电源计划与鼠标加速 | 是 |
 | `link` | 注册文件关联让 Windows 能选到这些程序；报告哪些类型还需手动点一次 | 否 |
 | `verify` | 验收：开发环境 / 软件清单 / 输入法健康 / 服务基线漂移 | 否 |
 
