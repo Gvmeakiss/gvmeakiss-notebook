@@ -24,6 +24,9 @@ skills/<name>/
   运行 `npm test`（Node 内置测试运行器 + Python 3）、`npm run typecheck`、`npm run build` 验证。
 - `shadowrocket/`：Mac / iPhone 通用分流配置、使用指南与离线配置检查。
 - `merlin/`：梅林 fancyss 分流名单、使用指南、美国节点入口绕过生成工具；账号与节点备份仅在本地使用。
+- `docs/`：过程与踩坑记录。`windows-environment-setup.md` 是在一台 Windows 10 非管理员机器上
+  把开发环境与常用软件从零配置到可用的实测记录（14 项问题总表 + Windows 专属陷阱）。
+  与两个 `win-*` Skill 配套：**Skill 是可执行的方法，docs 是为什么这么做、以及踩过的坑**。
 
 ## 使用流程
 
