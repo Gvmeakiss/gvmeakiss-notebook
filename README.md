@@ -24,6 +24,7 @@
 | [merlin](./merlin) | 配置与工具 · Config / Tools | 梅林 fancyss 香港日常出口、分流名单与全部美国节点入口绕过生成工具 |
 | [mini-app-spec](./mini-app-spec) | 技术规范 · Spec | 企业级「AI Agent 驱动轻应用平台」技术规范（脱敏方法论版）：静态导出 + BFF 中介 + SQL 预定义 + 原子替换部署，含 Agent 开发约定 |
 | [skills/screenshot-text-edit](./skills/screenshot-text-edit) | AI Skill | 截图文字/数字高保真修改（字形克隆法），含 4 个 CLI 脚本 |
+| [skills/win-dev-environment](./skills/win-dev-environment) | AI Skill | Windows 开发环境审计 / 修复 / 验证（非管理员账户）：识别 Store 存根、PATH 陈旧、区域编码等「假缺失」陷阱，含 4 个 PowerShell 脚本 |
 
 ---
 
@@ -73,6 +74,7 @@ Mac / iPhone 共用的 Shadowrocket 分流配置：国内 App 与局域网直连
 | [merlin](./merlin) | Config / Tools | Merlin fancyss routing lists, daily Hong Kong egress and a local US-node endpoint bypass generator |
 | [mini-app-spec](./mini-app-spec) | Tech spec | Enterprise “AI-Agent-driven light-app platform” technical spec (desensitized methodology edition): static export + BFF mediation + predefined SQL + atomic-swap deployment, with Agent dev conventions |
 | [skills/screenshot-text-edit](./skills/screenshot-text-edit) | AI Skill | High-fidelity text/digit editing inside screenshots (glyph-cloning method), incl. 4 CLI scripts |
+| [skills/win-dev-environment](./skills/win-dev-environment) | AI Skill | Audit / repair / verify a Windows dev environment on a non-admin account: catches “phantom missing tool” traps (Store alias stubs, stale PATH, regional code page), incl. 4 PowerShell scripts |
 
 ---
 

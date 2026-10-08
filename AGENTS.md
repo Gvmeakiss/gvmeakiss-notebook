@@ -36,11 +36,13 @@ skills/<name>/
 | Skill | 触发场景 | 入口 |
 |---|---|---|
 | `screenshot-text-edit` | 把图片/截图里的文字或数字改成别的内容（金额、日期、编号、字段名）。核心是字形克隆法，保真度远高于字体重绘 | [skills/screenshot-text-edit/SKILL.md](./skills/screenshot-text-edit/SKILL.md) |
+| `win-dev-environment` | 在 Windows（尤其非管理员账户）上审计/修复/验证开发环境：装编程语言、配国内镜像、排查「工具明明装了却找不到」。核心是区分「真缺失」与 Store 存根 / PATH 陈旧 / 区域编码造成的「假缺失」 | [skills/win-dev-environment/SKILL.md](./skills/win-dev-environment/SKILL.md) |
 
 ## 环境
 
 - 部分脚本依赖 macOS Vision OCR，**仅 macOS 可用**
 - 依赖：`pyobjc-framework-Vision` `pyobjc-framework-Quartz` `pillow`
+- `skills/win-dev-environment/` 下的脚本**仅 Windows 可用**，依赖 PowerShell 7+ 与 Scoop
 
 ## 内容红线
 
