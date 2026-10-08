@@ -1,43 +1,72 @@
 <#
 .SYNOPSIS
-  Prepare file associations for portable applications, and report exactly which ones
-  Windows will not let a script set.
+  Register portable applications so Windows offers them for file types, back up the
+  association registry, and report exactly which defaults Windows will not let a script set.
 
 .DESCRIPTION
-  Why this script does not "just set the default program":
+  Why this script does not "just set the default program" - the precise picture:
 
-  Windows 10/11 stores each user's default app in
-      HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\<ext>\UserChoice
-  and that key carries BOTH of these protections:
-    1. an explicit DENY SetValue ACE for the current user
-    2. a Hash value over the ProgId + SID + timestamp
-  A write attempt fails with "Requested registry access is not allowed". This is
-  deliberate - it stops software from silently hijacking your defaults. It also means
-  no script, admin or not, can change a default app for you.
+  1. The documented COM API exists. IApplicationAssociationRegistration
+     (CLSID 591209c7-767b-42b2-9fba-44ee4615f2c7) exposes SetAppAsDefault and
+     SetAppAsDefaultAll. QueryAppIsDefault still works and reports the truth.
+     But on Windows 10/11 SetAppAsDefault no longer changes the default; it fails.
+     Measured on Windows 10 22H2 it returned 0x80070002 (ERROR_FILE_NOT_FOUND) - an
+     error code that has nothing to do with the real reason, which is that the
+     operation is blocked by policy.
 
-  What a script CAN do, and what this one does:
-    - back up the association-related registry branches first
-    - register a ProgID under HKCU\Software\Classes so the app appears in the
-      "Open with" list and becomes selectable
-    - tell you precisely which extensions still need one manual click
+  2. The stored default lives in
+         HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\<ext>\UserChoice
+     and that key carries TWO protections:
+       - an explicit DENY SetValue ACE for the current user
+       - a Hash over ProgId + SID + timestamp
+     A write attempt fails with "Requested registry access is not allowed". Because NT
+     evaluates DENY before ALLOW, this holds even for the key owner and for an
+     administrator. It is deliberately designed to stop silent hijacking.
+
+  So the only thing that works is: register the application properly, then let the USER
+  pick it once. That is what this script automates as far as it can.
+
+  What this script does:
+    - backs up the association registry branches (restorable with reg import)
+    - registers each app so Windows OFFERS it, via BOTH mechanisms - they are not
+      interchangeable, and registering only one leaves the app half-visible:
+        HKCU\Software\Classes\Applications\<exe>   -> right-click "Open with" list
+        HKCU\Software\<Vendor>\Capabilities +
+        HKCU\Software\RegisteredApplications       -> Settings -> Default apps ->
+                                                      "Choose defaults by file type"
+    - reports which extensions still need one manual click
+
+.PARAMETER Apps
+  A hashtable of app definitions. Keys are display names; values are hashtables with:
+    Exe  - full path to the executable (required)
+    Exts - array of extensions to offer for, e.g. @('.png', '.jpg')
+    Desc - optional description shown in the Default apps list
+
+  Example:
+    -Apps @{ 'ImageGlass' = @{ Exe = "$env:USERPROFILE\Apps\ImageGlass\ImageGlass.exe"
+                              Exts = @('.png','.jpg'); Desc = 'Image viewer' } }
 
 .PARAMETER Register
-  ProgID names to register as selectable handlers, as name=exe path pairs,
-  e.g. -Register @{ 'MarkdownFile' = 'C:\Apps\Notepad++\notepad++.exe' }
+  Actually perform the registration. Without it the script only reports state and takes
+  a backup - so a first run is always safe.
 
 .PARAMETER CheckOnly
-  Only report the current association state. This is the default behaviour.
+  Only report the current association state; take no backup and register nothing.
+
+.PARAMETER BackupDir
+  Where to write the registry backups. Default: <portable root>\_backup
 
 .EXAMPLE
   pwsh -File set-app-associations.ps1
-  pwsh -File set-app-associations.ps1 -Register @{ 'MdEditor' = "$env:USERPROFILE\Apps\MarkText\marktext.exe" }
+  pwsh -File set-app-associations.ps1 -Register -Apps @{ 'ImageGlass' = @{ Exe = 'C:\Apps\ImageGlass\ImageGlass.exe'; Exts = @('.png') } }
 
 .NOTES
   ASCII-only on purpose.
 #>
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
-    [hashtable]$Register,
+    [hashtable]$Apps,
+    [switch]$Register,
     [switch]$CheckOnly,
     [string]$BackupDir = (Join-Path $env:USERPROFILE 'Apps\_backup')
 )
@@ -56,8 +85,12 @@ function Ok   { param([string]$M) Write-Output "    ok      $M" }
 function Warn { param([string]$M) Write-Output "    WARN    $M" }
 
 Write-Output '===== set-app-associations ====='
+if ($Apps -and -not $Register -and -not $CheckOnly) {
+    Info 'apps were supplied but -Register was not passed: reporting only, nothing will change'
+}
 
-$exts = @('.md','.txt','.png','.jpg','.jpeg','.gif','.webp','.bmp','.mp4','.mkv','.avi','.mov','.mp3','.flac','.wav')
+$exts = @('.md','.txt','.png','.jpg','.jpeg','.gif','.webp','.bmp','.tif','.tiff',
+          '.mp4','.mkv','.avi','.mov','.wmv','.webm','.mp3','.flac','.wav','.m4a')
 
 # ------------------------------------------------------------------- report
 function Get-Assoc {
@@ -100,7 +133,7 @@ foreach ($e in $exts) {
 }
 
 # ------------------------------------------------------------------- backup
-if (-not $CheckOnly) {
+if (-not $CheckOnly -and $Register -and $Apps) {
     Write-Output "`n--- backup"
     if ($Cmdlet.ShouldProcess($BackupDir, 'back up association registry branches')) {
         New-Item -ItemType Directory -Force -Path $BackupDir | Out-Null
@@ -116,19 +149,60 @@ if (-not $CheckOnly) {
 }
 
 # -------------------------------------------------------------- register
-if ($Register -and -not $CheckOnly) {
-    Write-Output "`n--- register handlers"
-    foreach ($progId in $Register.Keys) {
-        $exe = $Register[$progId]
-        if (-not (Test-Path $exe)) { Warn "$progId -> exe not found: $exe"; continue }
-        $key = "HKCU:\Software\Classes\$progId"
-        if ($Cmdlet.ShouldProcess($key, 'register ProgID')) {
-            New-Item -Path $key -Force | Out-Null
-            Set-ItemProperty -Path $key -Name '(default)' -Value $progId
-            New-Item -Path "$key\shell\open\command" -Force | Out-Null
-            # %1 is substituted with the clicked file path
-            Set-ItemProperty -Path "$key\shell\open\command" -Name '(default)' -Value "`"$exe`" `"%1`""
-            Ok "registered $progId -> $exe"
+if ($Apps -and -not $CheckOnly -and $Register) {
+    Write-Output "`n--- register applications"
+    New-Item -Path 'HKCU:\Software\RegisteredApplications' -Force | Out-Null
+
+    foreach ($name in $Apps.Keys) {
+        $def = $Apps[$name]
+        $exe = $def.Exe
+        $appExts = @($def.Exts)
+        if (-not $exe -or -not (Test-Path $exe)) { Warn "$name -> exe not found: $exe"; continue }
+
+        $safe = $name -replace '[^A-Za-z0-9]', '_'
+        $exeLeaf = Split-Path $exe -Leaf
+
+        # (a) Classes\Applications\<exe> : makes the app show up in the right-click
+        #     "Open with" list. Without it the user has to browse for the executable.
+        $appKey = "HKCU:\Software\Classes\Applications\$exeLeaf"
+        if ($Cmdlet.ShouldProcess($appKey, "register $name for Open-with")) {
+            New-Item -Path "$appKey\shell\open\command" -Force | Out-Null
+            Set-ItemProperty -Path $appKey -Name 'FriendlyAppName' -Value $name
+            Set-ItemProperty -Path "$appKey\shell\open\command" -Name '(default)' -Value "`"$exe`" `"%1`""
+            Ok "$name -> Open with list"
+        }
+
+        # App Paths lets the Run dialog and the Open-with dialog resolve the bare exe name
+        $appPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\App Paths\$exeLeaf"
+        if ($Cmdlet.ShouldProcess($appPath, "register App Path for $exeLeaf")) {
+            New-Item -Path $appPath -Force | Out-Null
+            Set-ItemProperty -Path $appPath -Name '(default)' -Value $exe
+            Ok "$name -> App Paths"
+        }
+
+        # (b) Capabilities + RegisteredApplications : makes the app appear in
+        #     Settings -> Apps -> Default apps -> "Choose defaults by file type".
+        #     Registering only (a) leaves the app out of that list entirely.
+        if ($appExts.Count -gt 0) {
+            $cap = "HKCU:\Software\$safe\Capabilities"
+            if ($Cmdlet.ShouldProcess($cap, "register $name capabilities")) {
+                New-Item -Path "$cap\FileAssociations" -Force | Out-Null
+                Set-ItemProperty -Path $cap -Name 'ApplicationName' -Value $name
+                if ($def.Desc) { Set-ItemProperty -Path $cap -Name 'ApplicationDescription' -Value $def.Desc }
+                foreach ($ext in $appExts) {
+                    $progId = "$safe$ext"
+                    # a per-extension ProgID gives each type a proper display name and icon
+                    $progKey = "HKCU:\Software\Classes\$progId"
+                    New-Item -Path "$progKey\shell\open\command" -Force | Out-Null
+                    New-Item -Path "$progKey\DefaultIcon" -Force | Out-Null
+                    Set-ItemProperty -Path $progKey -Name '(default)' -Value "$ext ($name)"
+                    Set-ItemProperty -Path "$progKey\shell\open\command" -Name '(default)' -Value "`"$exe`" `"%1`""
+                    Set-ItemProperty -Path "$progKey\DefaultIcon" -Name '(default)' -Value "$exe,0"
+                    Set-ItemProperty -Path "$cap\FileAssociations" -Name $ext -Value $progId
+                }
+                Set-ItemProperty -Path 'HKCU:\Software\RegisteredApplications' -Name $name -Value "Software\$safe\Capabilities"
+                Ok "$name -> Default apps list ($($appExts.Count) extensions)"
+            }
         }
     }
 }
@@ -144,12 +218,14 @@ if ($manual.Count -eq 0) {
         '  {0,-7} {1}' -f $m.Extension, $reason | Write-Output
     }
     Write-Output ''
-    Write-Output '  Windows forbids scripts from changing these. Do it once per extension:'
-    Write-Output '    right-click a file -> Open with -> Choose another app'
-    Write-Output '    -> pick the portable app -> tick "Always use this app"'
+    Write-Output '  Windows forbids scripts from changing these (see the header comment for the'
+    Write-Output '  exact mechanism). Do it once per extension - it sticks:'
     Write-Output ''
-    Write-Output '  Alternatively: Settings -> Apps -> Default apps -> Choose defaults by file type.'
-    Write-Output '  This is a one-time action per extension, and it sticks.'
+    Write-Output '    A) right-click a file -> Open with -> Choose another app'
+    Write-Output '       -> pick the portable app -> tick "Always use this app"'
+    Write-Output ''
+    Write-Output '    B) Settings -> Apps -> Default apps -> Choose defaults by file type'
+    Write-Output '       (registered apps appear here by name)'
 }
 
 Write-Output "`n===== done ====="

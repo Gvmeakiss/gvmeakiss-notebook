@@ -94,17 +94,28 @@ pwsh -File scripts/set-app-associations.ps1
 
 ## 必须知道的限制：默认程序改不了
 
-这是最容易被误判为"脚本有 bug"的一点。
+这是最容易被误判为"脚本有 bug"的一点。结论比"改不掉"更精确。
 
-### 机理
+### 1) 官方 API 存在，但在 Windows 10+ 上已失效
 
-默认程序记在：
+`IApplicationAssociationRegistration`（CLSID `591209c7-767b-42b2-9fba-44ee4615f2c7`）
+是微软文档化的接口，提供 `SetAppAsDefault` / `SetAppAsDefaultAll`。
+
+实测（Windows 10 22H2）：
+
+| 调用 | 结果 |
+|---|---|
+| `QueryAppIsDefault` | ✅ 能**查询**，正常工作 |
+| `SetAppAsDefault` | ❌ 返回 **`0x80070002`**（`ERROR_FILE_NOT_FOUND`） |
+| 实际效果 | 默认程序**未被改动** |
+
+**错误码本身也在误导** —— 它暗示"文件找不到"，真实原因是被策略禁止。
+
+### 2) 存储默认程序的键带两重保护
 
 ```
 HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\<扩展名>\UserChoice
 ```
-
-该键带**两重保护**：
 
 1. **显式 `Deny SetValue` ACE**——对自己也拒绝写
 2. **`Hash` 值**——ProgId + SID + 时间戳的哈希
@@ -116,24 +127,38 @@ Access 规则:
 写入测试: Requested registry access is not allowed.
 ```
 
-**`Deny` 优先于 `Allow FullControl`** —— 所以哪怕你是键的所有者、哪怕是管理员也改不了。
+**NT 先判 `Deny` 再判 `Allow`** —— 所以哪怕你是键的所有者、哪怕是管理员也改不了。
 这是**防静默劫持的设计，不是缺陷。**
 
-### 因此：脚本能做 / 不能做
+### 3) 因此：脚本能做 / 不能做
 
 | 能做 | 不能做 |
 |---|---|
-| 备份关联注册表分支（`reg export`） | 修改默认程序 |
-| 在 `HKCU\Software\Classes` 注册 ProgID，让程序**出现在"打开方式"列表** | 让它成为默认 |
-| 精确列出哪些扩展名还需手动点一次 | 绕过 Hash |
+| 备份关联注册表分支（`reg export`，可还原） | 修改默认程序 |
+| 注册应用让 Windows **主动提供**它（见下） | 绕过 Hash |
+| 精确列出哪些扩展名还需手动点一次 | 用 COM API 设置默认 |
+
+### 4) 注册应用有两条路径，缺一不可
+
+最容易漏的一点 —— **只注册一条，程序就是"半可见"状态**：
+
+| 注册位置 | 效果 |
+|---|---|
+| `HKCU\Software\Classes\Applications\<exe>` | 出现在右键**"打开方式"**列表 |
+| `HKCU\Software\<Vendor>\Capabilities`<br>+ `HKCU\Software\RegisteredApplications` | 出现在**设置 → 默认应用 → 按文件类型选择** |
+
+漏了第一条 → 用户只能手动浏览到 exe；
+漏了第二条 → **设置页里根本看不到这个程序**。
 
 ### 给用户的操作指引
 
 每个扩展名**只需一次**，之后长期生效：
 
-> 右键任意该类型文件 → 打开方式 → 选择其他应用 → 选中便携程序 → 勾选"始终使用此应用"
+> **A)** 右键任意该类型文件 → 打开方式 → 选择其他应用 → 选中便携程序 → 勾选"始终使用此应用"
+>
+> **B)** 设置 → 应用 → 默认应用 → 按文件类型选择默认应用（注册过的程序按名字出现在这里）
 
-或 **设置 → 应用 → 默认应用 → 按文件类型选择**。
+**必须把这句说明清楚**，否则用户会以为安装失败。
 
 **手动设置确实有效且持久**（实测 `.md` → Notepad++、`.png` → JPEGView、`.webp` → ImageGlass
 均成功保持），只是无法由脚本代劳。**必须把这句说明清楚**，否则用户会以为安装失败。
@@ -193,7 +218,7 @@ CreateObject("WScript.Shell").Run "powershell -NoProfile -WindowStyle Hidden -Ex
 
 | 限制 | 原因 |
 |---|---|
-| **默认程序无法脚本设置** | `UserChoice` 的 `Deny SetValue` ACE + Hash |
+| **默认程序无法脚本设置** | UserChoice 的 `Deny SetValue` ACE + Hash；官方 COM API 在 Win10+ 返回 `0x80070002` 且不生效 |
 | **`rclone mount` 需要管理员** | 依赖 WinFsp 驱动安装 |
 | **便携软件不出现在系统应用列表** | 天生如此，必须目录扫描盘点 |
 | **首次运行可能被 SmartScreen 拦** | 未签名程序，属正常，需手动允许 |

@@ -88,37 +88,56 @@ pwsh -Command "& ./scripts/install-portable.ps1 -Manifest apps.json -Only Notepa
 ### `scripts/set-app-associations.ps1` — 文件关联
 
 ```powershell
-pwsh -File scripts/set-app-associations.ps1                                  # 只报告 + 备份
-pwsh -File scripts/set-app-associations.ps1 -Register @{ 'MdEditor' = 'C:\...\marktext.exe' }
+pwsh -File scripts/set-app-associations.ps1                    # 只报告（默认，安全）
+pwsh -File scripts/set-app-associations.ps1 -Register -Apps @{
+    'ImageGlass' = @{ Exe = "$env:USERPROFILE\Apps\ImageGlass\ImageGlass.exe"
+                      Exts = @('.png','.jpg','.jpeg','.gif','.webp','.bmp')
+                      Desc = '现代图片查看器（便携版）' }
+}
 ```
 
-**这个脚本不会替你设置默认程序 —— 因为 Windows 不允许。** 见下节。
+**`-Register` 是显式开关** —— 不加它只报告、不写任何东西，所以首次运行永远安全。
+注册前会自动 `reg export` 备份 `Classes` 与 `FileExts` 分支，可 `reg import` 还原。
+
+写这个脚本前要先明白：**默认程序无法由脚本设置。** 见下节。
 
 ---
 
 ## 必须知道的限制：默认程序无法脚本化
 
-这是本项目最有价值的发现，也是"为什么脚本没帮我把图片默认程序改掉"的完整答案。
+这是"为什么脚本没帮我把图片默认程序改掉"的完整答案。结论比"改不掉"更精确。
 
-### 机理
+### 1) 微软的官方 API 存在，但在 Windows 10+ 上已失效
 
-Windows 10/11 把每个用户的默认程序记在：
+文档化的 COM 接口 `IApplicationAssociationRegistration`
+（CLSID `591209c7-767b-42b2-9fba-44ee4615f2c7`）提供 `SetAppAsDefault` / `SetAppAsDefaultAll`。
+
+实测结果（Windows 10 22H2，非管理员）：
+
+| 调用 | 结果 |
+|---|---|
+| `QueryAppIsDefault` | ✅ 正常工作，能**查询**真实默认程序 |
+| `SetAppAsDefault` | ❌ 返回 **`0x80070002`**（`ERROR_FILE_NOT_FOUND`） |
+| 实际效果 | **默认程序未被改动** |
+
+注意 `0x80070002` 这个错误码**本身也在误导** —— 它暗示"文件找不到"，真实原因却是
+该操作在 Windows 10+ 上被策略禁止。
+
+### 2) 存储默认程序的键带两重保护
 
 ```
 HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\<扩展名>\UserChoice
 ```
 
-这个键带**两重保护**：
+1. **显式 `Deny SetValue` ACE** —— 对当前用户拒绝写入
+2. **`Hash` 值** —— ProgId + SID + 时间戳的哈希
 
-1. **显式的 `Deny SetValue` ACE** —— 对当前用户拒绝写入
-2. **`Hash` 值** —— 对 ProgId + SID + 时间戳做哈希，值不对就不认
-
-实测证据（本机真实输出）：
+实测输出：
 
 ```
 Access 规则:
   <用户>              Deny    SetValue      ← 显式拒绝
-  <用户>              Allow   FullControl   ← 但 SetValue 仍被 Deny 压过
+  <用户>              Allow   FullControl   ← Deny 仍然压过 Allow
   NT AUTHORITY\SYSTEM Allow   FullControl
 
 键值:
@@ -129,30 +148,53 @@ Access 规则:
   Requested registry access is not allowed.
 ```
 
-注意 `Deny` **优先于** `Allow FullControl` —— 所以即便你是键的所有者、哪怕是管理员，
-也改不了。**这是防静默劫持的设计，不是 bug。**
+**NT 先判 `Deny` 再判 `Allow`** —— 所以即便键的所有者是本人、即便是管理员也改不了。
+这是**防静默劫持**的设计。
 
-### 脚本能做与不能做
+### 3) 因此：正确做法是"注册好 + 让用户点一次"
 
 | 能做 | 不能做 |
 |---|---|
-| 备份关联相关注册表分支（`reg export`） | 修改 `UserChoice` 的默认程序 |
-| 在 `HKCU\Software\Classes` 注册 ProgID，让程序**出现在"打开方式"列表**里 | 让程序**成为默认** |
-| 精确报告哪些扩展名还需要手动点一次 | 绕过 Hash 校验 |
+| 备份关联注册表（`reg export`，可 `reg import` 还原） | 修改默认程序 |
+| 注册应用让 Windows **主动提供**它（见下） | 绕过 Hash |
+| 精确报告哪些扩展名还需手动点 | 用 COM API 设置默认 |
+
+### 4) 注册应用有两条路径，缺一不可
+
+这一点最容易漏 —— **只注册一条，程序就是"半可见"状态**：
+
+| 注册位置 | 效果 | 漏了会怎样 |
+|---|---|---|
+| `HKCU\Software\Classes\Applications\<exe>` | 出现在右键**"打开方式"**列表 | 用户只能在列表里翻找，或手动浏览到 exe |
+| `HKCU\Software\<Vendor>\Capabilities`<br>+ `HKCU\Software\RegisteredApplications` | 出现在**设置 → 默认应用 → 按文件类型选择默认应用** | 设置页里根本看不到这个程序 |
+
+`Capabilities` 下的 `FileAssociations` 把每个扩展名映射到一个 ProgID，而这些 ProgID
+又在 `HKCU\Software\Classes\<ProgID>\shell\open\command` 指向真实 exe：
+
+```
+HKCU\Software\RegisteredApplications
+    ImageGlass   REG_SZ   Software\ImageGlass\Capabilities
+
+HKCU\Software\ImageGlass\Capabilities
+    ApplicationName = ImageGlass
+    \FileAssociations
+        .png  = ImageGlass.png
+        .jpg  = ImageGlass.jpg
+
+HKCU\Software\Classes\ImageGlass.png\shell\open\command
+    (default) = "C:\...\ImageGlass.exe" "%1"
+```
 
 ### 需要手动点一次的操作
 
 每个扩展名**只需一次**，之后长期生效：
 
-1. 右键任意该类型文件 → **打开方式** → **选择其他应用**
-2. 选中你的便携程序 → 勾选 **始终使用此应用**
+- **A)** 右键任意该类型文件 → **打开方式** → **选择其他应用** → 选中程序 → 勾选 **始终使用此应用**
+- **B)** **设置 → 应用 → 默认应用 → 按文件类型选择默认应用**（注册过的程序会按名字出现在这里）
 
-或走 **设置 → 应用 → 默认应用 → 按文件类型选择默认应用**。
-
-> **实测确认这条路径有效且持久**：本机 `.md` 已成功关联到 Notepad++、`.png` 已关联到
-> JPEGView、`.webp` 已关联到 ImageGlass，而 `.jpg` / `.mp4` / `.mkv` / `.mp3` 等仍是
-> 系统商店应用（`AppX...`），正等待手动选择。
-> **手动设置是能生效的**，只是无法由脚本代劳。
+> **实测确认有效且持久**：`.md` → Notepad++、`.webp` → ImageGlass，
+> 以及 `.png`/`.jpg`/`.jpeg`/`.gif`/`.bmp` **整批改为 ImageGlass 后均保持成功**。
+> 手动设置是能生效的，只是无法由脚本代劳。
 
 ---
 
