@@ -26,6 +26,7 @@
 | [skills/screenshot-text-edit](./skills/screenshot-text-edit) | AI Skill | 截图文字/数字高保真修改（字形克隆法），含 4 个 CLI 脚本 |
 | [skills/win-dev-environment](./skills/win-dev-environment) | AI Skill | Windows 开发环境审计 / 修复 / 验证（非管理员账户）：识别 Store 存根、PATH 陈旧、区域编码等「假缺失」陷阱，含 4 个 PowerShell 脚本 |
 | [skills/win-portable-apps](./skills/win-portable-apps) | AI Skill | Windows 便携软件安装与盘点（非管理员账户）：免安装、免提权、删文件夹即卸载；含软件清单扫描、带 SHA256 校验的清单式安装器、文件关联边界说明 |
+| [skills/win-system-tweaks-safety](./skills/win-system-tweaks-safety) | AI Skill | 安全地做 Windows 系统调优并在出故障后回滚：调优前快照 → 逐项对比 → 按基线恢复；含「服务显示名≠职责」风险清单与输入法故障诊断修复 |
 | [docs/windows-environment-setup](./docs/windows-environment-setup.md) | 记录 · Notes | 一台 Windows 10 非管理员机器的环境与软件配置全过程：11 类踩坑、14 个问题总表、可复现命令 |
 
 ---
@@ -78,6 +79,7 @@ Mac / iPhone 共用的 Shadowrocket 分流配置：国内 App 与局域网直连
 | [skills/screenshot-text-edit](./skills/screenshot-text-edit) | AI Skill | High-fidelity text/digit editing inside screenshots (glyph-cloning method), incl. 4 CLI scripts |
 | [skills/win-dev-environment](./skills/win-dev-environment) | AI Skill | Audit / repair / verify a Windows dev environment on a non-admin account: catches “phantom missing tool” traps (Store alias stubs, stale PATH, regional code page), incl. 4 PowerShell scripts |
 | [skills/win-portable-apps](./skills/win-portable-apps) | AI Skill | Install and inventory portable apps on a non-admin Windows account: no installer, no elevation, uninstall by deleting a folder; incl. software inventory, a manifest installer with SHA256 verification, and the file-association boundary |
+| [skills/win-system-tweaks-safety](./skills/win-system-tweaks-safety) | AI Skill | Tweak Windows safely and roll back when it breaks: snapshot before → diff after → restore from baseline; incl. a “a service's display name is not its job” risk table and IME-failure diagnosis/repair |
 | [docs/windows-environment-setup](./docs/windows-environment-setup.md) | Notes | Full record of setting up a Windows 10 non-admin machine: 11 pitfall classes, a 14-item problem table, and reproducible commands |
 
 ---
