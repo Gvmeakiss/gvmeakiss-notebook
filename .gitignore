@@ -2,6 +2,13 @@
 .DS_Store
 .AppleDouble
 .LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.stackdump
 
 # 依赖 / 缓存
 node_modules/
@@ -11,6 +18,26 @@ __pycache__/
 venv/
 .env
 .env.*
+.pytest_cache/
+.eslintcache
+*.tsbuildinfo
+next-env.d.ts
+
+# 构建产物（audit-workbench 等 Node 工程）
+dist/
+build/
+out/
+.next/
+*.tgz
+
+# 编辑器 / IDE
+.idea/
+.vscode/
+*.swp
+
+# 日志
+*.log
+npm-debug.log*
 
 # 数据文件红线：客户/业务数据一律不入库
 *.xlsx

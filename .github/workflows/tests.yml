@@ -1,0 +1,41 @@
+name: tests
+
+# 仓库内三套测试均为 Node 内置测试运行器（node --test），无第三方依赖，
+# 因此在 Linux 上可直接运行。CI 同时覆盖 macOS/Linux 的 POSIX 权限位断言：
+# merlin 测试中的 0o600/0o700 断言在非 Windows 平台会真正生效，
+# 与 Windows 本地运行互补（Windows 不支持 POSIX 权限位，该断言自动跳过）。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 显示环境信息
+        run: |
+          node --version
+          git --version
+
+      - name: shadowrocket + merlin 测试
+        run: node --test shadowrocket/tests/config.test.mjs merlin/tests/generate-us-bypass.test.mjs
+
+      - name: audit-kanban 测试
+        run: node --test audit-kanban/tests/core.test.cjs
+
+      - name: 空白字符检查
+        run: git diff --check
