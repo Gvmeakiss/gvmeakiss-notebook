@@ -25,6 +25,7 @@
 | [mini-app-spec](./mini-app-spec) | 技术规范 · Spec | 企业级「AI Agent 驱动轻应用平台」技术规范（脱敏方法论版）：静态导出 + BFF 中介 + SQL 预定义 + 原子替换部署，含 Agent 开发约定 |
 | [skills/screenshot-text-edit](./skills/screenshot-text-edit) | AI Skill | 截图文字/数字高保真修改（字形克隆法），含 4 个 CLI 脚本 |
 | [skills/win-dev-environment](./skills/win-dev-environment) | AI Skill | Windows 开发环境审计 / 修复 / 验证（非管理员账户）：识别 Store 存根、PATH 陈旧、区域编码等「假缺失」陷阱，含 4 个 PowerShell 脚本 |
+| [skills/win-portable-apps](./skills/win-portable-apps) | AI Skill | Windows 便携软件安装与盘点（非管理员账户）：免安装、免提权、删文件夹即卸载；含软件清单扫描、带 SHA256 校验的清单式安装器、文件关联边界说明 |
 
 ---
 
@@ -75,6 +76,7 @@ Mac / iPhone 共用的 Shadowrocket 分流配置：国内 App 与局域网直连
 | [mini-app-spec](./mini-app-spec) | Tech spec | Enterprise “AI-Agent-driven light-app platform” technical spec (desensitized methodology edition): static export + BFF mediation + predefined SQL + atomic-swap deployment, with Agent dev conventions |
 | [skills/screenshot-text-edit](./skills/screenshot-text-edit) | AI Skill | High-fidelity text/digit editing inside screenshots (glyph-cloning method), incl. 4 CLI scripts |
 | [skills/win-dev-environment](./skills/win-dev-environment) | AI Skill | Audit / repair / verify a Windows dev environment on a non-admin account: catches “phantom missing tool” traps (Store alias stubs, stale PATH, regional code page), incl. 4 PowerShell scripts |
+| [skills/win-portable-apps](./skills/win-portable-apps) | AI Skill | Install and inventory portable apps on a non-admin Windows account: no installer, no elevation, uninstall by deleting a folder; incl. software inventory, a manifest installer with SHA256 verification, and the file-association boundary |
 
 ---
 

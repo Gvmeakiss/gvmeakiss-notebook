@@ -1,0 +1,58 @@
+{
+  "_comment": "Example manifest for install-portable.ps1. Replace every sha256 with the real value from the vendor's release page before installing. An empty sha256 is refused unless -AllowUnverified is passed.",
+  "version": 1,
+  "apps": [
+    {
+      "name": "Notepad++",
+      "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.8.1/npp.8.9.8.1.portable.x64.zip",
+      "sha256": "",
+      "exe": "notepad++.exe",
+      "notes": "Text / Markdown / code editing. Portable zip keeps settings inside its own folder."
+    },
+    {
+      "name": "JPEGView",
+      "url": "https://github.com/sylikc/jpegview/releases/download/v1.3.46/JPEGView_1.3.46.zip",
+      "sha256": "",
+      "exe": "JPEGView.exe",
+      "notes": "Fastest image viewer for large folders. Launching it with no argument opens its own NavPanel.png - that is normal."
+    },
+    {
+      "name": "nomacs",
+      "url": "https://github.com/nomacs/nomacs/releases/download/3.22.4/nomacs-portable-win.zip",
+      "sha256": "",
+      "exe": "nomacs.exe",
+      "notes": "Broadest format support, EXIF metadata, batch operations."
+    },
+    {
+      "name": "ImageGlass",
+      "url": "https://github.com/d2phap/ImageGlass/releases/download/10.0.6.906/ImageGlass_10.0.6.906_win-x64.zip",
+      "sha256": "",
+      "exe": "ImageGlass.exe",
+      "notes": "Modern UI. First run shows a Quick Setup wizard; it is portable, config stays in its folder."
+    },
+    {
+      "name": "mpv",
+      "url": "https://github.com/mpv-player/mpv/releases/download/v0.41.0/mpv-v0.41.0-x86_64-pc-windows-msvc.zip",
+      "sha256": "",
+      "exe": "mpv.exe",
+      "addToPath": ".",
+      "notes": "Best quality/format coverage. Keys: space, arrows, f fullscreen, 9/0 volume, q quit. Subtitles auto-load from a same-named .srt."
+    },
+    {
+      "name": "MPC-BE",
+      "url": "https://github.com/Aleksoid1978/MPC-BE/releases/download/1.9.1/MPC-BE.1.9.1.x64.7z",
+      "sha256": "",
+      "exe": "mpc-be64.exe",
+      "addToPath": ".",
+      "notes": "Familiar player UX: playlist, speed (Ctrl+up/down), subtitles (Ctrl+L)."
+    },
+    {
+      "name": "rclone",
+      "url": "https://github.com/rclone/rclone/releases/download/v1.75.1/rclone-v1.75.1-windows-amd64.zip",
+      "sha256": "",
+      "exe": "rclone.exe",
+      "addToPath": ".",
+      "notes": "Sync/backup to a NAS over SMB or WebDAV. `rclone mount` needs WinFsp, which DOES require elevation - use OS drive mapping for that instead."
+    }
+  ]
+}

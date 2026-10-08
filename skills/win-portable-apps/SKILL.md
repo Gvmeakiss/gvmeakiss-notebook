@@ -1,0 +1,208 @@
+---
+name: win-portable-apps
+description: 在 Windows 上为非管理员账户安装与盘点便携软件（免安装、免提权、删文件夹即卸载）。当出现"帮我装些好用的软件""电脑没有 winget/装不了软件""装个打开 md/图片/视频的软件""便携版软件""软件装在哪个目录了""为什么我的默认打开程序改不掉""右键打开方式里没有这个程序"等诉求时使用。核心是三条判断：便携版是非管理员账户的可行路线、便携软件不出现在系统应用列表所以必须目录扫描、默认程序受 UserChoice 的 Deny ACL + Hash 保护因而无法脚本设置。
+agent_created: true
+---
+
+# Windows 便携软件安装（非管理员账户）
+
+## 适用场景
+
+用户想**装软件、管软件、或者搞不清软件装哪了**，而不是排查代码：
+
+- "帮我装些方便用电脑的软件，免费的"
+- "装个能打开 md / 图片 / 视频的"
+- "电脑没有 winget / 装软件提示需要管理员"
+- "便携版的，别装进系统里"
+- "为什么我改了图片默认程序又变回去了"
+- "右键打开方式里找不到我刚装的那个程序"
+
+## 第一判断：能不能用安装程序？
+
+**先看权限，再谈装什么。** 这一步决定整条路线：
+
+| 条件 | 结论 |
+|---|---|
+| 是管理员 | MSI / winget / exe 安装程序都可以 |
+| **不是管理员** | **走便携版**（或 Scoop 这类用户级包管理器） |
+
+非管理员跑 MSI 的后果不是"报错"，而是**静默失败或留下半成品**，比直接失败更难排查。
+
+```powershell
+(New-Object Security.Principal.WindowsPrincipal(
+  [Security.Principal.WindowsIdentity]::GetCurrent()
+)).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+```
+
+配套：`Get-Command winget, scoop, choco -ErrorAction SilentlyContinue`
+—— 三者都没有时，便携版就是唯一选项。
+
+## 工作流程
+
+### 第一步：盘点现状（只读）
+
+```powershell
+pwsh -File scripts/check-software.ps1
+pwsh -File scripts/check-software.ps1 -Json
+```
+
+**关键点：便携软件根本不出现在 Windows 的"应用和功能"里。**
+只查系统列表会得出"什么都没装"的错误结论。必须多路并查：
+
+| 来源 | 方式 |
+|---|---|
+| 便携应用 | 扫描便携根目录，逐目录找主程序并读文件版本 |
+| Scoop | `scoop list` |
+| MSI / 安装程序 | 三个 Uninstall 注册表分支 |
+| PATH | 报告哪些便携目录已进用户 PATH |
+
+### 第二步：按用途选型
+
+**同一用途配多个程序不是冗余。** 不同程序在不同场景下明显更合适：
+
+| 用途 | 选择 | 选它的理由 |
+|---|---|---|
+| 文本 / 代码 | Notepad++ | 轻量、启动快、多标签 |
+| Markdown 写作 | MarkText | 所见即所得预览 |
+| 图片·快翻 | **JPEGView** | 极小极快，启动几乎瞬时 |
+| 图片·元数据/批量 | **nomacs** | 格式最全、EXIF、批处理 |
+| 图片·日常 | ImageGlass | 界面现代 |
+| 视频·画质 | **mpv** | 格式覆盖最强，键盘驱动 |
+| 视频·传统界面 | **MPC-BE** | 播放列表、倍速、字幕 |
+| 网络存储 | **rclone** | 同步 / 校验 / 备份 |
+
+### 第三步：从清单安装
+
+```powershell
+pwsh -File scripts/install-portable.ps1 -Manifest apps.json -WhatIf
+pwsh -File scripts/install-portable.ps1 -Manifest apps.json
+```
+
+安装器依次：下载到 `.installers\` 缓存 → **校验 SHA256** → 解压 → 折叠单层目录 →
+可选建快捷方式 → 可选加入 PATH。
+
+**必须填 `sha256`。** 脚本默认**拒绝**无哈希的条目（需显式 `-AllowUnverified` 才放行）——
+哈希是"下载是否被篡改"的唯一防线，默认放行等于没有防线。
+
+### 第四步：处理文件关联
+
+```powershell
+pwsh -File scripts/set-app-associations.ps1
+```
+
+**然后接受一个事实：默认程序无法由脚本设置。** 见下节。
+
+## 必须知道的限制：默认程序改不了
+
+这是最容易被误判为"脚本有 bug"的一点。
+
+### 机理
+
+默认程序记在：
+
+```
+HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\<扩展名>\UserChoice
+```
+
+该键带**两重保护**：
+
+1. **显式 `Deny SetValue` ACE**——对自己也拒绝写
+2. **`Hash` 值**——ProgId + SID + 时间戳的哈希
+
+```
+Access 规则:
+  <用户>              Deny    SetValue      ← 显式拒绝
+  <用户>              Allow   FullControl   ← Deny 仍然压过 Allow
+写入测试: Requested registry access is not allowed.
+```
+
+**`Deny` 优先于 `Allow FullControl`** —— 所以哪怕你是键的所有者、哪怕是管理员也改不了。
+这是**防静默劫持的设计，不是缺陷。**
+
+### 因此：脚本能做 / 不能做
+
+| 能做 | 不能做 |
+|---|---|
+| 备份关联注册表分支（`reg export`） | 修改默认程序 |
+| 在 `HKCU\Software\Classes` 注册 ProgID，让程序**出现在"打开方式"列表** | 让它成为默认 |
+| 精确列出哪些扩展名还需手动点一次 | 绕过 Hash |
+
+### 给用户的操作指引
+
+每个扩展名**只需一次**，之后长期生效：
+
+> 右键任意该类型文件 → 打开方式 → 选择其他应用 → 选中便携程序 → 勾选"始终使用此应用"
+
+或 **设置 → 应用 → 默认应用 → 按文件类型选择**。
+
+**手动设置确实有效且持久**（实测 `.md` → Notepad++、`.png` → JPEGView、`.webp` → ImageGlass
+均成功保持），只是无法由脚本代劳。**必须把这句说明清楚**，否则用户会以为安装失败。
+
+### 怎么判断"已经是好的关联"
+
+ProgId 以 `AppX` 开头表示当前是**系统商店应用**，通常正是需要改掉的那种：
+
+```
+.md  → Notepad++_md                            ← 已手动关联成功
+.png → Applications\JPEGView.exe               ← 已手动关联成功
+.jpg → AppX43hnxtbyyps62jhe9sqpdzxn1790zetc    ← 商店"照片"，待改
+```
+
+## Windows 专属陷阱
+
+### 1. `-File` 模式下逗号不拆数组
+
+```powershell
+pwsh -File x.ps1 -Only 'A','B'    # 实测：只收到 1 个元素 "A,B"，不是 2 个
+```
+
+`-Command` 模式会拆，`-File` 模式不会。**脚本必须自己兼容**：
+
+```powershell
+$wanted = @($Only | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() })
+```
+
+否则用户按文档传 `-Only A,B` 会得到 "no apps selected"，看起来像脚本坏了。
+
+### 2. 陈旧 PATH 让"已装的软件"看起来没装
+
+GUI / agent 父进程的环境可能早于当前配置，子进程继承后会把已装的 Scoop、
+7-Zip 报成缺失。**脚本必须自行从注册表重建 PATH**：
+
+```powershell
+$env:PATH = (@(
+    [Environment]::GetEnvironmentVariable('Path','Machine'),
+    [Environment]::GetEnvironmentVariable('Path','User')
+) | Where-Object { $_ }) -join ';'
+```
+
+### 3. 中文路径与批处理的编码
+
+`.bat` 里含中文文件名或变量时需要 `chcp 936`（GBK），或全程用引号包裹路径。
+更稳的做法是让 `.bat` 只做转发，逻辑写在 `.ps1` 里。
+
+### 4. 隐藏窗口启动（后台/开机任务）
+
+需要开机静默运行的脚本，用 VBS 包一层可避免黑框闪烁：
+
+```vbscript
+CreateObject("WScript.Shell").Run "powershell -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File ""C:\path\to\script.ps1""", 0, False
+```
+
+## 边界
+
+| 限制 | 原因 |
+|---|---|
+| **默认程序无法脚本设置** | `UserChoice` 的 `Deny SetValue` ACE + Hash |
+| **`rclone mount` 需要管理员** | 依赖 WinFsp 驱动安装 |
+| **便携软件不出现在系统应用列表** | 天生如此，必须目录扫描盘点 |
+| **首次运行可能被 SmartScreen 拦** | 未签名程序，属正常，需手动允许 |
+| **不能操作提权窗口** | Windows 既定边界 |
+
+## 安全纪律
+
+- **只从官方发布页下载。** 第三方"绿色版/破解版"是恶意软件主要载体
+- **务必校验 SHA256。** 脚本能校验，但哈希值要从发布页自己取——不要盲信某个来源
+- **绝不把含凭据的文件放进公开仓库**：NAS 地址、用户名、`rclone.conf`、
+  网络驱动器映射导出、浏览器书签备份都属于私有信息
+- 交付前确认：文档与脚本里**没有**真实主机名、内网 IP、账号名、路径中的用户名
