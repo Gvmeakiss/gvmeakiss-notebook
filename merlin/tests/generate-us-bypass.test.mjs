@@ -14,6 +14,11 @@ const backup = (nodes, domains = '', ips = '') => ({
 const node = (name = '美国 测试', server = 'edge.example.test') => ({ name, server, port: '443', password: 'SECRET_PASSWORD', xray_uuid: 'SECRET_UUID' });
 const answer = (ipv4 = ['192.0.2.1'], ipv6 = []) => ({ ipv4, ipv6 });
 
+// Windows 不支持 POSIX 权限位：chmod 只影响只读属性，stat().mode 恒为 0o666，
+// 因此 Unix 模式位断言仅在类 Unix 平台生效。
+const POSIX_MODE = process.platform !== 'win32';
+const unixMode = (info) => info.mode & 0o777;
+
 test('20 nodes / 11 IPv4 addresses, preserving existing entries and AAAA locally', async () => {
   const nodes = Array.from({ length: 20 }, (_, index) => node(`美国 A${String(index + 1).padStart(2, '0')}`, `edge${index + 1}.example.test`));
   nodes.push(node('日本 测试', 'other.example.test'));
@@ -140,10 +145,10 @@ test('CLI success writes private files and refuses to overwrite an existing good
   assert.equal(await runCli(['--backup', input, '--output', output], options), 0);
   assert.deepEqual((await readdir(output)).sort(), [...OUTPUT_FILES].sort());
   for (const filename of OUTPUT_FILES) {
-    assert.equal((await stat(join(output, filename))).mode & 0o777, 0o600);
+    if (POSIX_MODE) assert.equal(unixMode(await stat(join(output, filename))), 0o600);
     assert.doesNotMatch(await readFile(join(output, filename), 'utf8'), /SECRET_|password|xray_uuid|subscription/);
   }
-  assert.equal((await stat(output)).mode & 0o777, 0o700);
+  if (POSIX_MODE) assert.equal(unixMode(await stat(output)), 0o700);
   const before = await readFile(join(output, OUTPUT_FILES[1]), 'utf8');
   assert.equal(await runCli(['--backup', input, '--output', output], { ...options, lookup: async () => answer(['192.0.2.99']) }), 1);
   assert.equal(await readFile(join(output, OUTPUT_FILES[1]), 'utf8'), before);

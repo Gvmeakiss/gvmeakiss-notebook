@@ -1,0 +1,41 @@
+# 统一换行与文本处理，避免 Windows / macOS 协作时产生整文件差异
+# 仓库同时在此二者上维护，故文本一律以 LF 入库
+
+* text=auto eol=lf
+
+# 显式声明文本类型
+*.md      text
+*.mjs     text
+*.cjs     text
+*.js      text
+*.json    text
+*.py      text
+*.html    text
+*.css     text
+*.txt     text
+*.yml     text
+*.yaml    text
+*.conf    text
+.gitignore    text
+.gitattributes text
+
+# 二进制文件不做换行转换，也不参与 diff
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.webp    binary
+*.ico     binary
+*.pdf     binary
+*.zip     binary
+*.xlsx    binary
+*.xls     binary
+*.woff    binary
+*.woff2   binary
+
+# 生成/压缩产物：禁止 diff，减少仓库噪音
+*.min.js  -diff linguist-generated
+*.min.css -diff linguist-generated
+
+# GitHub 语言统计：把 vendored 第三方库排除出统计
+audit-kanban/vendor/* linguist-vendored
