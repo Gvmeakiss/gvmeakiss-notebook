@@ -34,6 +34,13 @@
       "exe": "rclone.exe",
       "addToPath": ".",
       "notes": "Command-line sync/backup to a NAS over SMB or WebDAV. `rclone mount` needs WinFsp (elevation) - map the drive with the OS instead."
+    },
+    {
+      "name": "PhotoDemon",
+      "url": "https://github.com/tannerhelland/PhotoDemon/releases/download/v2025.12/PhotoDemon-2025.12.zip",
+      "sha256": "269095087093575a975a66a9588cd8bcc18ff356d20fd4b2851f7e1088df75a1",
+      "exe": "PhotoDemon.exe",
+      "notes": "Portable photo editor. Its Crop tool can LOCK AN ARBITRARY ASPECT RATIO (m_IsAspectLocked in Tools_Crop.bas), which makes it the tool for cropping photos into wallpapers: set 3840x2160, drag, apply, save. No file associations on purpose - the fast viewer keeps those."
     }
   ]
 }
