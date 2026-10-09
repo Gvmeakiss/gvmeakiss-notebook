@@ -175,6 +175,8 @@ pwsh -File scripts/snapshot-services.ps1 -OutDir C:\backup\before-tweak
 | `TrustedInstaller` 启动类型变过 | 是 **Windows 更新自己**切的（事件 7040 有记录），不是优化脚本 |
 | 快照里某服务 `StartMode=Unknown` | 受保护服务读不到注册表，**不是被改了** |
 | `Get-HotFix` 说系统停在 2023 | 它不列累积更新；用 `UBR` 判断真实补丁级别 |
+| **WU 报"安装成功"但系统版本没变** | 实测：累积更新是 **SSU+LCU 合并包**，可以出现"服务栈那半装上了、LCU 那半回滚"的情况——**WU 历史与事件日志都记成功，但 `UBR` 不变、更新又被重新提供**。判据只有一个：`CurrentBuild.UBR` 是否上升，别信"安装成功"。修法：SSU 落地后**重启再重试一次 LCU**（服务栈到位后通常就能提交）；仍失败则用 `dism /online /add-package` 装离线 msu（错误码可见，不再静默回滚） |
+| 组件库检查 | `dism /online /cleanup-image /checkhealth` 是**秒级**的（`/scanhealth` 才慢）；报 `CBS_E_INVALID_PACKAGE` 的旧 KB（如 KB3025096）通常是陈年孤儿包，未必影响新更新 |
 | 某设备显示 Error / Code 43 | **与优化无关，是缺厂商驱动**。`reset-failed-devices.ps1 -Reset` 只能清状态（实测 Code 43 蓝牙约 40 秒后复发）。**实测解法**：装厂商/UWD 驱动 —— 微软通用驱动加载不了设备固件（MT7921 蓝牙就是这样：通用驱动 → "适配器命令超时" → Code 43；装上 MediaTek UWD 驱动（含 7MB 固件）后整套蓝牙协议栈立刻 OK）。找不到驱动时用 **Microsoft Update Catalog** 检索，**装前必须确认 INF 里含你的硬件 ID**（如 `USB\VID_0489&PID_E0CD&MI_00`） |
 | 开机日志 `7026 ... dam` / `DCOM 10016` | 良性噪音，不用管 |
 | CPU 显示 100% | 用增量采样，别信 `LoadPercentage` 瞬时值 |
