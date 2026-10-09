@@ -41,7 +41,6 @@ agent_created: true
 | 语言与构建工具 | python / nodejs / go / cmake / dotnet-sdk / mingw / **uv**（+ rust 由 `setup-langs.ps1` 处理） | Scoop main |
 | 编辑器与终端 | **VS Code**、**Windows Terminal** | Scoop extras（`-NoEditor` 可跳过） |
 | 便携软件 | **JPEGView**（图片）、**MPC-BE**（音视频）、**MarkText**（Markdown）、**rclone**（NAS 同步） | `apps.json`，SHA256 校验 |
-| 照片编辑 / **等比例剪裁** | **PhotoDemon**（剪裁工具可锁定任意宽高比，做壁纸用：设 3840x2160 → 拖框 → 应用 → 保存） | `apps.json` |
 | 可选 | GPU 栈、WSL2 / Docker（AI 常见需求，需提权与虚拟化） | 手动 |
 
 ### ③ 执行的命令
