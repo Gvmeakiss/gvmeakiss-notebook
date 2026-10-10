@@ -318,6 +318,47 @@ if (Have 'ssh') {
     Record 'ssh' 'github auth' $authed $sshDetail -Optional
 }
 
+# ------------------------------------------------------------------ tune tweaks
+# Why this section exists: a cumulative update silently reverts the tune phase.
+# Two rules learned the hard way, both encoded below.
+#   1. The update DELETES these values rather than changing them. So "missing"
+#      must count as FAIL, not be read as "this machine never had it set".
+#      Checking only the value would let a deleted setting pass unnoticed.
+#   2. For MMCSS, reading the registry is not evidence. The driver can sit at
+#      START_TYPE=2 AUTO_START while STATE=STOPPED (exit code 1341); the values
+#      are then inert. Only `sc query` showing RUNNING means it actually works.
+Write-Output "`n--- tune tweaks (did they survive a Windows Update?)"
+$tweaks = @(
+    @{ Check = 'GameDVR policy';        Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR';                        Name = 'AllowGameDVR';                    Want = '0' },
+    @{ Check = 'GameDVR user';          Path = 'HKCU:\System\GameConfigStore';                                            Name = 'GameDVR_Enabled';                 Want = '0' },
+    @{ Check = 'MMCSS responsiveness';  Path = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile'; Name = 'SystemResponsiveness';          Want = '10' },
+    @{ Check = 'MMCSS net throttling';  Path = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile'; Name = 'NetworkThrottlingIndex';         Want = '4294967295' },
+    @{ Check = 'MMCSS GPU priority';    Path = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games'; Name = 'GPU Priority';       Want = '8' },
+    @{ Check = 'MMCSS sched category';  Path = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games'; Name = 'Scheduling Category'; Want = 'High' },
+    @{ Check = 'consumer features off'; Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent';                   Name = 'DisableWindowsConsumerFeatures';  Want = '1' },
+    @{ Check = 'silent app installs';   Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager';   Name = 'SilentInstalledAppsEnabled';      Want = '0' },
+    @{ Check = 'start suggestions';     Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager';   Name = 'SystemPaneSuggestionsEnabled';    Want = '0' },
+    @{ Check = 'soft landing tips';     Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager';   Name = 'SoftLandingEnabled';              Want = '0' },
+    @{ Check = 'explorer sync ads';     Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced';         Name = 'ShowSyncProviderNotifications';   Want = '0' },
+    @{ Check = 'bing web search';       Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Search';                   Name = 'BingSearchEnabled';               Want = '0' },
+    @{ Check = 'telemetry policy';      Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection';                 Name = 'AllowTelemetry';                  Want = '0' }
+)
+foreach ($t in $tweaks) {
+    $prop  = Get-ItemProperty $t.Path -Name $t.Name -ErrorAction SilentlyContinue
+    $have  = ($null -ne $prop) -and ($null -ne $prop.($t.Name))
+    $val   = if ($have) { "$($prop.($t.Name))" } else { $null }
+    $ok    = $have -and ($val -eq $t.Want)
+    $detail = if (-not $have) { 'VALUE MISSING - a cumulative update deletes it; re-run: setup.ps1 -Phase tune' }
+              elseif (-not $ok) { "actual=$val want=$($t.Want)" }
+              else { "=$val" }
+    Record 'tweaks' $t.Check $ok $detail
+}
+$mmcssOut = sc.exe query MMCSS 2>&1 | Out-String
+$mmcssUp  = $mmcssOut -match 'RUNNING'
+Record 'tweaks' 'MMCSS driver running' $mmcssUp $(
+    if ($mmcssUp) { 'RUNNING - the MMCSS values above are actually in effect' }
+    else { 'STOPPED - values above are inert even if present; fix: sc.exe config MMCSS start= auto ; sc.exe start MMCSS' })
+
 # ------------------------------------------------------------------ summary
 Write-Output "`n===== summary ====="
 $grouped = $results | Group-Object Language

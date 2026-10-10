@@ -184,10 +184,11 @@ pwsh -File scripts/snapshot-services.ps1 -OutDir C:\backup\before-tweak
 | CPU 显示 100% | 用增量采样，别信 `LoadPercentage` 瞬时值 |
 | 用 `-File` 调用脚本时 `-Only A,B` 只收到一个元素 | **`-File` 模式不拆逗号数组**（`-Command` 会拆）。要么脚本内部自己 `-split ','`，要么改用 `&` 在进程内调用传数组 |
 | 遍历 `HKCU\Software\Classes` 慢到几分钟 | PowerShell 逐键读实测 **281 秒**；改用原生 `reg query /s` 全量 dump 后内存过滤约 **18 秒**。注意 `/f` **不能跨反斜杠匹配键名**（`shell\open\command` 要 `/s` dump 后自己过滤） |
-| **累积更新会悄悄重置你的系统优化** | 实测：装完累积更新后，之前禁用的服务**全部回到出厂启动类型**，`MMCSS\SystemResponsiveness` 这个值**直接从注册表消失**。原因很可能是 LCU 的服务栈那半重写了服务/多媒体注册表。**判据：优化后隔一次累积更新要重新回读验证**，别假设设定还在 |
+| **累积更新会悄悄重置你的系统优化** | 实测**两次**：装完累积更新后，之前禁用的服务**全部回到出厂启动类型**，广告 / 推荐 / `GlobalUserDisabled` / `SystemResponsiveness` 等一批注册表值**直接消失**。**关键规律：它对这类设置是「删除值」而不是「改成别的值」——所以判断是否被重置必须看值存不存在，只看它等不等于期望值，会把「被删了」误判成「本来就没设置过」。** 判据：隔一次累积更新就重跑 `verify-env.ps1`（已内置 tune 存活检查，缺失值记为 FAIL） |
 | **`SystemResponsiveness` 写进去了但服务没跑** | 配置写对 ≠ 生效。`MMCSS` 是**内核驱动**，可处于 `START_TYPE=2 AUTO_START` 却 `STATE=STOPPED`、`WIN32_EXIT_CODE=1341 (ERROR_SERVICE_NOT_IN_EXE)`，此时 `SystemResponsiveness` 与 `Games` 优先级全部无效。修法：`sc.exe config MMCSS start= auto` 后用 `sc.exe start MMCSS` 拉起；验证要 `sc query MMCSS` 看到 `RUNNING`，**不能只看注册表值** |
 | PS7 里 `Enable-ComputerRestore` / `Checkpoint-Computer` 找不到 | 与 `Get-WinUserLanguageList` 同理，**这两个 cmdlet 是 5.1 专有**。系统还原相关一律走 `powershell.exe`（5.1）。另外 `SystemRestorePointCreationFrequency` 默认限制 24 小时只能建一个还原点，脚本里先置 `0` |
 | **系统还原点默认可能是 0 个** | 不少机器出厂就没开系统保护，等于没有任何回滚兜底。优化前建议先 `Enable-ComputerRestore -Drive 'C:\'` + `Checkpoint-Computer` 建一个基线 |
+| **`bcdedit` 非提权执行「静默返回空」** | 不报错、也不提示「拒绝访问」，就是什么都没有——极易误判成「这个设置被清空了」。**实际提权后读写完全正常。** 这是同一类坑的第 N 个：`Test-Path` 把 `*` 当通配符、`Get-AppxPackage` 在 PS7 里模块加载失败、`Get-ComputerRestorePoint` 是 5.1 专有、WMI 的 `CurrentHorizontalResolution` 有缓存滞后。**通用教训：「查不到」不等于「不存在」，先确认查询手段本身有效** |
 
 ## 验收
 
@@ -195,7 +196,9 @@ pwsh -File scripts/snapshot-services.ps1 -OutDir C:\backup\before-tweak
 pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1 -Phase verify
 ```
 
-`setup.ps1` 末尾输出 PASS/FAIL 表；**新开一个终端**再看 PATH 类结果。剩下三件脚本做不了的事：
+`setup.ps1` 末尾输出 PASS/FAIL 表；**新开一个终端**再看 PATH 类结果。
+`verify-env.ps1` 另含一组 **tune 存活检查（14 项）** —— 因为累积更新会悄悄**删掉**这些值，**每次打完累积更新都值得重跑一次**。它也顺带检查 MMCSS 驱动是否真的在跑（只看注册表会漏掉"值在、服务停"的失效）。
+剩下三件脚本做不了的事：
 
 1. **重启**，然后开新终端
 2. 逐个文件类型**手动点一次**默认程序（右键 → 打开方式 → 选择其他应用 → 勾"始终"）

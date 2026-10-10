@@ -159,7 +159,7 @@ pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1
 | `drivers` | 故障设备清单（含故障码）+ Windows 更新里的驱动更新；`-InstallDrivers` 直接装 | 是 | 驱动可在设备管理器回滚 |
 | `tune` | **先快照**，再改：GameDVR 关闭、MMCSS 调优、**关闭广告推荐/开始菜单联网搜索/遥测**；（可选）高性能电源计划、鼠标加速 | 是 | 是（`compare-services.ps1 -Restore`） |
 | `link` | 注册关联（`-RegisterAssociations`）+ 报告哪些类型需手动点一次 + 孤儿关联检查 | 否 | 是（有注册表备份） |
-| `verify` | dev 环境 / 软件清单 / 输入法健康 / 服务基线漂移，四项验收 | 否 | — |
+| `verify` | dev 环境 / 软件清单 / 输入法健康 / 服务基线漂移 / **tune 存活检查 14 项**，五项验收 | 否 | — |
 
 ## 四、参数
 
@@ -195,6 +195,11 @@ pwsh -File scripts/setup.ps1 -Phase verify
 ```
 
 ## 五、跑完必须做的三件事（脚本代替不了）
+
+> ⚠️ **打完累积更新后，重跑一次 `verify-env.ps1`。**
+> 实测两次：累积更新会**删掉** tune 阶段写入的注册表值 —— 不是改成别的值，是**直接删除**（`SystemResponsiveness`、`GlobalUserDisabled`、各项广告开关都中招过）。
+> 所以 `verify-env.ps1` 里那组 **tune 存活检查**把「值缺失」直接判为 `FAIL`：只看值等不等于期望值，会把「被删了」误判成「本来就没设置过」。
+> 同一组检查还会验证 **MMCSS 驱动是否真的在跑** —— 光看注册表会漏掉「值在、服务停」这种失效。
 
 1. **重启，然后新开一个终端** —— PATH 与输入法栈都在登录时重建；不重启就下结论是最常见的误判
 2. **手动点一次默认程序** —— Windows 的 `UserChoice` 有 Deny ACL + Hash 保护，脚本只能让程序出现在候选里。
@@ -234,7 +239,7 @@ pwsh -File scripts/diagnose-ime.ps1 -Repair    # 修复（管理员），之后�
 | `check-software.ps1 [-Json]` | 便携软件盘点 |
 | `set-app-associations.ps1 [-Register -Apps @{}]` | 关联注册 / 现状报告 |
 | `clean-orphan-associations.ps1 [-Clean]` | 卸载后的关联残留清理 |
-| `audit-env.ps1` / `fix-env.ps1` / `setup-langs.ps1` / `verify-env.ps1` | 开发环境审计 / 修复 / 装语言 / 验收 |
+| `audit-env.ps1` / `fix-env.ps1` / `setup-langs.ps1` / `verify-env.ps1` | 开发环境审计 / 修复 / 装语言 / 验收（含 **tune 存活检查 14 项**，打完累积更新后值得重跑） |
 
 ## 八、环境与边界
 
