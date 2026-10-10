@@ -1,6 +1,6 @@
 ---
 name: win-ai-gaming-setup
-description: 把一台新的 Windows 电脑一条命令配置成「AI 开发 + 游戏」机器，并在优化出故障时回滚。当出现"新电脑怎么配""帮我装开发环境""装 Python/Node/Go/dotnet""装些好用的小软件""优化一下打游戏""优化后输入法没了/某个功能坏了""想关服务但不知道后果"等诉求时使用。唯一入口是 scripts/setup.ps1（check/dev/apps/tune/link/verify 六个阶段，幂等、可 -WhatIf）；核心纪律只有三条：不碰按需启动的服务、动系统前先拍快照、改完必须重启再验证。
+description: 把一台刚装好系统的 Windows 电脑一条命令配置成「AI 开发 + 游戏」机并完成系统优化 —— 装开发工具链（Python/Node/Go/dotnet/cmake/mingw/uv）、装编辑器与便携软件、做安全的系统优化（GameDVR/MMCSS/广告推荐/遥测），出故障可按基线回滚。当出现"新电脑怎么配""新机一键配置""帮我装开发环境""装 Python/Node/Go/dotnet""装些好用的小软件""优化一下打游戏""优化后输入法没了/某个功能坏了""想关服务但不知道后果"等诉求时使用。唯一入口是 scripts/setup.ps1（check/dev/apps/drivers/tune/link/verify 七个阶段，幂等、可 -WhatIf）；核心纪律只有三条：不碰按需启动的服务、动系统前先拍快照、改完必须重启再验证。
 agent_created: true
 ---
 
@@ -184,6 +184,10 @@ pwsh -File scripts/snapshot-services.ps1 -OutDir C:\backup\before-tweak
 | CPU 显示 100% | 用增量采样，别信 `LoadPercentage` 瞬时值 |
 | 用 `-File` 调用脚本时 `-Only A,B` 只收到一个元素 | **`-File` 模式不拆逗号数组**（`-Command` 会拆）。要么脚本内部自己 `-split ','`，要么改用 `&` 在进程内调用传数组 |
 | 遍历 `HKCU\Software\Classes` 慢到几分钟 | PowerShell 逐键读实测 **281 秒**；改用原生 `reg query /s` 全量 dump 后内存过滤约 **18 秒**。注意 `/f` **不能跨反斜杠匹配键名**（`shell\open\command` 要 `/s` dump 后自己过滤） |
+| **累积更新会悄悄重置你的系统优化** | 实测：装完累积更新后，之前禁用的服务**全部回到出厂启动类型**，`MMCSS\SystemResponsiveness` 这个值**直接从注册表消失**。原因很可能是 LCU 的服务栈那半重写了服务/多媒体注册表。**判据：优化后隔一次累积更新要重新回读验证**，别假设设定还在 |
+| **`SystemResponsiveness` 写进去了但服务没跑** | 配置写对 ≠ 生效。`MMCSS` 是**内核驱动**，可处于 `START_TYPE=2 AUTO_START` 却 `STATE=STOPPED`、`WIN32_EXIT_CODE=1341 (ERROR_SERVICE_NOT_IN_EXE)`，此时 `SystemResponsiveness` 与 `Games` 优先级全部无效。修法：`sc.exe config MMCSS start= auto` 后用 `sc.exe start MMCSS` 拉起；验证要 `sc query MMCSS` 看到 `RUNNING`，**不能只看注册表值** |
+| PS7 里 `Enable-ComputerRestore` / `Checkpoint-Computer` 找不到 | 与 `Get-WinUserLanguageList` 同理，**这两个 cmdlet 是 5.1 专有**。系统还原相关一律走 `powershell.exe`（5.1）。另外 `SystemRestorePointCreationFrequency` 默认限制 24 小时只能建一个还原点，脚本里先置 `0` |
+| **系统还原点默认可能是 0 个** | 不少机器出厂就没开系统保护，等于没有任何回滚兜底。优化前建议先 `Enable-ComputerRestore -Drive 'C:\'` + `Checkpoint-Computer` 建一个基线 |
 
 ## 验收
 

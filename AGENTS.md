@@ -39,7 +39,7 @@ skills/<name>/
 | Skill | 触发场景 | 入口 |
 |---|---|---|
 | `screenshot-text-edit` | 把图片/截图里的文字或数字改成别的内容（金额、日期、编号、字段名）。核心是字形克隆法，保真度远高于字体重绘 | [skills/screenshot-text-edit/SKILL.md](./skills/screenshot-text-edit/SKILL.md) |
-| `win-ai-gaming-setup` | 把一台新 Windows 机器一条命令配成「AI 开发 + 游戏」机：前置检查 → 装开发工具链 → 装便携软件 → 安全调优（先快照）→ 注册关联 → 验收，出故障能按基线回滚。唯一入口 `scripts/setup.ps1`。核心纪律三条：不碰按需启动的服务、动系统前先拍快照、改完必须重启再验证 | [skills/win-ai-gaming-setup/SKILL.md](./skills/win-ai-gaming-setup/SKILL.md) |
+| `win-ai-gaming-setup` | 把一台新装好的 Windows 机器一条命令配成「AI 开发 + 游戏」机并完成系统优化：引导检查 → 装开发工具链 → 装便携软件 → 驱动分诊 → 安全调优（先快照）→ 注册关联 → 验收，出故障能按基线回滚。唯一入口 `scripts/setup.ps1`（七阶段）。核心纪律三条：不碰按需启动的服务、动系统前先拍快照、改完必须重启再验证 | [skills/win-ai-gaming-setup/SKILL.md](./skills/win-ai-gaming-setup/SKILL.md) |
 
 ## 环境
 

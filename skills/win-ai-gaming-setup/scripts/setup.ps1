@@ -24,7 +24,7 @@
     * a command returning success is not evidence; read the state back
 
 .PARAMETER Phase
-  check | dev | apps | tune | link | verify | all      (default: all)
+  check | dev | apps | drivers | tune | link | verify | all      (default: all)
 
 .PARAMETER Manifest
   Portable app manifest. Default: apps.json in the skill root.
