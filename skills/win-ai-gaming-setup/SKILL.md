@@ -1,6 +1,6 @@
 ---
 name: win-ai-gaming-setup
-description: 把一台刚装好系统的 Windows 电脑一条命令配置成「AI 开发 + 游戏」机并完成系统优化 —— 装开发工具链（Python/Node/Go/dotnet/cmake/mingw/uv）、装编辑器与便携软件、做安全的系统优化（GameDVR/MMCSS/广告推荐/遥测），出故障可按基线回滚。当出现"新电脑怎么配""新机一键配置""帮我装开发环境""装 Python/Node/Go/dotnet""装些好用的小软件""优化一下打游戏""优化后输入法没了/某个功能坏了""想关服务但不知道后果"等诉求时使用。唯一入口是 scripts/setup.ps1（check/dev/apps/drivers/tune/link/verify 七个阶段，幂等、可 -WhatIf）；核心纪律只有三条：不碰按需启动的服务、动系统前先拍快照、改完必须重启再验证。
+description: 把一台刚装好系统的 Windows 电脑一条命令配置成「AI 开发 + 游戏」机并完成系统优化 —— 装开发工具链（Python/Node/Go/dotnet/cmake/mingw/uv）、装编辑器与便携软件、做安全的系统优化（GameDVR/MMCSS/广告推荐/遥测），出故障可按基线回滚。当出现"新电脑怎么配""新机一键配置""帮我装开发环境""装 Python/Node/Go/dotnet""装些好用的小软件""优化一下打游戏""优化后输入法没了/某个功能坏了""想关服务但不知道后果""游戏老是崩溃/黑屏一下又恢复/分辨率被改了"等诉求时使用。唯一入口是 scripts/setup.ps1（check/dev/apps/drivers/tune/link/verify 七个阶段，幂等、可 -WhatIf）；核心纪律只有三条：不碰按需启动的服务、动系统前先拍快照、改完必须重启再验证。游戏崩溃 / 显卡挂起 / TDR 走 SKILL.md 的「显卡稳定性」小节。
 agent_created: true
 ---
 
@@ -97,6 +97,24 @@ sc.exe config WSearch start= delayed-auto ; sc.exe start WSearch
 
 > 实测：一台被"关闭更新"工具处理过的机器上，这三项都处于被关闭状态；恢复更新后系统会自行下载积压的补丁。
 
+## 显卡稳定性（遇到游戏崩溃 / 黑屏 / TDR 再做）
+
+`tune` 阶段只管「无效配置」，**不碰驱动稳定性**。真正遇到**游戏中崩溃、屏幕黑一下又恢复、进游戏那一刻挂掉**时，按这个顺序处理：
+
+| 步骤 | 动作 | 依据 |
+|---|---|---|
+| **1. 先取证** | 看 `C:\Windows\LiveKernelReports\WATCHDOG\` 有无新增 `.dmp`；在应用程序日志搜 `LiveKernelEvent` | 区分「偶发」与「反复」，也排除掉「其实是游戏自己崩」的误判 |
+| **2. 恢复设备** | `pnputil /restart-device "<InstanceId>"` | 实测几秒修好 `CM_PROB_FAILED_ADD`，**不用重启**（见 `reset-failed-devices.ps1`） |
+| **3. 加大驱动超时** | `HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers` → `TdrDelay=8`、`TdrDdiDelay=8`（默认 2 / 5 秒） | 驱动响应慢时不被看门狗直接判死。**需重启才被驱动读取** |
+| **4. 关 AMD ULPS** | 显示适配器类键下 `EnableUlps=0` | ULPS 是 AMD「黑屏 / 驱动崩溃」的著名元凶。**吻合点是「空闲→满载」的切换，也就是进游戏那一刻**。代价：待机功耗略升 |
+| **5. 散热 / 驱动重装** | 清灰换硅脂；DDU 安全模式清除后装厂商驱动 | 前四步都是软件层。迷你主机 / 笔记本在游戏满载下的问题往往在这里 |
+
+三条纪律：
+
+- **驱动版本不要盲目「更新」** —— Windows 更新推荐的显示驱动**可能比已装的更旧**（比对版本号第 3、4 段，如 `31.0.21925` > `31.0.12027`）。判断依据是版本号，不是「更新」二字。
+- **一次只改一个变量**，每步之后进游戏实测，否则无法归因。
+- **显卡挂掉会让游戏重跑硬件检测** —— 不支持 DPI 感知的游戏在检测不到原显卡时，会把画质/分辨率改回通用推荐值（实测被改成 1280×1024 + 画质中 + 抗锯齿开）。**游戏设置被改坏是这个故障的症状，不是原因**，别往游戏配置上排查。
+
 ## 唯一入口
 
 ```powershell
@@ -189,6 +207,11 @@ pwsh -File scripts/snapshot-services.ps1 -OutDir C:\backup\before-tweak
 | PS7 里 `Enable-ComputerRestore` / `Checkpoint-Computer` 找不到 | 与 `Get-WinUserLanguageList` 同理，**这两个 cmdlet 是 5.1 专有**。系统还原相关一律走 `powershell.exe`（5.1）。另外 `SystemRestorePointCreationFrequency` 默认限制 24 小时只能建一个还原点，脚本里先置 `0` |
 | **系统还原点默认可能是 0 个** | 不少机器出厂就没开系统保护，等于没有任何回滚兜底。优化前建议先 `Enable-ComputerRestore -Drive 'C:\'` + `Checkpoint-Computer` 建一个基线 |
 | **`bcdedit` 非提权执行「静默返回空」** | 不报错、也不提示「拒绝访问」，就是什么都没有——极易误判成「这个设置被清空了」。**实际提权后读写完全正常。** 这是同一类坑的第 N 个：`Test-Path` 把 `*` 当通配符、`Get-AppxPackage` 在 PS7 里模块加载失败、`Get-ComputerRestorePoint` 是 5.1 专有、WMI 的 `CurrentHorizontalResolution` 有缓存滞后。**通用教训：「查不到」不等于「不存在」，先确认查询手段本身有效** |
+| **`foreach` 遍历哈希表不会枚举条目** | `foreach ($kv in $hashtable)` 得到的是**哈希表本身**（只迭代 1 次），`$kv.Key` 为 `null`，脚本以「无法将自变量绑定到参数 Name」这类莫名错误失败。`[ordered]@{}` 同样中招。**必须用 `$h.GetEnumerator()`**；而管道 `$h \| ForEach-Object` 反而会正常枚举——两种写法行为不一致正是坑点。实测同一场排查里连栽三次 |
+| **显示设备的「名字」会变** | `pnputil /restart-device` 重新添加适配器后，Windows 会把活动显示设备从 `\\.\DISPLAY1` 改名成 `\\.\DISPLAY2`。**硬编码设备名的脚本会静默失效**：`EnumDisplaySettings` 对不存在的设备返回空，脚本却报「驱动不支持该分辨率」，完全误导。正确做法是枚举 `EnumDisplayDevices`，取 `StateFlags` 含 `0x1`（已连接桌面）的那个，优先 `0x4`（主显示器） |
+| **`CM_PROB_FAILED_ADD` (Code 31) 不必重启就能修** | 现象：设备 `Status=Error`、取不到分辨率、3D 应用崩溃。**先试 `pnputil /restart-device "<InstanceId>"`** —— 实测几秒恢复，既不用重启也不用重装驱动。`reset-failed-devices.ps1` 已把它作为第一步，disable/enable 降为兜底 |
+| **GPU 挂起的历史证据在 `LiveKernelReports`** | `C:\Windows\LiveKernelReports\WATCHDOG\*.dmp` 是**内核级看门狗转储**；配合应用程序日志里 `Windows Error Reporting → LiveKernelEvent`（`P1` 是事件码）能还原「什么时候挂过、挂了几次」。**设备恢复后这些记录仍在**，是判断「偶发还是反复」的唯一依据 |
+| **别信文件夹名，看文件属性** | `C:\Program Files\AMD\Performance Profile Client\AUEPMaster.exe` 看着像性能配置组件，**实际 FileDescription 是 "AMD User Experience Program Master"（纯遥测）**。按文件夹名判断组件用途会做出错误的保留/禁用决策——实测差点为此把 77~90 秒的开机延迟白拿回来。**查 `(Get-Item x.exe).VersionInfo` 的 FileDescription / ProductName** |
 
 ## 验收
 

@@ -204,7 +204,8 @@ pwsh -File scripts/setup.ps1 -Phase verify
 1. **重启，然后新开一个终端** —— PATH 与输入法栈都在登录时重建；不重启就下结论是最常见的误判
 2. **手动点一次默认程序** —— Windows 的 `UserChoice` 有 Deny ACL + Hash 保护，脚本只能让程序出现在候选里。
    右键任意该类文件 → 打开方式 → 选择其他应用 → 选中 → 勾"始终使用此应用"（每个类型一次，长期有效）
-3. **设备有故障码就复位** —— `pwsh -File scripts/reset-failed-devices.ps1 -Reset`（管理员）；
+3. **设备有故障码就复位** —— `pwsh -File scripts/reset-failed-devices.ps1 -Reset`（管理员）。
+   脚本会**先试 `pnputil /restart-device`**（秒级、免重启），失败才降级到 disable/enable + 重扫；
    仍不行的先"完全关机"断电，再装厂商驱动
 
 ## 六、坏了怎么回滚
@@ -227,6 +228,20 @@ pwsh -File scripts/diagnose-ime.ps1            # 诊断：服务/进程/语言�
 pwsh -File scripts/diagnose-ime.ps1 -Repair    # 修复（管理员），之后必须重启
 ```
 
+**游戏崩溃 / 黑屏 / 进游戏就挂** —— 不是改回滚，而是显卡驱动挂起，走专用路径：
+
+```powershell
+# 1) 先取证：有没有内核看门狗转储（设备恢复后记录仍在）
+Get-ChildItem C:\Windows\LiveKernelReports\WATCHDOG\*.dmp | Sort-Object LastWriteTime -Descending
+
+# 2) 恢复设备（秒级，不用重启）
+pnputil /restart-device "<InstanceId>"     # 或直接跑 reset-failed-devices.ps1 -Reset
+```
+
+仍反复的话按 `SKILL.md` 的「**显卡稳定性**」小节走：加大 `TdrDelay` → 关 AMD `EnableUlps` → 散热 / 驱动重装。
+
+> 症状识别：**屏幕黑一下又恢复** = 又 TDR 了；**游戏分辨率/画质被改回通用值** = 显卡挂掉后游戏重跑了硬件检测，是症状不是原因。
+
 ## 七、工具箱（同一目录，可单独用）
 
 | 脚本 | 用途 |
@@ -234,7 +249,7 @@ pwsh -File scripts/diagnose-ime.ps1 -Repair    # 修复（管理员），之后�
 | `snapshot-services.ps1 -OutDir <dir>` | 改动前拍照（只读） |
 | `compare-services.ps1 -Snapshot <csv> [-Restore] [-Only X]` | 逐项对比 / 按基线回滚 |
 | `diagnose-ime.ps1 [-Repair]` | 输入法故障诊断与修复 |
-| `reset-failed-devices.ps1 [-Reset] [-Class X]` | 设备故障码分诊与复位 |
+| `reset-failed-devices.ps1 [-Reset] [-Class X]` | 设备故障码分诊与复位（先试 `pnputil /restart-device`，含 Code 31 `CM_PROB_FAILED_ADD`） |
 | `install-portable.ps1 -Manifest <json>` | 清单式便携安装（SHA256 必填） |
 | `check-software.ps1 [-Json]` | 便携软件盘点 |
 | `set-app-associations.ps1 [-Register -Apps @{}]` | 关联注册 / 现状报告 |

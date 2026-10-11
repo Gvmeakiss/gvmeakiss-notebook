@@ -67,6 +67,7 @@ $codeMeaning = @{
     22 = 'disabled by the user or by policy'
     24 = 'device not present'
     28 = 'no driver installed'
+    31 = 'driver failed to load (CM_PROB_FAILED_ADD)'
     43 = 'the device reported a failure and Windows stopped it'
     45 = 'not currently connected'
     52 = 'driver signature not verified'
@@ -110,6 +111,8 @@ $rows = foreach ($d in $devices) {
 $rows | Format-Table -AutoSize -Wrap | Out-String -Width 200 | Write-Output
 
 Say 'reading the result:'
+Say '    Code 31            -> driver failed to LOAD (CM_PROB_FAILED_ADD). Restart the device; this'
+Say '                          script tries that first. Measured to clear in seconds without a reboot.'
 Say '    Code 43 / 10 / 12  -> the device itself reported a problem. Driver, firmware or a stuck radio.'
 Say '    Code 28 / 1 / 18   -> no usable driver installed. Install the VENDOR driver.'
 Say '    Code 22            -> soft-disabled. Re-enable it (this script) or check policy.'
@@ -125,14 +128,33 @@ if (-not $Reset) {
     return
 }
 
+# Two escalating attempts per device, lightest first.
+#   1) `pnputil /restart-device` - seconds, no reboot, no driver reinstall. Measured to clear
+#      CM_PROB_FAILED_ADD (code 31) on a GPU that had stopped responding after two watchdog
+#      events; the alternative would have been a reboot.
+#   2) disable -> enable -> rescan - heavier, and for a display adapter the screen blanks.
+#      Use it only when the restart did not take.
 foreach ($d in $devices) {
-    if ($PSCmdlet.ShouldProcess("$($d.FriendlyName) ($($d.InstanceId))", 'disable, re-enable, rescan')) {
+    if (-not $PSCmdlet.ShouldProcess("$($d.FriendlyName) ($($d.InstanceId))", 'restart the device; then disable/re-enable + rescan if still failing')) { continue }
+
+    $fixed = $false
+    & pnputil.exe /restart-device "$($d.InstanceId)" 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+        Start-Sleep -Seconds 5
+        if ((Get-PnpDevice -InstanceId $d.InstanceId -ErrorAction SilentlyContinue).Status -eq 'OK') {
+            Ok "$($d.FriendlyName): recovered by pnputil /restart-device (no reboot needed)"
+            $fixed = $true
+        }
+    }
+    else { Warn "$($d.FriendlyName): /restart-device not supported or refused (exit $LASTEXITCODE) - falling back" }
+
+    if (-not $fixed) {
         try {
             Disable-PnpDevice -InstanceId $d.InstanceId -Confirm:$false -ErrorAction Stop
             Start-Sleep -Seconds 2
             Enable-PnpDevice -InstanceId $d.InstanceId -Confirm:$false -ErrorAction Stop
             Start-Sleep -Seconds 3
-            Ok "$($d.FriendlyName): reset attempted"
+            Ok "$($d.FriendlyName): disable/enable attempted"
         }
         catch { Bad "$($d.FriendlyName): reset failed - $($_.Exception.Message)" }
     }
