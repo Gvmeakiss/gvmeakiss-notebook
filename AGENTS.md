@@ -22,12 +22,16 @@ skills/<name>/
 - `audit-workbench/`：同主题的 Next.js / React / TypeScript 工程版（脱敏），需 `npm ci` 后构建，
   不是双击 HTML 的离线版；含团队分区、长期阶段历史、挽损分批明细、归档恢复与 SQLite DDL。
   运行 `npm test`（Node 内置测试运行器 + Python 3）、`npm run typecheck`、`npm run build` 验证。
+  它是 `audit-kanban` 的工程版实现，**共用同一入口说明**，在根 `README.md` 中并入「稽核与业务应用」而非单列项目。
 - `shadowrocket/`：Mac / iPhone 通用分流配置、使用指南与离线配置检查。
 - `merlin/`：梅林 fancyss 分流名单、使用指南、美国节点入口绕过生成工具；账号与节点备份仅在本地使用。
 - `docs/`：过程与踩坑记录。`windows-environment-setup.md` 是在一台 Windows 10 非管理员机器上
   把开发环境与常用软件从零配置到可用的实测记录（14 项问题总表 + Windows 专属陷阱）。
   与 `win-ai-gaming-setup` 配套：**Skill 是可执行的方法，docs 是为什么这么做、以及踩过的坑**。
 - `internal-audit-reform/`：AI复用制作内部审计整改汇报的完整项目包，包含可编辑PPT、逐页口播、复用规范及配图库。使用前阅读其 `README.md` 和项目级 `AGENTS.md`；当前页面中的业务条件和时限只适用于对应示例项目。
+- `assets/`：根 `README.md` 的横幅素材。`banner.svg` 与 `banner-dark.svg` 是同一版式的浅色 / 深色两套，
+  由 README 中的 `<picture>` 按 `prefers-color-scheme` 自动切换；**改动需同步两份**。
+  字体走系统字体栈（`PingFang SC, Hiragino Sans GB, Noto Sans SC, Microsoft YaHei`），不内嵌外部字体文件。
 
 ## 使用流程
 
