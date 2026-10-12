@@ -1,114 +1,110 @@
 <p align="center">
-  <b>Language · 语言</b>&nbsp;&nbsp;
-  <a href="#zh"><code>🇨🇳 中文</code></a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="#en"><code>🇬🇧 English</code></a>
+  <a href="#zh">🇨🇳 中文</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="#en">🇬🇧 English</a>
 </p>
 
-# 📓 Gvmeakiss Notebook
+<h1 align="center">📓 Gvmeakiss Notebook</h1>
 
-**个人技术笔记本 —— 收录可复用的通用配置、工具说明与 AI Skill。**
-*Personal technical notebook — reusable configurations, tooling notes and AI skills.*
+<p align="center"><strong>个人技术笔记本 · 可复用配置、工具说明与 AI Skill</strong></p>
+<p align="center"><sub>A personal notebook of reusable configurations, tools and AI skills.</sub></p>
+
+<p align="center">
+  <a href="#-项目导航">项目导航</a>&nbsp;·&nbsp;
+  <a href="#-近期项目">近期项目</a>&nbsp;·&nbsp;
+  <a href="#-使用说明">使用说明</a>
+</p>
 
 ---
 
 <a name="zh"></a>
 
-# 🇨🇳 中文
+## 🇨🇳 中文
 
-## 📌 目录 · Contents
+这里收录可复用的技术配置、实践记录和 AI 工具。项目按主题独立整理，优先提供清晰入口、使用说明与可复现步骤。
 
-| 目录 | 类型 | 说明 |
+### ✨ 近期项目
+
+| 项目 | 内容 | 快速入口 |
 |---|---|---|
-| [audit-kanban](./audit-kanban) | 演示应用 · Demo | 离线「稽核工作进度看板」演示版（纯前端，双击即用；脱敏泛化，含虚构演示数据与构建/使用文档） |
-| [audit-workbench](./audit-workbench) | 演示应用 · Demo | 同主题的 Next.js / React / TypeScript 工程版（`npm ci` 后构建；含团队分区、长期阶段历史、挽损分批明细、归档恢复与 SQLite DDL；脱敏泛化，虚构数据） |
-| [shadowrocket](./shadowrocket) | 配置 · Config | Mac / iPhone 通用分流：国内 App、海外 AI、局域网、独立移动网络使用与排错指南 |
-| [merlin](./merlin) | 配置与工具 · Config / Tools | 梅林 fancyss 香港日常出口、分流名单与全部美国节点入口绕过生成工具 |
-| [mini-app-spec](./mini-app-spec) | 技术规范 · Spec | 企业级「AI Agent 驱动轻应用平台」技术规范（脱敏方法论版）：静态导出 + BFF 中介 + SQL 预定义 + 原子替换部署，含 Agent 开发约定 |
-| [skills/screenshot-text-edit](./skills/screenshot-text-edit) | AI Skill | 截图文字/数字高保真修改（字形克隆法），含 4 个 CLI 脚本 |
-| [skills/win-ai-gaming-setup](./skills/win-ai-gaming-setup) | AI Skill | **新装 Windows 电脑一条命令配成「AI 开发 + 游戏」机并完成系统优化**：装 17 个软件（Scoop 工具链 7 项 + VS Code / Windows Terminal + 4 个便携软件，逐个 SHA256 校验）、做 6 类系统优化（GameDVR / MMCSS / 广告推荐 / 遥测 / 电源 / 鼠标）；七阶段 check → dev → apps → drivers → tune → link → verify，先快照、可按基线回滚。含四类故障的诊断与修复：**输入法 / 服务 / 设备 / 显卡（崩溃·黑屏·TDR）** |
-| [docs/windows-environment-setup](./docs/windows-environment-setup.md) | 记录 · Notes | 一台 Windows 10 非管理员机器的环境与软件配置全过程：11 类踩坑、14 个问题总表、可复现命令 |
+| **内部审计整改汇报复用包** | 可编辑 PPT、逐页口播稿、内容规划与视觉规范、配图库；附 AI 接手说明 | [打开项目](./internal-audit-reform) · [查看 PPT](./internal-audit-reform/交付成果/内部审计整改革新_可编辑终稿.pptx) |
 
----
+### 🧭 项目导航
 
-## 📦 模块介绍
+#### 稽核与业务应用
 
-### `audit-kanban/` · 稽核工作进度看板（演示应用）
+| 项目 | 类型 | 简介 |
+|---|---|---|
+| [内部审计整改汇报复用包](./internal-audit-reform) | AI复用项目 | 汇报材料与下次制作可复用的内容、视觉规范和素材 |
+| [audit-kanban](./audit-kanban) | 演示应用 | 离线稽核工作进度看板，含虚构演示数据与使用文档 |
+| [audit-workbench](./audit-workbench) | 工程项目 | Next.js / React / TypeScript 看板工程，含团队分区、阶段历史、归档恢复和 SQLite DDL |
+| [mini-app-spec](./mini-app-spec) | 技术规范 | AI Agent 驱动轻应用平台的方法论、接口与开发约定 |
 
-纯前端离线看板，双击 `audit-kanban/index.html` 即可运行、无需部署。演示「同事填报 → 专人汇总 → 经理看板」的部门工作台账流转，含 Excel 导入导出与周快照。演示代码与数据已泛化脱敏，仅供展示交互与构建方法。
+#### 配置与工具
 
-### `shadowrocket/` · 分流配置
+| 项目 | 类型 | 简介 |
+|---|---|---|
+| [shadowrocket](./shadowrocket) | 配置 | Mac / iPhone 分流规则及使用、排错指南 |
+| [merlin](./merlin) | 配置与工具 | 梅林 fancyss 分流名单、节点入口绕过生成工具与说明 |
+| [Windows 环境配置记录](./docs/windows-environment-setup.md) | 实践记录 | Windows 10 非管理员环境配置过程、问题清单与复现命令 |
 
-Mac / iPhone 共用的 Shadowrocket 分流配置：国内 App 与局域网直连，海外 AI、内容和开发服务使用当前代理节点，兼顾在家叠加梅林与外出大陆热点。节点和订阅由客户端自行管理。
+#### AI Skills
 
-[下载配置](./shadowrocket/shadowrocket-optimized.conf) · [使用指南](./shadowrocket/使用指南.md)
+| Skill | 用途 |
+|---|---|
+| [截图文字编辑](./skills/screenshot-text-edit) | 使用字形克隆方法高保真修改截图文字与数字，含 CLI 脚本 |
+| [Windows AI 与游戏环境配置](./skills/win-ai-gaming-setup) | 新装 Windows 电脑的软件安装、系统优化、校验与回滚 |
 
-### `merlin/` · 梅林分流与节点绕过
+### 📖 使用说明
 
-面向 fancyss 3.5.30 的配置说明与公开名单：日常海外访问由香港节点处理，客户端额外开启时可让全部美国节点入口绕过路由器代理。提供从本地 fancyss 备份生成入口域名和 IPv4 `/32` 清单的工具，不发布真实订阅或节点地址。
-
-[功能与参数](./merlin/README.md) · [使用指南](./merlin/使用指南.md)
-
-2026-09-23 更新保留既有服务规则，补齐国内 AI、办公/NAS、OpenAI 核心连接和 DNS 回退配置。公开版不含私人域名与节点入口；个人已应用配置、书签核验明细及完整备份仅保存在本地。
-
-### `mini-app-spec/` · 轻应用平台技术规范
-
-企业级「AI Agent 驱动的轻应用平台」技术规范（脱敏方法论版）。覆盖整体框架、前端约定、数据库方案、生命周期控制（5 步发布脚本 + 三级并发）、接口清单与 Agent 开发约定，并附「依照规范设计轻应用」的标准流程，供同类平台设计与 AI 开发参考。
-
-### `skills/screenshot-text-edit/` · 截图改字（AI Skill）
-
-高保真修改截图中的文字与数字（字形克隆法，字形像素级一致）。含 4 个自包含 CLI 脚本（均支持 `--help`），适用于 ERP 截图、报表、单据等改数改字场景；触发词如「把截图里的 X 改成 Y」。
+- 从对应项目目录的 `README.md` 开始，按其中步骤安装、运行或复用。
+- 配置、脚本和规范均按各自项目说明使用；涉及账号、订阅或本地环境的内容以本机设置为准。
+- 仓库中的演示应用使用虚构数据；项目适用范围和复用边界以项目文档为准。
 
 ---
 
 <a name="en"></a>
 
-# 🇬🇧 English
+## 🇬🇧 English
 
-**Gvmeakiss Notebook — personal technical notebook with reusable configurations, tooling notes and AI skills.**
+This repository collects reusable technical configurations, practical notes and AI tools. Each project has its own entry point and usage guide.
 
-## 📌 Contents
+### ✨ Featured project
 
-| Path | Type | Description |
+| Project | What’s inside | Quick links |
 |---|---|---|
-| [audit-kanban](./audit-kanban) | Demo app | Offline “audit work-progress kanban” demo (pure front-end, run by double-clicking index.html; desensitized & generic, with fabricated demo data and build/usage docs) |
-| [audit-workbench](./audit-workbench) | Demo app | Next.js / React / TypeScript engineering edition of the same theme (build after `npm ci`; adds team partitions, long-term stage history, loss-recovery line items, archive restore, and SQLite DDL; desensitized & generic, fabricated data) |
-| [shadowrocket](./shadowrocket) | Config | Shared Mac / iPhone routing for domestic apps, overseas AI, LAN and mobile networks, with a usage guide |
-| [merlin](./merlin) | Config / Tools | Merlin fancyss routing lists, daily Hong Kong egress and a local US-node endpoint bypass generator |
-| [mini-app-spec](./mini-app-spec) | Tech spec | Enterprise “AI-Agent-driven light-app platform” technical spec (desensitized methodology edition): static export + BFF mediation + predefined SQL + atomic-swap deployment, with Agent dev conventions |
-| [skills/screenshot-text-edit](./skills/screenshot-text-edit) | AI Skill | High-fidelity text/digit editing inside screenshots (glyph-cloning method), incl. 4 CLI scripts |
-| [skills/win-ai-gaming-setup](./skills/win-ai-gaming-setup) | AI Skill | **One command turns a freshly installed Windows box into an AI-development + gaming machine, system optimization included**: installs 17 pieces of software (7-package Scoop toolchain + VS Code / Windows Terminal + 4 SHA256-verified portable apps) and applies 6 categories of tuning (GameDVR / MMCSS / ads & suggestions / telemetry / power plan / mouse acceleration). Seven phases check → dev → apps → drivers → tune → link → verify; snapshot first, roll back from the baseline. Ships diagnostics/repair for four failure classes: **IME / services / devices / GPU (crashes, black screens, TDR)** |
-| [docs/windows-environment-setup](./docs/windows-environment-setup.md) | Notes | Full record of setting up a Windows 10 non-admin machine: 11 pitfall classes, a 14-item problem table, and reproducible commands |
+| **Internal Audit Reform Presentation Kit** | Editable PowerPoint, page-matched spoken script, reusable content and visual standards, image library, and AI handoff guide | [Open project](./internal-audit-reform) · [View deck](./internal-audit-reform/交付成果/内部审计整改革新_可编辑终稿.pptx) |
+
+### 🧭 Project directory
+
+#### Audit and business apps
+
+| Project | Type | Description |
+|---|---|---|
+| [Internal audit reform kit](./internal-audit-reform) | AI-assisted project | Presentation deliverables, reusable standards and source assets |
+| [audit-kanban](./audit-kanban) | Demo app | Offline audit work-progress board with fabricated demo data |
+| [audit-workbench](./audit-workbench) | Engineering project | Next.js / React / TypeScript app with team partitions, stage history, archive restore and SQLite DDL |
+| [mini-app-spec](./mini-app-spec) | Technical spec | Methods, APIs and development conventions for AI-agent-driven light apps |
+
+#### Configurations and tools
+
+| Project | Type | Description |
+|---|---|---|
+| [shadowrocket](./shadowrocket) | Config | Mac / iPhone routing rules, usage and troubleshooting |
+| [merlin](./merlin) | Config and tools | Merlin fancyss routing lists, endpoint bypass generator and guide |
+| [Windows setup notes](./docs/windows-environment-setup.md) | Notes | Windows 10 setup notes, issue list and reproducible commands |
+
+#### AI skills
+
+| Skill | Purpose |
+|---|---|
+| [Screenshot text edit](./skills/screenshot-text-edit) | High-fidelity text and digit edits using glyph cloning, with CLI scripts |
+| [Windows AI and gaming setup](./skills/win-ai-gaming-setup) | Software installation, system tuning, verification and rollback for a new Windows PC |
+
+### 📖 How to use
+
+- Start with the `README.md` in the relevant project folder.
+- Follow each project’s instructions; account, subscription and local-environment details remain machine-specific.
+- Demo apps use fabricated data. Refer to each project guide for its scope and reuse boundaries.
 
 ---
 
-## 📦 Module Overview
-
-### `audit-kanban/` · Audit Work-Progress Kanban (demo app)
-
-A pure front-end offline kanban — open `audit-kanban/index.html` to run, no deployment needed. Demonstrates a department work-log flow of "member updates → consolidator merges → manager board", with Excel import/export and weekly snapshots. Code and data are generic/desensitized, for interaction & build reference only.
-
-### `shadowrocket/` · Routing Config
-
-Shared Mac / iPhone rules for domestic direct access, overseas services and LAN discovery, usable both with a home router and independently on mainland mobile networks. Keep subscriptions and credentials in the client.
-
-[Config](./shadowrocket/shadowrocket-optimized.conf) · [Usage guide (Chinese)](./shadowrocket/使用指南.md)
-
-### `merlin/` · Merlin Routing and Endpoint Bypass
-
-Routing lists and a guide for fancyss 3.5.30: keep Hong Kong as the daily router egress and bypass the router proxy for client-side US-node endpoints. Generate exact endpoint lists locally from a private fancyss backup; never upload subscriptions, credentials or endpoint inventories.
-
-[Overview](./merlin/README.md) · [Usage guide (Chinese)](./merlin/使用指南.md)
-
-The 2026-09-23 update retains existing service coverage and adds domestic AI, office/NAS services, core OpenAI routing and portable DNS fallback. Private exceptions, bookmark reports and full device backups are intentionally excluded from this public repository.
-
-### `mini-app-spec/` · Light-App Platform Spec
-
-Enterprise "AI-Agent-driven light-app platform" technical spec (desensitized methodology edition). Covers the overall framework, front-end conventions, database scheme, lifecycle control (5-step publish scripts + 3-level concurrency), API inventory and Agent dev conventions, plus a standard workflow for building light apps per the spec — for similar-platform design and AI-assisted development.
-
-### `skills/screenshot-text-edit/` · Screenshot Text Edit (AI Skill)
-
-High-fidelity editing of text/digits inside screenshots (glyph-cloning, pixel-identical glyphs). Ships 4 self-contained CLI scripts (all support `--help`) for ERP screens, reports, documents, etc. Triggers like "change X to Y in this screenshot".
-
----
-
-> 本仓库仅收录与技术交流相关的通用配置与逻辑，不含任何客户数据、财务数据或工作底稿。
-> *This repo only hosts generic, tech-related configurations and logic — no client data, financial data, or workpapers.*
+<p align="center"><sub>个人技术记录与可复用工具 · Personal notes and reusable tools</sub></p>
