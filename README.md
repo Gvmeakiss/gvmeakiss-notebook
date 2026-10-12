@@ -18,6 +18,7 @@
 
 | 目录 | 类型 | 说明 |
 |---|---|---|
+| [internal-audit-reform](./internal-audit-reform) | AI复用项目 | 可编辑的内部审计整改汇报PPT、逐页口播稿、配色与内容规划规范、配图库，以及给下次AI接手的协作说明 |
 | [audit-kanban](./audit-kanban) | 演示应用 · Demo | 离线「稽核工作进度看板」演示版（纯前端，双击即用；脱敏泛化，含虚构演示数据与构建/使用文档） |
 | [audit-workbench](./audit-workbench) | 演示应用 · Demo | 同主题的 Next.js / React / TypeScript 工程版（`npm ci` 后构建；含团队分区、长期阶段历史、挽损分批明细、归档恢复与 SQLite DDL；脱敏泛化，虚构数据） |
 | [shadowrocket](./shadowrocket) | 配置 · Config | Mac / iPhone 通用分流：国内 App、海外 AI、局域网、独立移动网络使用与排错指南 |
@@ -69,6 +70,7 @@ Mac / iPhone 共用的 Shadowrocket 分流配置：国内 App 与局域网直连
 
 | Path | Type | Description |
 |---|---|---|
+| [internal-audit-reform](./internal-audit-reform) | AI-assisted presentation kit | Editable audit-reform deck, page-matched spoken script, reusable visual and content specifications, image assets, and AI handoff instructions |
 | [audit-kanban](./audit-kanban) | Demo app | Offline “audit work-progress kanban” demo (pure front-end, run by double-clicking index.html; desensitized & generic, with fabricated demo data and build/usage docs) |
 | [audit-workbench](./audit-workbench) | Demo app | Next.js / React / TypeScript engineering edition of the same theme (build after `npm ci`; adds team partitions, long-term stage history, loss-recovery line items, archive restore, and SQLite DDL; desensitized & generic, fabricated data) |
 | [shadowrocket](./shadowrocket) | Config | Shared Mac / iPhone routing for domestic apps, overseas AI, LAN and mobile networks, with a usage guide |

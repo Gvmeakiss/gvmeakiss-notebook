@@ -27,6 +27,8 @@
 *.webp    binary
 *.ico     binary
 *.pdf     binary
+*.pptx    binary
+*.docx    binary
 *.zip     binary
 *.xlsx    binary
 *.xls     binary
