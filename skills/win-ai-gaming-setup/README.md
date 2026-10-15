@@ -91,6 +91,26 @@ pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1
 | **WSL2 / Docker** | AI 开发的常见需求，但需要提权 + 虚拟化支持，交给你决定 |
 | **厂商驱动**（蓝牙/网卡等） | 找不到时用 Microsoft Update Catalog 检索，**装前必须确认 INF 里含你的硬件 ID** |
 
+### 1.6 不想用 scoop 的话（WinGet / 官方安装器路线）
+
+scoop 在本技能里是**手段**（保证工具装得上），不是目的。如果你更喜欢 WinGet 或官方安装器，
+**结果是等价的** —— 只要下表这些"仪器"到位、镜像生效即可。实测有一台机器就是这么配的：
+**17 项里 16 项到位**（唯一缺的正是 scoop 本身），版本与 `apps.json` 声明逐一吻合。
+
+代价是**技能的自动安装阶段用不了**（`setup.ps1` 有 44 处引用 scoop），但**验收与故障处置工具链完整可用**
+（`verify-env.ps1` 与快照/回滚/输入法/设备复位/关联这 6 个脚本都是 0 处引用）。
+
+| 检查项 | 判据（不是"路径在不在"，而是"能不能调出版本号"） |
+|---|---|
+| 引导依赖 | `pwsh` / `git --version` / `7z`（可选：`scoop`） |
+| 语言链 | `python --version`、`node --version`、`go version`、`cmake --version`、`dotnet --version`、`gcc -dumpfullversion -dumpversion`、`uv --version`、`rustc --version` |
+| 编辑器 | `code --version`、Windows Terminal |
+| 便携软件 | 扫 `~\Apps\` 下 `apps.json` 声明的相对路径 + 读文件版本（**它们不进系统"应用列表"**） |
+| 镜像 | `pip config get global.index-url`、`npm config get registry`、`go env GOPROXY`、`cargo` 的 `config.toml`（注意 `CARGO_HOME` 未必是 `~\.cargo`）、`HF_ENDPOINT` |
+
+> ⚠ **不要用 `Test-Path` 判断工具链**：它把 `*` 当通配符，而且"路径存在"不等于"能跑"。
+> 完整对照实例与方法见 [`docs/windows-environment-setup-win11.md`](../../docs/windows-environment-setup-win11.md) §5。
+
 ---
 
 ## 二、执行的配置（完整清单）

@@ -2,13 +2,23 @@
 
 <a name="top"></a>
 
-<!-- 主题自适应横幅：浅色 / 深色自动切换 -->
+<!-- 主题自适应横幅：浅色 / 深色自动切换。
+     文字已全部转为矢量轮廓（<path>），不依赖任何字体 —— GitHub 在服务端渲染 SVG，
+     系统字体栈里没有中文字体时会出豆腐块。改版式请改 assets 下的 SVG 并保持两份同步。 -->
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./assets/banner-dark.svg">
-  <img src="./assets/banner.svg" alt="Gvmeakiss Notebook — 个人技术笔记本" width="100%">
+  <img src="./assets/banner.svg" alt="Gvmeakiss Notebook — 个人技术笔记本：可复用配置、工具与 AI Skill" width="100%">
 </picture>
 
-[**🇨🇳 中文**](#-中文) &nbsp;·&nbsp; [**🇬🇧 English**](#-english)
+[**🇨🇳 中文**](#zh) &nbsp;·&nbsp; [**🇬🇧 English**](#en)
+
+**可复用的配置 · 实测的踩坑记录 · 可直接加载的 AI Skill**<br>
+<sub>每个目录独立成篇，都有自己的 <code>README.md</code> —— 按其中步骤安装、运行或复用即可</sub>
+
+[⭐ 近期项目](#featured-zh) &nbsp;·&nbsp;
+[🧭 项目导航](#nav-zh) &nbsp;·&nbsp;
+[🤖 AI Skills](#skills-zh) &nbsp;·&nbsp;
+[📚 参考文档](#docs-zh)
 
 </div>
 
@@ -22,7 +32,15 @@
 
 ### ⭐ 近期项目
 
-> **内部审计整改汇报复用包** —— 一次做完，下次能直接复用：可编辑终稿、逐页口播稿、内容与视觉规范、配图素材库，另附 AI 接手说明。
+<a name="featured-zh"></a>
+
+<div align="center">
+
+**内部审计整改汇报复用包**
+
+*一次做完，下次能直接复用：可编辑终稿、逐页口播稿、内容与视觉规范、配图素材库，另附 AI 接手说明*
+
+</div>
 
 | 交付物 | 说明 |
 |---|---|
@@ -32,9 +50,11 @@
 | 🖼️ **[素材库](./internal-audit-reform/素材库)** | 背景图、页面元素、侧边元素，成体系的配图资产 |
 | 📘 **[项目说明](./internal-audit-reform/README.md)** · **[AI 接手说明](./internal-audit-reform/AGENTS.md)** | 项目定位、复用边界与交给 AI 继续做的入口 |
 
-<p align="right"><a href="./internal-audit-reform"><b>进入项目 →</b></a></p>
+<p align="center"><a href="./internal-audit-reform"><b>进入项目 →</b></a></p>
 
 ### 🧭 项目导航
+
+<a name="nav-zh"></a>
 
 #### 稽核与业务应用
 
@@ -57,6 +77,8 @@
 
 #### AI Skills
 
+<a name="skills-zh"></a>
+
 | Skill | 用途 | 入口 |
 |---|---|---|
 | **screenshot-text-edit** | 截图文字 / 数字高保真修改：字形克隆法，保真度远高于字体重绘 | [SKILL.md](./skills/screenshot-text-edit/SKILL.md) · [参数速查](./skills/screenshot-text-edit/README.md) |
@@ -70,6 +92,8 @@
 - 需要让 AI 接手时，先读 **[AGENTS.md](./AGENTS.md)** —— 仓库有什么、怎么用，一份就够。
 
 ### 📚 参考与文档
+
+<a name="docs-zh"></a>
 
 > 支撑性文档：背景依据、验收记录与演示数据说明。需要追溯"为什么这么做"时从这里查。
 
@@ -142,9 +166,29 @@
 
 This repository collects reusable technical configurations, practical notes and AI tools. **Each project is standalone**, with its own `README.md` as the entry point.
 
+<div align="center">
+
+**Reusable configs · Field-tested notes · Drop-in AI skills**<br>
+<sub>Every folder stands alone with its own <code>README.md</code> — follow it to install, run or reuse</sub>
+
+[⭐ Featured](#featured-en) &nbsp;·&nbsp;
+[🧭 Projects](#nav-en) &nbsp;·&nbsp;
+[🤖 AI Skills](#skills-en) &nbsp;·&nbsp;
+[📚 Docs](#docs-en)
+
+</div>
+
 ### ⭐ Featured project
 
-> **Internal Audit Reform Presentation Kit** — built once, reusable next time: a finalized editable deck, a page-matched spoken script, content and visual standards, an image library, and an AI handoff guide.
+<a name="featured-en"></a>
+
+<div align="center">
+
+**Internal Audit Reform Presentation Kit**
+
+*Build it once, reuse it next time: a finalized editable deck, a page-matched spoken script, content and visual standards, an image library, and an AI handoff guide*
+
+</div>
 
 | Deliverable | What it is |
 |---|---|
@@ -154,9 +198,11 @@ This repository collects reusable technical configurations, practical notes and 
 | 🖼️ **[Asset library](./internal-audit-reform/素材库)** | Backgrounds, page elements and side elements as a coherent asset set |
 | 📘 **[Project readme](./internal-audit-reform/README.md)** · **[AI handoff](./internal-audit-reform/AGENTS.md)** | Scope, reuse boundaries and the entry point for handing this to an agent |
 
-<p align="right"><a href="./internal-audit-reform"><b>Open project →</b></a></p>
+<p align="center"><a href="./internal-audit-reform"><b>Open project →</b></a></p>
 
 ### 🧭 Project directory
+
+<a name="nav-en"></a>
 
 #### Audit and business apps
 
@@ -179,6 +225,8 @@ This repository collects reusable technical configurations, practical notes and 
 
 #### AI skills
 
+<a name="skills-en"></a>
+
 | Skill | Purpose | Entry points |
 |---|---|---|
 | **screenshot-text-edit** | High-fidelity text and digit edits inside screenshots via glyph cloning | [SKILL.md](./skills/screenshot-text-edit/SKILL.md) · [Reference](./skills/screenshot-text-edit/README.md) |
@@ -192,6 +240,8 @@ This repository collects reusable technical configurations, practical notes and 
 - Handing this to an AI agent? Read **[AGENTS.md](./AGENTS.md)** first.
 
 ### 📚 Reference documents
+
+<a name="docs-en"></a>
 
 > Supporting material: rationale, acceptance records and demo-data notes. Start here when tracing *why* something was done.
 
