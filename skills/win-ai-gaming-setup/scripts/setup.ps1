@@ -263,7 +263,9 @@ if ($phases -contains 'check') {
     if ($dev -eq 1) { Ok 'developer mode already on' }
     elseif ($isAdmin) {
         if ($PSCmdlet.ShouldProcess('Developer Mode', 'enable (symlinks without elevation)')) {
-            New-Item 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock' -Force -ErrorAction SilentlyContinue | Out-Null
+            # Same hazard as the tune loop below: -Force on an existing key wipes its values.
+            $amKey = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock'
+            if (-not (Test-Path $amKey)) { New-Item -Path $amKey -Force -ErrorAction SilentlyContinue | Out-Null }
             Set-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock' -Name 'AllowDevelopmentWithoutDevLicense' -Value 1 -Type DWord -ErrorAction SilentlyContinue
             Ok 'developer mode enabled (needed by HF cache / pnpm symlinks)'
         }
@@ -451,7 +453,21 @@ if ($phases -contains 'tune') {
         foreach ($c in $changes) {
             if (-not $PSCmdlet.ShouldProcess("$($c.Path)\$($c.Name)", "set $($c.Value) - $($c.Why)")) { continue }
             try {
-                New-Item $c.Path -Force -ErrorAction SilentlyContinue | Out-Null
+                # Create the key ONLY if it does not already exist.
+                #
+                # `New-Item <key> -Force` on an EXISTING registry key RECREATES it and wipes
+                # every value already inside. Measured on a probe key:
+                #   4x (New-Item -Force + Set) -> only 1 value left
+                #   4x (Set-ItemProperty only) -> all 5 values left
+                # This loop writes SEVERAL values into the same key (Multimedia\SystemProfile,
+                # its Tasks\Games subkey, and ContentDeliveryManager), so the -Force form
+                # silently destroyed every value but the LAST one written into each key -
+                # while the summary line still reported "applied N registry change(s),
+                # 0 failed". That is what made the tune phase look like it worked while
+                # most of its values were missing afterwards.
+                if (-not (Test-Path $c.Path)) {
+                    New-Item -Path $c.Path -Force -ErrorAction SilentlyContinue | Out-Null
+                }
                 Set-ItemProperty -Path $c.Path -Name $c.Name -Value $c.Value -Type $c.Type -ErrorAction Stop
                 $applied++
             }
