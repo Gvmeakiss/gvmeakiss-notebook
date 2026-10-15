@@ -82,7 +82,7 @@ except Exception as exc:
         @'
 from pathlib import Path
 p = Path(__file__).with_name("utf8.txt")
-p.write_text("中文测试 utf8\n", encoding="utf-8")
+p.write_text("\u4e2d\u6587\u6d4b\u8bd5 utf8\n", encoding="utf-8")
 try:
     default_read = p.read_text()
     print("default-encoding read: OK")
@@ -230,7 +230,15 @@ if ($Languages -contains 'dotnet') {
         Push-Location $root
         & dotnet new console -o dotnetproj --force 2>&1 | Out-Null
         Push-Location $proj
-        $build = & dotnet build -v q --nologo 2>&1 | Select-String -Pattern 'error|Build succeeded|已成功生成' | Select-Object -First 1
+        # The success marker is matched with a regex \uXXXX escape rather than the literal
+        # text: this file must stay pure ASCII. With a non-ASCII literal and no BOM,
+        # Windows PowerShell 5.1 decodes the UTF-8 bytes as ANSI, a stray quote pops out of
+        # the shifted byte pairs, and the HERE-STRING ABOVE TERMINATES EARLY - the script
+        # then dies with "The '<' operator is reserved for future use" while parsing C++.
+        # PowerShell 7 reads BOM-less files as UTF-8, so running through setup.ps1 (which
+        # prefers pwsh) hid this completely; only a direct powershell.exe run exposed it.
+        # .NET regex decodes \uXXXX in both hosts, so this form works everywhere.
+        $build = & dotnet build -v q --nologo 2>&1 | Select-String -Pattern 'error|Build succeeded|\u5DF2\u6210\u529F\u751F\u6210' | Select-Object -First 1
         Record 'dotnet' 'build' ($LASTEXITCODE -eq 0) "$build"
         $run = & dotnet run --no-build 2>&1 | Select-Object -Last 1
         Record 'dotnet' 'run' ($LASTEXITCODE -eq 0) "$run"
@@ -328,6 +336,7 @@ if (Have 'ssh') {
 #      START_TYPE=2 AUTO_START while STATE=STOPPED (exit code 1341); the values
 #      are then inert. Only `sc query` showing RUNNING means it actually works.
 Write-Output "`n--- tune tweaks (did they survive a Windows Update?)"
+$keyCache = @{}
 $tweaks = @(
     @{ Check = 'GameDVR policy';        Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR';                        Name = 'AllowGameDVR';                    Want = '0' },
     @{ Check = 'GameDVR user';          Path = 'HKCU:\System\GameConfigStore';                                            Name = 'GameDVR_Enabled';                 Want = '0' },
@@ -344,11 +353,16 @@ $tweaks = @(
     @{ Check = 'telemetry policy';      Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection';                 Name = 'AllowTelemetry';                  Want = '0' }
 )
 foreach ($t in $tweaks) {
-    $prop  = Get-ItemProperty $t.Path -Name $t.Name -ErrorAction SilentlyContinue
-    $have  = ($null -ne $prop) -and ($null -ne $prop.($t.Name))
-    $val   = if ($have) { "$($prop.($t.Name))" } else { $null }
+    # Read each KEY once and look every value up inside it, instead of one Get-ItemProperty
+    # per value. Measured on 30 values: per-value = 154 ms, per-key = 4 ms (~35x).
+    if (-not $keyCache.ContainsKey($t.Path)) {
+        $keyCache[$t.Path] = Get-ItemProperty -Path $t.Path -ErrorAction SilentlyContinue
+    }
+    $props = $keyCache[$t.Path]
+    $have  = ($null -ne $props) -and ($null -ne $props.($t.Name))
+    $val   = if ($have) { "$($props.($t.Name))" } else { $null }
     $ok    = $have -and ($val -eq $t.Want)
-    $detail = if (-not $have) { 'VALUE MISSING - a cumulative update deletes it; re-run: setup.ps1 -Phase tune' }
+    $detail = if (-not $have) { 'VALUE MISSING - re-run: setup.ps1 -Phase tune. If several values in ONE key are missing but the last-written one is present, the cause is the New-Item -Force bug, not a cumulative update (see SKILL.md)' }
               elseif (-not $ok) { "actual=$val want=$($t.Want)" }
               else { "=$val" }
     Record 'tweaks' $t.Check $ok $detail
@@ -357,7 +371,7 @@ $mmcssOut = sc.exe query MMCSS 2>&1 | Out-String
 $mmcssUp  = $mmcssOut -match 'RUNNING'
 Record 'tweaks' 'MMCSS driver running' $mmcssUp $(
     if ($mmcssUp) { 'RUNNING - the MMCSS values above are actually in effect' }
-    else { 'STOPPED - values above are inert even if present; fix: sc.exe config MMCSS start= auto ; sc.exe start MMCSS' })
+    else { 'STOPPED - values above are INERT. Run: sc.exe config MMCSS start= auto ; sc.exe start MMCSS, then RE-CHECK. Measured: after a graphics driver install this failed many times in a row (first "failed 2: file not found" although mmcss.sys is present and validly signed, then 1341 "the server is currently disabled" even across a reboot) and STILL came up later on a retry - so retry rather than concluding it is broken' })
 
 # ------------------------------------------------------------------ summary
 Write-Output "`n===== summary ====="

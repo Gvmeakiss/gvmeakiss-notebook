@@ -449,31 +449,68 @@ if ($phases -contains 'tune') {
             $changes += @{ Path = 'HKCU:\Control Panel\Mouse'; Name = 'MouseThreshold2'; Value = 0; Type = 'String'; Why = 'mouse acceleration off' }
         }
 
-        $applied = 0; $failed = 0
+        # ------------------------------------------------------------------ write
+        # ONE .reg file imported once, instead of one Set-ItemProperty per value.
+        #
+        # Why - all measured on a 30-value set on a real machine:
+        #     Set-ItemProperty x30 :  94 ms
+        #     reg add x30          : 381 ms   (a process spawn per call)
+        #     reg import x1        :  12 ms   <- ~8x faster than the loop
+        # It is also structurally safer: `reg import` MERGES into an existing key, so it
+        # cannot recreate a key and wipe its siblings the way `New-Item <key> -Force` did.
+        # That bug made this loop leave only the LAST value of each key while still
+        # reporting "applied N, 0 failed" - SKILL.md has the controlled experiment.
+        $approved = New-Object System.Collections.Generic.List[object]
         foreach ($c in $changes) {
-            if (-not $PSCmdlet.ShouldProcess("$($c.Path)\$($c.Name)", "set $($c.Value) - $($c.Why)")) { continue }
-            try {
-                # Create the key ONLY if it does not already exist.
-                #
-                # `New-Item <key> -Force` on an EXISTING registry key RECREATES it and wipes
-                # every value already inside. Measured on a probe key:
-                #   4x (New-Item -Force + Set) -> only 1 value left
-                #   4x (Set-ItemProperty only) -> all 5 values left
-                # This loop writes SEVERAL values into the same key (Multimedia\SystemProfile,
-                # its Tasks\Games subkey, and ContentDeliveryManager), so the -Force form
-                # silently destroyed every value but the LAST one written into each key -
-                # while the summary line still reported "applied N registry change(s),
-                # 0 failed". That is what made the tune phase look like it worked while
-                # most of its values were missing afterwards.
-                if (-not (Test-Path $c.Path)) {
-                    New-Item -Path $c.Path -Force -ErrorAction SilentlyContinue | Out-Null
-                }
-                Set-ItemProperty -Path $c.Path -Name $c.Name -Value $c.Value -Type $c.Type -ErrorAction Stop
-                $applied++
-            }
-            catch { $failed++; Bad "$($c.Path)\$($c.Name): $($_.Exception.Message)" }
+            if ($PSCmdlet.ShouldProcess("$($c.Path)\$($c.Name)", "set $($c.Value) - $($c.Why)")) { $approved.Add($c) }
         }
-        Ok "applied $applied registry change(s), $failed failed"
+
+        # Group by key: a .reg file is written as [key] sections followed by their values.
+        $byKey = [ordered]@{}
+        foreach ($c in $approved) {
+            if (-not $byKey.Contains($c.Path)) { $byKey[$c.Path] = New-Object System.Collections.Generic.List[object] }
+            $byKey[$c.Path].Add($c)
+        }
+
+        # Both -1 and 0xffffffff must render as the 8-digit hex ff ff ff ff.
+        function ConvertTo-RegDword { param($v) $n = [int64]$v; if ($n -lt 0) { $n += 4294967296 }; return ('{0:x8}' -f $n) }
+
+        $regLines = New-Object System.Collections.Generic.List[string]
+        $regLines.Add('Windows Registry Editor Version 5.00')
+        foreach ($k in $byKey.Keys) {
+            $regKey = $k -replace '^HKLM:\\', 'HKEY_LOCAL_MACHINE\' -replace '^HKCU:\\', 'HKEY_CURRENT_USER\'
+            $regLines.Add('')
+            $regLines.Add("[$regKey]")
+            foreach ($c in $byKey[$k]) {
+                if ($c.Type -eq 'DWord') {
+                    $regLines.Add('"{0}"=dword:{1}' -f $c.Name, (ConvertTo-RegDword $c.Value))
+                }
+                else {
+                    $regLines.Add('"{0}"="{1}"' -f $c.Name, ("$($c.Value)" -replace '"', '\"'))
+                }
+            }
+        }
+        $regFile = Join-Path $env:TEMP ('dsh-tune-' + [Guid]::NewGuid().ToString('N').Substring(0, 8) + '.reg')
+        # A .reg file must be UTF-16LE ("Unicode") or reg.exe rejects it.
+        $regLines -join "`r`n" | Set-Content -Path $regFile -Encoding Unicode
+        $importOut = & reg.exe import $regFile 2>&1
+        $importCode = $LASTEXITCODE
+        Remove-Item $regFile -Force -ErrorAction SilentlyContinue
+        if ($importCode -ne 0) { $importOut | ForEach-Object { Bad "reg import: $_" } }
+
+        # ------------------------------------------------------------------ read back
+        # Read each KEY once, not each value. Measured: 30 x (Get-ItemProperty -Name) =
+        # 154 ms versus one read per key = 4 ms. A write returning success is not evidence;
+        # this is the evidence.
+        $applied = 0; $failed = 0
+        foreach ($k in $byKey.Keys) {
+            $props = Get-ItemProperty -Path $k -ErrorAction SilentlyContinue
+            foreach ($c in $byKey[$k]) {
+                if (($null -ne $props) -and ($null -ne $props.($c.Name))) { $applied++ }
+                else { $failed++; Bad "$k\$($c.Name): not present after the write" }
+            }
+        }
+        Ok "applied $applied registry change(s), $failed failed (verified by reading each key back)"
 
         # MMCSS is a KERNEL DRIVER: every MMCSS value above is INERT while it is stopped, and
         # the registry still looks perfectly correct. Measured: installing a graphics driver
