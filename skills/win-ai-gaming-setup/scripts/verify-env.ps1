@@ -349,20 +349,45 @@ $tweaks = @(
     @{ Check = 'start suggestions';     Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager';   Name = 'SystemPaneSuggestionsEnabled';    Want = '0' },
     @{ Check = 'soft landing tips';     Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager';   Name = 'SoftLandingEnabled';              Want = '0' },
     @{ Check = 'explorer sync ads';     Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced';         Name = 'ShowSyncProviderNotifications';   Want = '0' },
-    @{ Check = 'bing web search';       Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Search';                   Name = 'BingSearchEnabled';               Want = '0' },
+    # The Start-menu web-search switch exists in TWO places, and which one is settable is
+    # build/product dependent. Measured on Windows 11 24H2+: writes to the
+    # `...\CurrentVersion\Search` key are refused at kernel level ("not all data was
+    # successfully written") while its ACL still shows the user FullControl, so the tune
+    # phase cannot land BingSearchEnabled/CortanaConsent there at all. The official policy
+    # route below always worked. Scoring these as a pair means either route counts as done -
+    # a one-path check reports a permanent false FAIL on the machines where the key is locked.
+    @{ Check = 'bing web search';       Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Search';                   Name = 'BingSearchEnabled';               Want = '0'
+       AltPath = 'HKCU:\Software\Policies\Microsoft\Windows\Explorer';                                                     AltName = 'DisableSearchBoxSuggestions';  AltWant = '1'
+       AltWhy = 'policy route (the Search key can be kernel-protected; policy wins over user scope anyway)' },
+    @{ Check = 'web search policy';     Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search';                 Name = 'ConnectedSearchUseWeb';           Want = '0'
+       AltWhy = 'machine-wide: no web results in Start search' },
     @{ Check = 'telemetry policy';      Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection';                 Name = 'AllowTelemetry';                  Want = '0' }
 )
 foreach ($t in $tweaks) {
     # Read each KEY once and look every value up inside it, instead of one Get-ItemProperty
     # per value. Measured on 30 values: per-value = 154 ms, per-key = 4 ms (~35x).
-    if (-not $keyCache.ContainsKey($t.Path)) {
-        $keyCache[$t.Path] = Get-ItemProperty -Path $t.Path -ErrorAction SilentlyContinue
+    $get = {
+        param($p)
+        if (-not $keyCache.ContainsKey($p)) {
+            $keyCache[$p] = Get-ItemProperty -Path $p -ErrorAction SilentlyContinue
+        }
+        return $keyCache[$p]
     }
-    $props = $keyCache[$t.Path]
+    $props = & $get $t.Path
     $have  = ($null -ne $props) -and ($null -ne $props.($t.Name))
     $val   = if ($have) { "$($props.($t.Name))" } else { $null }
     $ok    = $have -and ($val -eq $t.Want)
-    $detail = if (-not $have) { 'VALUE MISSING - re-run: setup.ps1 -Phase tune. If several values in ONE key are missing but the last-written one is present, the cause is the New-Item -Force bug, not a cumulative update (see SKILL.md)' }
+    $altOk = $false
+    $altVal = $null
+    if (-not $ok -and $t.ContainsKey('AltPath')) {
+        $altProps = & $get $t.AltPath
+        $altHave  = ($null -ne $altProps) -and ($null -ne $altProps.($t.AltName))
+        $altVal   = if ($altHave) { "$($altProps.($t.AltName))" } else { $null }
+        $altOk    = $altHave -and ($altVal -eq $t.AltWant)
+    }
+    $ok = $ok -or $altOk
+    $detail = if ($altOk) { "=$altVal via $($t.AltName) - $($t.AltWhy)" }
+              elseif (-not $have) { 'VALUE MISSING - re-run: setup.ps1 -Phase tune. If several values in ONE key are missing but the last-written one is present, the cause is the New-Item -Force bug, not a cumulative update (see SKILL.md)' }
               elseif (-not $ok) { "actual=$val want=$($t.Want)" }
               else { "=$val" }
     Record 'tweaks' $t.Check $ok $detail

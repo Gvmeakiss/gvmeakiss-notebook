@@ -127,9 +127,14 @@ pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1
 | 锁屏广告 | `SubscribedContent-338387=0`、`RotatingLockScreenOverlayEnabled=0` |
 | Windows 提示 | `SoftLandingEnabled=0` |
 | 资源管理器同步提供程序广告 | `ShowSyncProviderNotifications=0` |
-| 开始菜单 Bing 联网搜索 | `BingSearchEnabled=0`、`CortanaConsent=0` |
+| 开始菜单 Bing 联网搜索 | **走策略键**：`DisableSearchBoxSuggestions=1`（HKCU\Software\Policies\...\Explorer）+ `ConnectedSearchUseWeb=0`、`AllowCortana=0`（HKLM\...\Policies\...\Windows Search） |
 
 > 即 SKILL.md 里说的「CDM 9 项」。
+>
+> ⚠ **联网搜索为什么不用 `BingSearchEnabled`**：`HKCU\...\CurrentVersion\Search` 这个键在 Windows 11 24H2+
+> 上**会被内核层拒绝写入**（`reg import` 报 `Not all data was successfully written to the registry`），
+> 而它的 ACL 看着仍是当前用户 `FullControl` —— 不是 ACL 问题，夺所有权也没用。策略键实测可写，
+> 且优先级高于用户作用域，**不是降级**。`verify-env.ps1` 对这两条路径**任一生效即判 PASS**。
 
 #### C. 遥测
 
@@ -173,7 +178,7 @@ pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1
 | `drivers` | 故障设备清单（含故障码）+ Windows 更新里的驱动更新；`-InstallDrivers` 直接装 | 是 | 驱动可在设备管理器回滚 |
 | `tune` | **先快照**，再改：GameDVR 关闭、MMCSS 调优（**含 `Tasks\Games` 四项**）、**关闭广告推荐/开始菜单联网搜索/遥测**；结束前**回读 `sc query MMCSS` 是否 RUNNING**——服务停则上述 MMCSS 值**全部无效**，且它是引导期驱动、**只能靠重启加载**；（可选）高性能电源计划、鼠标加速 | 是 | 是（`compare-services.ps1 -Restore`） |
 | `link` | 注册关联（`-RegisterAssociations`）+ 报告哪些类型需手动点一次 + 孤儿关联检查 | 否 | 是（有注册表备份） |
-| `verify` | dev 环境 / 软件清单 / 输入法健康 / 服务基线漂移 / **tune 存活检查 14 项**，五项验收 | 否 | — |
+| `verify` | dev 环境 / 软件清单 / 输入法健康 / 服务基线漂移 / **tune 存活检查 15 项**，五项验收 | 否 | — |
 
 ## 四、参数
 
@@ -268,7 +273,7 @@ pnputil /restart-device "<InstanceId>"     # 或直接跑 reset-failed-devices.p
 | `check-software.ps1 [-Json]` | 便携软件盘点 |
 | `set-app-associations.ps1 [-Register -Apps @{}]` | 关联注册 / 现状报告 |
 | `clean-orphan-associations.ps1 [-Clean]` | 卸载后的关联残留清理 |
-| `audit-env.ps1` / `fix-env.ps1` / `setup-langs.ps1` / `verify-env.ps1` | 开发环境审计 / 修复 / 装语言 / 验收（含 **tune 存活检查 14 项**，打完累积更新后值得重跑） |
+| `audit-env.ps1` / `fix-env.ps1` / `setup-langs.ps1` / `verify-env.ps1` | 开发环境审计 / 修复 / 装语言 / 验收（含 **tune 存活检查 15 项**，打完累积更新后值得重跑） |
 
 ## 八、环境与边界
 

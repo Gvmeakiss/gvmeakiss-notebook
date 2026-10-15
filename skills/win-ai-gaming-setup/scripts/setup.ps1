@@ -440,8 +440,17 @@ if ($phases -contains 'tune') {
             @{ Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Name = 'PreInstalledAppsEnabled'; Value = 0; Type = 'DWord'; Why = 'no preinstalled app promotion' }
             @{ Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Name = 'OemPreInstalledAppsEnabled'; Value = 0; Type = 'DWord'; Why = 'no OEM app promotion' }
             @{ Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'; Name = 'ShowSyncProviderNotifications'; Value = 0; Type = 'DWord'; Why = 'no "sync your settings" ads in Explorer' }
-            @{ Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Search'; Name = 'BingSearchEnabled'; Value = 0; Type = 'DWord'; Why = 'Start search stays local' }
-            @{ Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Search'; Name = 'CortanaConsent'; Value = 0; Type = 'DWord'; Why = 'no cloud search consent' }
+            # Start-menu web search. The obvious key (`...\CurrentVersion\Search`:
+            # BingSearchEnabled / CortanaConsent) is NOT reliably writable: measured on
+            # Windows 11 24H2+, writes there are refused at kernel level with "Not all data
+            # was successfully written to the registry" while the key's ACL still shows the
+            # user FullControl - so it is not an ACL problem and cannot be fixed by taking
+            # ownership. The policy keys below are the official route and were verified to
+            # accept the write. Policy also outranks the user-scope value, so this is not a
+            # downgrade. verify-env.ps1 accepts EITHER route.
+            @{ Path = 'HKCU:\Software\Policies\Microsoft\Windows\Explorer'; Name = 'DisableSearchBoxSuggestions'; Value = 1; Type = 'DWord'; Why = 'Start search stops offering web suggestions' }
+            @{ Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search'; Name = 'ConnectedSearchUseWeb'; Value = 0; Type = 'DWord'; Why = 'no web results in Start search (machine policy)' }
+            @{ Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search'; Name = 'AllowCortana'; Value = 0; Type = 'DWord'; Why = 'no cloud search consent' }
         )
         if ($DisableMouseAcceleration) {
             $changes += @{ Path = 'HKCU:\Control Panel\Mouse'; Name = 'MouseSpeed'; Value = 0; Type = 'String'; Why = 'mouse acceleration off (gaming preference)' }
@@ -460,6 +469,14 @@ if ($phases -contains 'tune') {
         # cannot recreate a key and wipe its siblings the way `New-Item <key> -Force` did.
         # That bug made this loop leave only the LAST value of each key while still
         # reporting "applied N, 0 failed" - SKILL.md has the controlled experiment.
+        #
+        # ONE CAVEAT, measured: `reg import` is a PARTIAL write when a key is refused.
+        # A file containing an unwritable key returns exit 1, keeps the keys it managed to
+        # write, and SKIPS THE REMAINING SECTIONS. So do not put a key of unknown
+        # writability in the middle of this batch - the read-back below would then report
+        # the tail as "not present after the write" and the real cause (one locked key)
+        # would look like N unrelated failures. That is why the Start-menu search values
+        # now go to their policy keys instead of `...\CurrentVersion\Search`.
         $approved = New-Object System.Collections.Generic.List[object]
         foreach ($c in $changes) {
             if ($PSCmdlet.ShouldProcess("$($c.Path)\$($c.Name)", "set $($c.Value) - $($c.Why)")) { $approved.Add($c) }

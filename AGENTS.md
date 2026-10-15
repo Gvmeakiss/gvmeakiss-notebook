@@ -26,7 +26,9 @@ skills/<name>/
 - `shadowrocket/`：Mac / iPhone 通用分流配置、使用指南与离线配置检查。
 - `merlin/`：梅林 fancyss 分流名单、使用指南、美国节点入口绕过生成工具；账号与节点备份仅在本地使用。
 - `docs/`：过程与踩坑记录。`windows-environment-setup.md` 是在一台 Windows 10 非管理员机器上
-  把开发环境与常用软件从零配置到可用的实测记录（14 项问题总表 + Windows 专属陷阱）。
+  把开发环境与常用软件从零配置到可用的实测记录（14 项问题总表 + Windows 专属陷阱）；
+  `windows-environment-setup-win11.md` 是**互补的另一半** —— 一台"已经优化过"的 Windows 11 管理员机的
+  逐项复核（真损害 / 被累积更新删掉的调优值 / **审计者自己的 3 处误判**，含「判定标准对错对照」表）。
   与 `win-ai-gaming-setup` 配套：**Skill 是可执行的方法，docs 是为什么这么做、以及踩过的坑**。
 - `internal-audit-reform/`：AI复用制作内部审计整改汇报的完整项目包，包含可编辑PPT、逐页口播、复用规范及配图库。使用前阅读其 `README.md` 和项目级 `AGENTS.md`；当前页面中的业务条件和时限只适用于对应示例项目。
 - `assets/`：根 `README.md` 的横幅素材。`banner.svg` 与 `banner-dark.svg` 是同一版式的浅色 / 深色两套，

@@ -52,6 +52,7 @@
 | **shadowrocket** | 分流配置 | Mac / iPhone 通用分流规则：国内外分流、去广告、长连接优化 | [目录](./shadowrocket) · [说明](./shadowrocket/README.md) · [使用指南](./shadowrocket/使用指南.md) |
 | **merlin** | 配置与工具 | 梅林 fancyss 分流名单、节点入口绕过生成工具 | [目录](./merlin) · [说明](./merlin/README.md) · [使用指南](./merlin/使用指南.md) |
 | **Windows 环境配置记录** | 实践记录 | Windows 10 非管理员环境从零配到可用的实测记录：14 项问题总表与复现命令 | [阅读](./docs/windows-environment-setup.md) |
+| **Windows 11 优化审计记录** | 实践记录 | 一台"已优化过"的 Win11 管理员机复核：哪些没做成、哪些是我误判的，以及审计判定标准 | [阅读](./docs/windows-environment-setup-win11.md) |
 | **系统调优核查记录** | 实践记录 | 系统优化项的逐条核查依据，与 `win-ai-gaming-setup` 的调优阶段配套 | [阅读](./docs/system-tweaks-audit.md) |
 
 #### AI Skills
@@ -112,6 +113,7 @@
 | 文档 | 内容 |
 |---|---|
 | [Windows 环境配置记录](./docs/windows-environment-setup.md) | Windows 10 非管理员环境从零配置的实测记录：14 项问题总表 + Windows 专属陷阱 |
+| [Windows 11 优化审计记录](./docs/windows-environment-setup-win11.md) | 一台"已优化过"的 Win11 管理员机逐项复核：真损害、被删的调优值、**以及审计者自己的 3 处误判**；含「判定标准对错对照」 |
 | [系统调优核查记录](./docs/system-tweaks-audit.md) | 系统优化项逐条核查依据，对应 Skill 的 `tune` 阶段 |
 | [win-ai-gaming-setup 参数速查](./skills/win-ai-gaming-setup/README.md) | 七阶段参数、依赖与常见坑 |
 | [screenshot-text-edit 参数速查](./skills/screenshot-text-edit/README.md) | CLI 脚本参数与调用示例 |
@@ -172,6 +174,7 @@ This repository collects reusable technical configurations, practical notes and 
 | **shadowrocket** | Routing config | Mac / iPhone rules: CN / global split, ad-block, long-connection tuning | [Folder](./shadowrocket) · [Readme](./shadowrocket/README.md) · [Guide](./shadowrocket/使用指南.md) |
 | **merlin** | Config and tools | Merlin fancyss routing lists and an endpoint bypass generator | [Folder](./merlin) · [Readme](./merlin/README.md) · [Guide](./merlin/使用指南.md) |
 | **Windows setup notes** | Notes | Turning a locked-down Windows 10 machine into a working dev box: 14 issues and reproducible commands | [Read](./docs/windows-environment-setup.md) |
+| **Windows 11 tuning audit** | Notes | Re-checking a Windows 11 machine that was *already* "optimized": what never took effect, what the auditor himself got wrong, and the acceptance criteria that matter | [Read](./docs/windows-environment-setup-win11.md) |
 | **System tweaks audit** | Notes | Item-by-item evidence behind each system tweak, paired with the `win-ai-gaming-setup` tuning phase | [Read](./docs/system-tweaks-audit.md) |
 
 #### AI skills
@@ -231,6 +234,7 @@ The public edition excludes local private exceptions; never overwrite your perso
 | Document | Content |
 |---|---|
 | [Windows setup notes](./docs/windows-environment-setup.md) | Real-world record of setting up Windows 10 without admin rights: 14 issues plus Windows-specific pitfalls |
+| [Windows 11 tuning audit](./docs/windows-environment-setup-win11.md) | Item-by-item audit of an already-"optimized" Windows 11 box: real damage, values deleted by cumulative updates, **and three false alarms the auditor raised himself** |
 | [System tweaks audit](./docs/system-tweaks-audit.md) | Per-item evidence for each system tweak, matching the skill's `tune` phase |
 
 **The skill is the executable method; the docs explain why and what went wrong.**
