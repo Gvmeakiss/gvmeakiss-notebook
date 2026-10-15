@@ -12,8 +12,11 @@
   Idempotent: already-installed packages are skipped by scoop itself.
 
 .PARAMETER Packages
-  Logical languages to ensure. Default: python node go cmake dotnet mingw
-  Accepted: python node go rust java cmake dotnet mingw
+  Logical languages to ensure. Default: python node go rust cmake dotnet mingw uv
+  Accepted: python node go rust java cmake dotnet mingw uv
+  rust is in the default set on purpose: SKILL.md lists it as part of the toolchain and
+  verify-env.ps1 checks it, so leaving it out made a default run fail its own acceptance
+  test. Skip it with -SkipRust if you do not want the ~1 GB download.
 
 .PARAMETER SkipMirrors
   Do not write package-manager mirror configuration.
@@ -31,7 +34,7 @@
 #>
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
-    [string[]]$Packages = @('python','node','go','cmake','dotnet','mingw'),
+    [string[]]$Packages = @('python','node','go','rust','cmake','dotnet','mingw','uv'),
     [switch]$SkipMirrors,
     [switch]$SkipRust
 )
@@ -100,6 +103,7 @@ $map = [ordered]@{
     cmake  = @('cmake')
     dotnet = @('dotnet-sdk')
     mingw  = @('mingw')
+    uv     = @('uv')
 }
 foreach ($p in $Packages) {
     if ($p -eq 'rust') { continue }
@@ -146,7 +150,7 @@ if (($Packages -contains 'rust') -and -not $SkipRust) {
                 & $dl -y --no-modify-path --default-host x86_64-pc-windows-gnu `
                       --default-toolchain stable --profile default 2>&1 |
                     Select-Object -Last 3 | ForEach-Object { "            $_" }
-                $cargoBin = Join-Path $env:USERPROFILE '.cargo\bin'
+                $cargoBin = if ($env:CARGO_HOME) { Join-Path $env:CARGO_HOME 'bin' } else { Join-Path $env:USERPROFILE '.cargo\bin' }
                 $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
                 if (@($userPath -split ';') -notcontains $cargoBin) {
                     [Environment]::SetEnvironmentVariable('Path', "$cargoBin;$userPath", 'User')
@@ -158,7 +162,10 @@ if (($Packages -contains 'rust') -and -not $SkipRust) {
     }
     # cargo registry mirror
     if (-not $SkipMirrors) {
-        $cargoDir = Join-Path $env:USERPROFILE '.cargo'
+        # Honour CARGO_HOME. scoop's rustup package points CARGO_HOME at its own persist
+        # directory, so ~\.cargo is not always where cargo actually reads config.toml -
+        # writing the mirror to the wrong place is a silent no-op.
+        $cargoDir = if ($env:CARGO_HOME) { $env:CARGO_HOME } else { Join-Path $env:USERPROFILE '.cargo' }
         New-Item -ItemType Directory -Force -Path $cargoDir | Out-Null
         $cfg = Join-Path $cargoDir 'config.toml'
         if (-not (Test-Path $cfg)) {
@@ -185,7 +192,8 @@ git-fetch-with-cli = true
 # ---------------------------------------------------------------- mirrors
 if (-not $SkipMirrors) {
     Step '4. Package-manager mirrors'
-    $env:PATH = "$env:USERPROFILE\scoop\shims;$env:USERPROFILE\.cargo\bin;$env:PATH"
+    $cargoBinDir = if ($env:CARGO_HOME) { Join-Path $env:CARGO_HOME 'bin' } else { Join-Path $env:USERPROFILE '.cargo\bin' }
+    $env:PATH = "$env:USERPROFILE\scoop\shims;$cargoBinDir;$env:PATH"
 
     if (Get-Command python -ErrorAction SilentlyContinue) {
         if ($Cmdlet.ShouldProcess('pip', 'set Tsinghua index-url')) {

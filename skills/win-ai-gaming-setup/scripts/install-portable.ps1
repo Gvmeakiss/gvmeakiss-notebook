@@ -104,10 +104,18 @@ if ($WhatIfPreference) { Info 'DRY RUN (-WhatIf): nothing will be written' }
 $cache = Join-Path $Destination '.installers'
 if (-not $WhatIfPreference) { New-Item -ItemType Directory -Force -Path $cache, $Destination | Out-Null }
 
-# ------------------------------------------------------------------- 7-Zip
-# Resolve an extractor: prefer an installed 7-Zip, else fetch the standalone 7zr.exe.
-# 7zr handles both .zip and .7z, so one binary covers every manifest entry.
-$sevenZip = $null
+# ------------------------------------------------------------------- extractor
+# Two different jobs, two different tools - do not conflate them:
+#   * a FULL 7-Zip (7z.exe) reads both .7z and .zip.
+#   * 7zr.exe is the standalone REDUCED build: it reads 7z but has NO ZIP CODEC. Using it
+#     for .zip assets fails with exit code 2 on every archive - which is exactly what
+#     happened here: the single .7z app installed fine while all three .zip apps failed,
+#     and the comment that used to sit here ("7zr handles both .zip and .7z") was simply
+#     wrong.
+# So a full 7-Zip is preferred; without it, .zip entries use the in-box ZIP support and
+# only .7z entries need the 7zr download.
+$sevenZip = $null           # full 7-Zip: handles .7z and .zip
+$sevenZr  = $null           # reduced standalone: handles .7z only
 foreach ($cand in @(
     (Join-Path $env:ProgramFiles '7-Zip\7z.exe'),
     (Join-Path ${env:ProgramFiles(x86)} '7-Zip\7z.exe'),
@@ -119,24 +127,28 @@ if (-not $sevenZip) {
     $cmd = Get-Command 7z -ErrorAction SilentlyContinue
     if ($cmd) { $sevenZip = $cmd.Source }
 }
-if (-not $sevenZip) {
-    $sevenZip = Join-Path $cache '7zr.exe'
-    if (Test-Path $sevenZip) {
-        Ok "using standalone extractor: $sevenZip"
+if ($sevenZip) {
+    Ok "extractor: $sevenZip (full 7-Zip - handles .7z and .zip)"
+} else {
+    Ok 'no full 7-Zip found: .zip assets will use the in-box ZIP support'
+    $sevenZr = Join-Path $cache '7zr.exe'
+    if (Test-Path $sevenZr) {
+        Ok "using standalone 7zr.exe for .7z assets only: $sevenZr"
     } else {
         $sevenZipUrl = 'https://www.7-zip.org/a/7zr.exe'
-        if ($Cmdlet.ShouldProcess($sevenZipUrl, 'download 7zr.exe')) {
+        if ($Cmdlet.ShouldProcess($sevenZipUrl, 'download 7zr.exe (needed only for .7z assets)')) {
             try {
-                Invoke-WebRequest -Uri $sevenZipUrl -OutFile $sevenZip -TimeoutSec 120 -UseBasicParsing -ErrorAction Stop
-                Ok 'fetched standalone 7zr.exe'
+                Invoke-WebRequest -Uri $sevenZipUrl -OutFile $sevenZr -TimeoutSec 120 -UseBasicParsing -ErrorAction Stop
+                Ok 'fetched standalone 7zr.exe (.7z assets only)'
             } catch {
-                Bad "cannot fetch 7zr.exe: $($_.Exception.Message.Split("`n")[0])"
-                Write-Output '         install 7-Zip (e.g. scoop install 7zip) and re-run'
-                exit 1
+                # Not fatal any more: .zip entries no longer depend on it.
+                Warn "cannot fetch 7zr.exe: $($_.Exception.Message.Split("`n")[0])"
+                Warn '.zip entries will still install; .7z entries will be skipped'
+                $sevenZr = $null
             }
         }
     }
-} else { Ok "extractor: $sevenZip" }
+}
 
 $failures = @()
 
@@ -190,13 +202,55 @@ foreach ($app in $apps) {
         Warn 'no sha256 provided - installing UNVERIFIED download'
     }
 
-    # extract
+    # extract - pick the tool that actually supports this container
     $staging = Join-Path $cache ("_x_" + $app.name)
     if ($Cmdlet.ShouldProcess($target, "extract $fileName")) {
         if (Test-Path $staging) { Remove-Item $staging -Recurse -Force -ErrorAction SilentlyContinue }
         New-Item -ItemType Directory -Force -Path $staging | Out-Null
-        & $sevenZip x $archive "-o$staging" -y 2>&1 | Out-Null
-        if ($LASTEXITCODE -ne 0) { Bad "extraction failed (exit $LASTEXITCODE)"; $failures += $app.name; continue }
+
+        $ext = [IO.Path]::GetExtension($fileName).ToLowerInvariant()
+        $extracted = $false
+        if ($sevenZip) {
+            & $sevenZip x $archive "-o$staging" -y 2>&1 | Out-Null
+            $extracted = ($LASTEXITCODE -eq 0)
+            if (-not $extracted) { Bad "extraction failed (exit $LASTEXITCODE) via $sevenZip" }
+        }
+        elseif ($ext -eq '.zip') {
+            # No external tool needed for ZIP. .NET's ZipFile is far quicker than
+            # Expand-Archive on a large archive (the MarkText asset alone is ~166 MB);
+            # Expand-Archive is kept as the fallback in case ZipFile rejects an entry.
+            try {
+                Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction SilentlyContinue
+                [System.IO.Compression.ZipFile]::ExtractToDirectory($archive, $staging)
+                $extracted = $true
+            }
+            catch {
+                try {
+                    Expand-Archive -Path $archive -DestinationPath $staging -Force -ErrorAction Stop
+                    $extracted = $true
+                }
+                catch { Bad "ZIP extraction failed: $($_.Exception.Message.Split("`n")[0])" }
+            }
+        }
+        elseif ($ext -eq '.7z') {
+            if ($sevenZr) {
+                & $sevenZr x $archive "-o$staging" -y 2>&1 | Out-Null
+                $extracted = ($LASTEXITCODE -eq 0)
+                if (-not $extracted) { Bad "extraction failed (exit $LASTEXITCODE) via 7zr" }
+            }
+            else {
+                Bad 'a .7z asset needs 7-Zip, and the 7zr.exe download did not succeed'
+                Info 'install 7-Zip (e.g. scoop install 7zip) and re-run'
+            }
+        }
+        else {
+            try {
+                Expand-Archive -Path $archive -DestinationPath $staging -Force -ErrorAction Stop
+                $extracted = $true
+            }
+            catch { Bad "no extractor for '$ext': $($_.Exception.Message.Split("`n")[0])" }
+        }
+        if (-not $extracted) { $failures += $app.name; continue }
 
         # collapse a single top-level directory so the layout is always <dest>\<app>\<files>
         $entries = @(Get-ChildItem $staging -Force)

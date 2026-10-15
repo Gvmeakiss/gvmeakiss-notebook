@@ -111,7 +111,10 @@ sc.exe config WSearch start= delayed-auto ; sc.exe start WSearch
 
 三条纪律：
 
-- **驱动版本不要盲目「更新」** —— Windows 更新推荐的显示驱动**可能比已装的更旧**（比对版本号第 3、4 段，如 `31.0.21925` > `31.0.12027`）。判断依据是版本号，不是「更新」二字。
+- **驱动版本不要盲目「更新」** —— Windows 更新推荐的显示驱动**可能比已装的更旧**。判断依据是**版本号第 3 段（分支构建号）**，不是「更新」二字。
+  > ⚠ **只看第 3 段；第 4 段会反向误导。** 实测 `31.0.12027.9001` → `31.0.21925.1001`：第 3 段 `21925 > 12027` 判为**更新**，而**同一次比较里第 4 段 `1001 < 9001` 反而更小**。旧表述「比对第 3、4 段」按字面执行会得出相反结论。
+  > ⚠ **Raven Ridge / Polaris 必须用 `-vega-polaris` 包**（`whql-amd-software-adrenalin-edition-<版本>-win11-may-vega-polaris.exe`）。主线 Adrenalin **已不含 `DEV_15DD`**，装错包会失败或回退。AMD 的 legacy 文档（GPU-630）里**没有** Vega/Raven Ridge，它们走的是独立的 Polaris & Vega 维护轨，不是停更。
+  > 无故障体征时要不要升：`Windows Update` 驱动列表为 0 + 设备 `Status=OK` + 无 `LiveKernelReports\WATCHDOG` 转储 ⇒ 升级只是版本号上的前进，**收益不可量化**，属于"可做可不做"，别把它当修复。
 - **一次只改一个变量**，每步之后进游戏实测，否则无法归因。
 - **显卡挂掉会让游戏重跑硬件检测** —— 不支持 DPI 感知的游戏在检测不到原显卡时，会把画质/分辨率改回通用推荐值（实测被改成 1280×1024 + 画质中 + 抗锯齿开）。**游戏设置被改坏是这个故障的症状，不是原因**，别往游戏配置上排查。
 
@@ -212,6 +215,21 @@ pwsh -File scripts/snapshot-services.ps1 -OutDir C:\backup\before-tweak
 | **`CM_PROB_FAILED_ADD` (Code 31) 不必重启就能修** | 现象：设备 `Status=Error`、取不到分辨率、3D 应用崩溃。**先试 `pnputil /restart-device "<InstanceId>"`** —— 实测几秒恢复，既不用重启也不用重装驱动。`reset-failed-devices.ps1` 已把它作为第一步，disable/enable 降为兜底 |
 | **GPU 挂起的历史证据在 `LiveKernelReports`** | `C:\Windows\LiveKernelReports\WATCHDOG\*.dmp` 是**内核级看门狗转储**；配合应用程序日志里 `Windows Error Reporting → LiveKernelEvent`（`P1` 是事件码）能还原「什么时候挂过、挂了几次」。**设备恢复后这些记录仍在**，是判断「偶发还是反复」的唯一依据 |
 | **别信文件夹名，看文件属性** | `C:\Program Files\AMD\Performance Profile Client\AUEPMaster.exe` 看着像性能配置组件，**实际 FileDescription 是 "AMD User Experience Program Master"（纯遥测）**。按文件夹名判断组件用途会做出错误的保留/禁用决策——实测差点为此把 77~90 秒的开机延迟白拿回来。**查 `(Get-Item x.exe).VersionInfo` 的 FileDescription / ProductName** |
+| **scoop 一个坏清单会中止整批** | `scoop install python node go` 里只要有一个清单名在桶里不存在（`node` → 实为 `nodejs`，`dotnet` → 实为 `dotnet-sdk`），**整批立即中止**，后面的包一个都不装，而外层脚本照样往下走。**实测代价：整套语言链全部没装上，却一路报"成功"。** 判据：逐个回读 `~\scoop\apps\<名字>\current` 是否存在，别信退出码（`setup.ps1` 已改为逐个安装 + 逐个回读） |
+| **`7zr.exe` 不认 ZIP** | `7zr.exe` 是 7-Zip 的**精简版**，**没有 ZIP 编解码器**，解 `.zip` 返回 exit 2。实测：唯一的 `.7z` 应用装好，三个 `.zip` 应用全挂。**ZIP 根本不需要外部工具**——用 in-box 的 `[IO.Compression.ZipFile]`（大包比 `Expand-Archive` 快得多）/ `Expand-Archive`；只有 `.7z` 才需要 7-Zip |
+| **清单里的 exe 是相对路径，消费方不能用 `Split-Path -Leaf`** | 包里有多个顶层目录时"单层目录折叠"不会触发（JPEGView 有 `JPEGView32` / `JPEGView32-WinXP` / `JPEGView64` **三个**），清单必须写 `JPEGView64\JPEGView.exe`。**消费方若用 `Split-Path -Leaf` 取叶子名，子目录会被丢掉**，生成的快捷方式/关联指向不存在的文件 |
+| **写检查项的人必须和写实现的人对齐** | `verify-env.ps1` 检查 `Tasks\Games\GPU Priority` / `Scheduling Category`，而 `tune` 阶段原先**从不写它们** ⇒ 这两项在**任何机器上都必然 FAIL**。长期挂着的假失败会把真问题淹没 |
+| **声明的镜像 ≠ 实际生效的镜像** | 每个镜像配置都被 `if (Get-Command <tool>)` 守卫，工具链没装成功就整段跳过——而汇总行仍**硬编码打印"镜像已生效"**。实测：nodejs 下载失败 ⇒ npm 镜像根本没设，汇总却报 `npm=registry.npmmirror.com`。**汇总必须逐项回读**（`npm config get registry`、`pip config get`、`go env GOPROXY`），不能打印期望值 |
+| **`CARGO_HOME` 不一定是 `~\.cargo`** | scoop 的 `rustup` 包把 `CARGO_HOME`/`RUSTUP_HOME` 指向 `scoop\persist\rustup\`。往 `~\.cargo\config.toml` 写镜像会被**静默忽略**；同理在 `RUSTUP_HOME` 未生效的进程里 `cargo` 会报 "no default toolchain"。**写配置和查状态前都要先解析 `$env:CARGO_HOME` / `$env:RUSTUP_HOME`** |
+| **装载期内核驱动停了就拉不起来** | 实测：装显卡驱动把 `MMCSS` 带停，随后 `sc start MMCSS` 报 **`失败 2: 系统找不到指定的文件`——而 `mmcss.sys` 文件完整存在（53248 字节）**。它是引导期加载的驱动，**只能靠重启加载**。此时 `SystemResponsiveness` 与 `Games\*` **全部无效**。**判据：`sc query MMCSS` 必须看到 `RUNNING`**，只看注册表会漏掉"值在、服务停" |
+| **显示设备名在驱动重装后会改** | 实测**两次**：装驱动 / `pnputil /restart-device` 之后 `\\.\DISPLAY3` → `\\.\DISPLAY1`，硬编码设备名的脚本**静默失效**。而且 `ChangeDisplaySettingsEx(NULL, ...)` 在 Win10 返回 **`DISP_CHANGE_BADPARAM(-5)`**，必须显式传设备名；`EnumDisplaySettings` 也要传同一名字。**取名字用 `[Windows.Forms.Screen]::AllScreens` 里 `Primary` 那个**——实测 `EnumDisplayDevices` 的 P/Invoke 在本机**一直返回 false**（`SizeOf=840` 结构体大小是对的，仍失败） |
+| **`Get-ComputerRestorePoint` 非提权返回空** | 同一个 cmdlet：**非提权枚举返回 0 个还原点，提权后能看到 3 个**。据此会误判"这台机器没有任何回滚兜底"。**又一条"查不到 ≠ 不存在"**——系统还原相关一律在提权上下文里查（`Enable-ComputerRestore` / `Checkpoint-Computer` 本身也是 5.1 专有） |
+| **安全软件的注册表加固会"按自己的模型重写整个键"** | 实测：写 12 个调优值，**20 秒内被删 5 个**，而且**每次删的不是同一批**（上次活下来的这次被删、上次被删的这次活下来）。已排除域策略与本地 GPO。这种**随机删值**是"有组件按内存模型周期性重写键"的特征，**不是写入失败**。**验证方法：写完立刻回读一次，等 15~20 秒再回读一次**；只回读一次会把"被回滚"误判成"写入成功" |
+| **`-Verb RunAs` 不能配输出重定向** | `Start-Process -Verb RunAs -RedirectStandardOutput ...` 直接报"无法使用指定的命名参数解析参数集"，**UAC 根本不会弹**（容易误判成"用户拒绝了"）。提权脚本要留日志只能在脚本里用 `Start-Transcript` |
+| **PowerShell 变量名不区分大小写** | 局部变量 `$test` 会和参数 `[switch]$Test` **冲突**：赋值报 `Cannot convert ... to SwitchParameter`，**错误信息完全不提参数名**。与 `setup.ps1` 里"参数不能叫 `$Args`"是同一族坑 |
+| **大文件下载用 `curl -C -` 续传，SHA256 做裁决** | 网络抖动会中断 `Invoke-WebRequest`（**它不支持续传**），重下 600 MB 代价很高。`curl.exe -L -C -` 断点续传后**必须核对 SHA256**——校验通过才证明续传文件字节级正确（实测 653,644,328 字节精确匹配、哈希一致） |
+| **`Test-Connection` 是 ICMP，会假阴性** | `-Phase check` 报 `github.com not reachable`，而同一条网络上 `Test-NetConnection -Port 443` 通畅、仓库照下不误。**ICMP 被挡是常态**——判断网络用 TCP 443，别用 ping |
+| **便携软件的"省电"设置会让游戏掉线** | 网卡默认**允许系统关闭以省电**，表现为**游戏中随机掉线 / 延迟尖峰**。正解是官方注册表项 `PnPCapabilities = 24 (0x18)`（网卡类键下），**而 `Disable-NetAdapterPowerManagement` 会返回成功却不改值**（见 `docs/system-tweaks-audit.md`）。生效需**重启网卡或系统**。实测出厂值：有线网卡未设置、无线网卡 `16`，两者都应为 **24** |
 
 ## 验收
 

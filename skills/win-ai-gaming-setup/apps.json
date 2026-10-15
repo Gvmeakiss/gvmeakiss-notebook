@@ -6,9 +6,9 @@
       "name": "JPEGView",
       "url": "https://github.com/sylikc/jpegview/releases/download/v1.3.46/JPEGView_1.3.46.zip",
       "sha256": "ba71d5983b6c9e2dc55abbec0da53be54e67cf3251d6e9d2d8be82fe7d85bbe5",
-      "exe": "JPEGView.exe",
+      "exe": "JPEGView64\\JPEGView.exe",
       "assoc": [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".tif", ".tiff"],
-      "notes": "Image viewing. Starts instantly, handles huge folders. Launched with no argument it opens its own NavPanel.png - normal. Put strings_zh.txt in place for a Chinese UI."
+      "notes": "Image viewing. Starts instantly, handles huge folders. Launched with no argument it opens its own NavPanel.png - normal. Put strings_zh.txt in place for a Chinese UI. NOTE the exe path: the archive has THREE top-level folders (JPEGView32 / JPEGView32-WinXP / JPEGView64), so the single-top-level-directory collapse cannot flatten it and a bare 'JPEGView.exe' never matches - that silently produced no shortcut. Keep the relative path."
     },
     {
       "name": "MPC-BE",
@@ -17,7 +17,7 @@
       "exe": "mpc-be64.exe",
       "addToPath": ".",
       "assoc": [".mp4", ".mkv", ".avi", ".mov", ".webm", ".mp3", ".flac", ".wav", ".m4a"],
-      "notes": "Video and audio with a normal player UI: playlist, Ctrl+Up/Down speed, Ctrl+L subtitles. Needs 7-Zip available for the .7z asset (scoop has it)."
+      "notes": "Video and audio with a normal player UI: playlist, Ctrl+Up/Down speed, Ctrl+L subtitles. Needs a 7-Zip that can read .7z (scoop has it; the reduced 7zr.exe is enough for this one but NOT for the .zip entries)."
     },
     {
       "name": "MarkText",

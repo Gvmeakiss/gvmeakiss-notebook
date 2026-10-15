@@ -36,7 +36,10 @@
   Where the pre-tweak snapshot goes. Default: <Destination>\_backup
 
 .PARAMETER Languages
-  Scoop packages for the dev phase. Default: python,node,go,cmake,dotnet,mingw,uv
+  Scoop packages for the dev phase. Default (real scoop manifest names):
+  python,nodejs,go,cmake,dotnet-sdk,mingw,uv
+  Friendly aliases are accepted and normalised: node -> nodejs, dotnet -> dotnet-sdk,
+  python3 -> python, golang -> go.
 
 .PARAMETER NoEditor
   Skip VS Code + Windows Terminal in the dev phase.
@@ -77,7 +80,11 @@ param(
     [string]$Manifest,
     [string]$Destination = (Join-Path $env:USERPROFILE 'Apps'),
     [string]$SnapshotDir,
-    [string[]]$Languages = @('python', 'node', 'go', 'cmake', 'dotnet', 'mingw', 'uv'),
+    # These must be the REAL scoop manifest names. 'node' and 'dotnet' do not exist in the
+    # main bucket (they are 'nodejs' and 'dotnet-sdk'): `scoop install` aborts the WHOLE
+    # batch as soon as one manifest is missing, so the wrong names here silently skipped the
+    # entire toolchain while every later phase still reported success.
+    [string[]]$Languages = @('python', 'nodejs', 'go', 'cmake', 'dotnet-sdk', 'mingw', 'uv'),
     [switch]$NoEditor,
     [switch]$HighPerformancePowerPlan,
     [switch]$DisableMouseAcceleration,
@@ -153,13 +160,33 @@ function Scoop-Install { param([string[]]$Packages, [switch]$Bucket)
     if (-not $missing.Count) { Ok "already installed: $($Packages -join ', ')"; return $true }
     # In -WhatIf the change is simply not made; that is not a failure.
     if (-not $PSCmdlet.ShouldProcess(($missing -join ', '), 'scoop install')) { return $true }
-    Step "scoop install $($missing -join ' ')"
-    & scoop install @missing 2>&1 | ForEach-Object { Write-Host "       $_" -ForegroundColor DarkGray }
-    Reset-Path
-    $still = @($missing | Where-Object { -not (Test-ScoopApp ($_ -split '/')[-1]) })
+    # Install one package per invocation. `scoop install a b c` aborts the ENTIRE batch as
+    # soon as one manifest is missing, so a single bad name silently skips every package
+    # after it. Individually, one failure costs exactly one package, and the per-package
+    # read-back below names precisely which ones did not land.
+    $still = @()
+    foreach ($pkg in $missing) {
+        Step "scoop install $pkg"
+        & scoop install $pkg 2>&1 | ForEach-Object { Write-Host "       $_" -ForegroundColor DarkGray }
+        Reset-Path
+        if (-not (Test-ScoopApp ($pkg -split '/')[-1])) { $still += $pkg }
+    }
     if ($still.Count) { Bad "still missing: $($still -join ', ')"; return $false }
     return $true
 }
+
+# Normalise friendly package names to real scoop manifest names before anything installs.
+# Only the leaf is mapped, so 'bucket/app' still resolves to 'bucket/app'.
+$scoopAliases = @{ 'node' = 'nodejs'; 'dotnet' = 'dotnet-sdk'; 'python3' = 'python'; 'golang' = 'go' }
+$Languages = @($Languages | ForEach-Object {
+        $leaf = ($_ -split '/')[-1]
+        if ($scoopAliases.ContainsKey($leaf)) {
+            $_.Substring(0, $_.Length - $leaf.Length) + $scoopAliases[$leaf]
+        }
+        else { $_ }
+    })
+$aliasNote = @($Languages | Where-Object { $_ -notin @('python', 'nodejs', 'go', 'cmake', 'dotnet-sdk', 'mingw', 'uv') })
+if ($aliasNote.Count) { Write-Host "  languages   : $($Languages -join ', ')" -ForegroundColor Gray }
 
 $phases = @($Phase | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim().ToLower() } | Where-Object { $_ })
 $validPhase = @('check', 'dev', 'apps', 'drivers', 'tune', 'link', 'verify', 'all')
@@ -279,12 +306,32 @@ if ($phases -contains 'dev') {
 
     if (-not (Invoke-Step 'fix-env.ps1' @() 'repair PATH, Store stubs, credential helper')) { $ok = $false }
 
-    # AI-specific mirror. pip/npm/go/cargo mirrors are already handled by setup-langs.ps1.
+    # AI-specific mirror. pip/npm/go/cargo mirrors are configured by setup-langs.ps1.
     if ($PSCmdlet.ShouldProcess('HF_ENDPOINT', 'set to https://hf-mirror.com (user)')) {
         [Environment]::SetEnvironmentVariable('HF_ENDPOINT', 'https://hf-mirror.com', 'User')
         Ok 'HF_ENDPOINT = https://hf-mirror.com  (HuggingFace downloads via the mirror)'
     }
-    Warn 'mirrors in effect: pip=pypi.tuna.tsinghua.edu.cn  npm=registry.npmmirror.com  go=goproxy.cn  cargo=rsproxy.cn  hf=hf-mirror.com'
+    # Report what is ACTUALLY configured. Every mirror in setup-langs.ps1 is guarded by
+    # "is this tool on PATH yet", so a toolchain that failed to install leaves the machine
+    # only half-mirrored - while a hardcoded success line would still claim otherwise.
+    # This was measured: nodejs failed to download, so `npm config set registry` never ran,
+    # yet the summary still announced npm=registry.npmmirror.com. Read each one back.
+    Warn 'mirror state (read back, not assumed):'
+    $npmCmd = Get-Command npm -ErrorAction SilentlyContinue
+    if ($npmCmd) { Warn "  npm   -> $((& npm config get registry 2>&1 | Select-Object -First 1))" }
+    else { Warn '  npm   -> NOT configured (npm not on PATH; install nodejs, then re-run -Phase dev)' }
+    $pyCmd = Get-Command python -ErrorAction SilentlyContinue
+    if ($pyCmd) { Warn "  pip   -> $(((& python -m pip config get global.index-url 2>&1) | Select-Object -First 1))" }
+    else { Warn '  pip   -> NOT configured (python not on PATH)' }
+    $goCmd = Get-Command go -ErrorAction SilentlyContinue
+    if ($goCmd) { Warn "  go    -> $((& go env GOPROXY 2>&1 | Select-Object -First 1))" }
+    else { Warn '  go    -> NOT configured (go not on PATH)' }
+    # cargo honours CARGO_HOME; scoop's rustup package points it at its own persist dir,
+    # so ~/.cargo is NOT always where the config has to live.
+    $cargoHome = if ($env:CARGO_HOME) { $env:CARGO_HOME } else { Join-Path $env:USERPROFILE '.cargo' }
+    if (Test-Path (Join-Path $cargoHome 'config.toml')) { Warn "  cargo -> rsproxy.cn  ($cargoHome\config.toml)" }
+    else { Warn "  cargo -> NOT configured (no config.toml under $cargoHome; needs rust)" }
+    Warn "  hf    -> $([Environment]::GetEnvironmentVariable('HF_ENDPOINT', 'User'))"
     Warn 'GPU stack (CUDA/torch) is vendor-specific and NOT automated - install the driver, then the matching torch build'
     Record 'dev' $ok 'toolchain + editors + mirrors'
     Warn 'open a NEW terminal afterwards: the current one still has the old PATH'
@@ -366,6 +413,17 @@ if ($phases -contains 'tune') {
                Why = 'MMCSS: give the game thread more CPU (default 20)' }
             @{ Path = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile'; Name = 'NetworkThrottlingIndex'; Value = 0xffffffff; Type = 'DWord';
                Why = 'MMCSS: no network throttling while gaming' }
+            # The Games task class. verify-env.ps1 checks GPU Priority and Scheduling
+            # Category, so they have to be written here or those two checks fail on every
+            # single machine - the two halves of the project have to agree.
+            @{ Path = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games'; Name = 'GPU Priority'; Value = 8; Type = 'DWord';
+               Why = 'MMCSS: game task GPU priority (verify-env checks this)' }
+            @{ Path = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games'; Name = 'Priority'; Value = 6; Type = 'DWord';
+               Why = 'MMCSS: game task CPU priority' }
+            @{ Path = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games'; Name = 'Scheduling Category'; Value = 'High'; Type = 'String';
+               Why = 'MMCSS: game task scheduling category (verify-env checks this)' }
+            @{ Path = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games'; Name = 'SFIO Priority'; Value = 'High'; Type = 'String';
+               Why = 'MMCSS: game task storage IO priority' }
             @{ Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent'; Name = 'DisableWindowsConsumerFeatures'; Value = 1; Type = 'DWord';
                Why = 'stop silent app installs / promoted apps' }
             @{ Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection'; Name = 'AllowTelemetry'; Value = 0; Type = 'DWord';
@@ -401,6 +459,25 @@ if ($phases -contains 'tune') {
         }
         Ok "applied $applied registry change(s), $failed failed"
 
+        # MMCSS is a KERNEL DRIVER: every MMCSS value above is INERT while it is stopped, and
+        # the registry still looks perfectly correct. Measured: installing a graphics driver
+        # stopped it, and it then could NOT be started on demand ("StartService failed 2:
+        # the system cannot find the file" even though mmcss.sys is present and intact) - it
+        # is boot-loaded, so only a reboot brings it back. Report the real state, do not
+        # assume the writes took effect.
+        & sc.exe config MMCSS start= auto 2>&1 | Out-Null
+        & sc.exe start MMCSS 2>&1 | Out-Null
+        Start-Sleep -Seconds 2
+        $mmcssLine = ((& sc.exe query MMCSS 2>&1 | Select-String 'STATE') -join ' ').Trim()
+        if ($mmcssLine -match 'RUNNING') {
+            Ok 'MMCSS RUNNING - the SystemProfile / Tasks\Games values are actually in effect'
+        }
+        else {
+            Warn "MMCSS is NOT running ($mmcssLine) - every MMCSS value above is INERT."
+            Warn '  it is a boot-loaded kernel driver and cannot be started on demand: REBOOT,'
+            Warn '  then confirm with  sc query MMCSS  and re-run -Phase tune if values are gone'
+        }
+
         if ($HighPerformancePowerPlan) {
             if ($PSCmdlet.ShouldProcess('power plan', 'switch to High performance')) {
                 & powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c | Out-Null
@@ -423,7 +500,11 @@ if ($phases -contains 'link') {
         if (Test-Path $Manifest) {
             foreach ($app in (Get-Content $Manifest -Raw | ConvertFrom-Json).apps) {
                 if (-not $app.assoc) { continue }
-                $exe = Join-Path (Join-Path $Destination $app.name) (Split-Path $app.exe -Leaf)
+                # Keep the manifest's RELATIVE path. Some apps nest their binary
+                # (JPEGView ships JPEGView64\JPEGView.exe), and Split-Path -Leaf here would
+                # drop the subdirectory and register an association pointing at a file that
+                # does not exist - which then shows up as a dead entry in the Settings page.
+                $exe = Join-Path (Join-Path $Destination $app.name) $app.exe
                 $appsHash[$app.name] = @{ Exe = $exe; Exts = @($app.assoc) }
             }
         }

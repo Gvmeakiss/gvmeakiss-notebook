@@ -47,7 +47,13 @@ pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1
 | `mingw` | Windows 上的 GCC 工具链 |
 | `uv` | 极快的 Python 包/虚拟环境管理器 |
 
-> `rust` 由配套脚本 `setup-langs.ps1` 单独处理。
+> `rust` 由配套脚本 `setup-langs.ps1` 处理，且**已纳入默认集** —— `verify-env.ps1` 会检查它，
+> 早先不在默认列表里会导致默认流程**验收自失败**。不想付这 ~1 GB 下载就加 `-SkipRust`。
+>
+> ⚠ **Scoop 包名与俗称不同**：`node` 实为 `nodejs`、`dotnet` 实为 `dotnet-sdk`。
+> `scoop install` **遇到一个不存在的清单会中止整批**，所以名字写错会让整套工具链一个都装不上，
+> 而流程仍一路报成功。`setup.ps1` 现已内置别名归一化（`node` / `dotnet` / `python3` / `golang`），
+> 并改为**逐个安装 + 逐个回读**，一个失败只损失一个包。
 
 ### 1.3 编辑器与终端 —— `dev` 阶段，Scoop extras
 
@@ -59,6 +65,14 @@ pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1
 ### 1.4 便携软件 —— `apps` 阶段，按 `apps.json` 装
 
 **每一个都强制 SHA256 校验**（脚本默认拒绝无哈希条目），下载 → 校验 → 解压 → 折叠单层目录 → 建快捷方式 / 加 PATH。
+
+> ⚠ **解压器按容器选**：`.zip` 用系统内置的 ZIP 支持（**不需要任何外部工具**），`.7z` 才需要 7-Zip。
+> **`7zr.exe` 是精简版、没有 ZIP 编解码器** —— 早先误以为它能通吃，结果唯一的 `.7z` 装好了、
+> 三个 `.zip` 全挂（exit 2）。
+>
+> ⚠ **清单里的 `exe` 是相对安装根目录的路径**：包内有多个顶层目录时"折叠单层"不会触发
+> （JPEGView 就有 `JPEGView32` / `JPEGView32-WinXP` / `JPEGView64` 三个），必须写
+> `JPEGView64\JPEGView.exe`；消费方也不能用 `Split-Path -Leaf` 取叶子名，那会丢掉子目录。
 
 | 软件 | 用途 | 关联的文件类型 |
 |---|---|---|
@@ -88,7 +102,7 @@ pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1
 | **长路径支持** | `git config --global core.longpaths true` + `HKLM\SYSTEM\CurrentControlSet\Control\FileSystem\LongPathsEnabled=1` | AI 仓库嵌套深度经常超过 260 字符 |
 | **开发者模式** | `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock\AllowDevelopmentWithoutDevLicense=1` | HuggingFace 缓存 / pnpm 需要建符号链接 |
 | **执行策略** | 当前用户设为 `RemoteSigned` | Scoop 安装所需 |
-| **国内镜像** | **pip**=清华 · **npm**=npmmirror · **go**=goproxy.cn · **cargo**=rsproxy.cn · **HuggingFace**=`HF_ENDPOINT=hf-mirror.com` | 不走镜像基本下不动 |
+| **国内镜像** | **pip**=清华 · **npm**=npmmirror · **go**=goproxy.cn · **cargo**=rsproxy.cn · **HuggingFace**=`HF_ENDPOINT=hf-mirror.com` | 不走镜像基本下不动。**收尾会逐项回读真实值**——每个镜像都被"工具在不在 PATH"守卫着，工具没装成功就整段跳过，而硬编码的汇总行会谎报"已生效"。cargo 配置写入 `CARGO_HOME`（scoop 的 rustup 包把它指向 `scoop\persist\rustup\`，**不是** `~\.cargo`） |
 | **PATH / Store 存根** | `fix-env.ps1` 修「装了却找不到」、应用执行别名劫持 | Windows 的 Store 存根会劫持 `python` 等命令 |
 | **凭据助手** | 修正 git credential helper | — |
 
@@ -154,10 +168,10 @@ pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1
 | 阶段 | 内容 | 管理员 | 可回滚 |
 |---|---|---|---|
 | `check` | **引导安装 + 检查**：PowerShell 7 / Scoop / git / 7-Zip / 长路径 / 开发者模式 / github 连通 / 磁盘 / 提权 / build+UBR | 部分 | — |
-| `dev` | Scoop 装 `python node go cmake dotnet mingw uv` + **VS Code / Windows Terminal** + 国内镜像（pip/npm/go/cargo/HF）；修 PATH、Store 存根、凭据助手 | 部分 | 是（Scoop 卸载） |
+| `dev` | Scoop 装 `python nodejs go cmake dotnet-sdk mingw uv`（+ `rust`，由 `setup-langs.ps1` 默认集带入）+ **VS Code / Windows Terminal** + 国内镜像（pip/npm/go/cargo/HF）；修 PATH、Store 存根、凭据助手。**收尾逐项回读镜像真实状态** | 部分 | 是（Scoop 卸载） |
 | `apps` | 按 `apps.json` 装便携软件：下载 → **SHA256 校验** → 解压 → 折叠目录 → 快捷方式 / PATH | 否 | 是（删目录） |
 | `drivers` | 故障设备清单（含故障码）+ Windows 更新里的驱动更新；`-InstallDrivers` 直接装 | 是 | 驱动可在设备管理器回滚 |
-| `tune` | **先快照**，再改：GameDVR 关闭、MMCSS 调优、**关闭广告推荐/开始菜单联网搜索/遥测**；（可选）高性能电源计划、鼠标加速 | 是 | 是（`compare-services.ps1 -Restore`） |
+| `tune` | **先快照**，再改：GameDVR 关闭、MMCSS 调优（**含 `Tasks\Games` 四项**）、**关闭广告推荐/开始菜单联网搜索/遥测**；结束前**回读 `sc query MMCSS` 是否 RUNNING**——服务停则上述 MMCSS 值**全部无效**，且它是引导期驱动、**只能靠重启加载**；（可选）高性能电源计划、鼠标加速 | 是 | 是（`compare-services.ps1 -Restore`） |
 | `link` | 注册关联（`-RegisterAssociations`）+ 报告哪些类型需手动点一次 + 孤儿关联检查 | 否 | 是（有注册表备份） |
 | `verify` | dev 环境 / 软件清单 / 输入法健康 / 服务基线漂移 / **tune 存活检查 14 项**，五项验收 | 否 | — |
 
@@ -169,7 +183,7 @@ pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1
 | `-Manifest` | `apps.json`（技能根目录） | 便携软件清单 |
 | `-Destination` | `%USERPROFILE%\Apps` | 便携软件根目录 |
 | `-SnapshotDir` | `<Destination>\_backup` | 快照与关联备份位置 |
-| `-Languages` | `python,node,go,cmake,dotnet,mingw,uv` | 开发阶段要装的 Scoop 包 |
+| `-Languages` | `python,nodejs,go,cmake,dotnet-sdk,mingw,uv` | 开发阶段要装的 Scoop 包。**必须是真实 scoop 清单名**；`node` / `dotnet` / `python3` / `golang` 会被自动归一化 |
 | `-NoEditor` | 关 | 跳过 VS Code + Windows Terminal |
 | `-InstallDrivers` | 关 | `drivers` 阶段实际安装 Windows 更新提供的驱动 |
 | `-DisableMouseAcceleration` | 关 | 把鼠标加速曲线清零（FPS 习惯） |
