@@ -67,7 +67,7 @@ Head '1. TabletInputService (the usual culprit)'
 # Read via CIM rather than parsing `sc qc` text: the state comes back as typed properties,
 # and it is the same source the snapshot uses, so comparisons stay consistent.
 $svc = Get-CimInstance Win32_Service -Filter "Name='TabletInputService'" -ErrorAction SilentlyContinue
-$startLabel = 'unknown'; $stateLabel = 'unknown'; $badService = $false
+$startLabel = 'unknown'; $stateLabel = 'unknown'; $badService = $false; $serviceMissing = $false
 if ($svc) {
     $startLabel = "$($svc.StartMode)"
     $stateLabel = "$($svc.State)"
@@ -76,6 +76,14 @@ if ($svc) {
     # CIM reports Boot/System/Auto/Manual/Disabled; only 'Disabled' is the failure mode
     $badService = ($startLabel -eq 'Disabled')
 } else {
+    # A missing service is a DIFFERENT failure mode from a disabled one, and it is worse:
+    # `sc config` cannot restore a service that does not exist. It used to fall through
+    # silently - the flag stayed $false, so the verdict said "the IME stack looks healthy"
+    # while section 1 had just printed FAIL, and -Repair then reported
+    # "not disabled - nothing to repair here" and did nothing.
+    # (Measured on a machine where the service had been removed: diagnosis contradicted
+    # itself and the repair path was a no-op.)
+    $serviceMissing = $true
     Bad 'TabletInputService not found - the service is missing entirely, not merely stopped'
 }
 
@@ -206,7 +214,15 @@ else { Ok 'no known security-software process detected' }
 
 # ------------------------------------------------------- 6. verdict
 Head '6. verdict'
-if ($badService) {
+if ($serviceMissing) {
+    Write-Output '    TabletInputService does not exist on this machine, so this is not the usual'
+    Write-Output '    "optimizer disabled it" case - `sc config` cannot restore a service that is'
+    Write-Output '    gone. Repair the service registration, in this order:'
+    Write-Output '      1. sfc /scannow            (restores protected service registrations)'
+    Write-Output '      2. DISM /Online /Cleanup-Image /RestoreHealth'
+    Write-Output '      3. reboot, then re-run this script to confirm the service is back'
+    Write-Output '    If it is still missing, an in-place repair upgrade keeps your files and apps.'
+} elseif ($badService) {
     Write-Output '    Most likely cause: TabletInputService was disabled.'
     Write-Output '    Fix it with -Repair (elevated), then REBOOT. A broken input stack does not'
     Write-Output '    always recover inside the same session - ctfmon may refuse to come up until'
@@ -226,6 +242,11 @@ if ($Repair) {
     if (-not $isAdmin) {
         Bad '-Repair requires an elevated shell'
         Write-Output '         Right-click your terminal -> Run as administrator, then re-run.'
+        exit 1
+    }
+    if ($serviceMissing) {
+        Bad 'TabletInputService is missing - -Repair cannot create a service registration'
+        Write-Output '         Follow the sfc / DISM path printed in the verdict above instead.'
         exit 1
     }
     if (-not $badService) {
@@ -256,3 +277,10 @@ if ($Repair) {
 
 Write-Output "`n===== done ====="
 if (-not $Repair) { Write-Output 'Report only. Use -Repair (elevated) if the verdict above names the service.' }
+
+# Exit code: report a diagnosed input-stack fault so a caller can act on it without parsing
+# text. Both failure modes count - a service that is missing is at least as broken as one
+# that is disabled. Before this, the script always returned 0, so "diagnose says FAIL" and
+# "diagnose says healthy" were indistinguishable to any caller.
+if ($serviceMissing -or $badService) { exit 1 }
+exit 0

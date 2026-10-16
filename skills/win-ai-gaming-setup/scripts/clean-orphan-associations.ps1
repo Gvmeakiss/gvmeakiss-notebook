@@ -123,32 +123,56 @@ if ($brokenDefaults.Count -eq 0) {
 
 # ------------------------------------------------------------------ 2. dead ProgIDs
 Write-Output "`n--- 2. dead Program IDs (HKCU\Software\Classes)"
-# Dump the whole hive with the native tool and filter in memory.
+# Enumerate the hive with .NET RegistryKey and read each key's DEFAULT value.
 #
-# Two traps here, both measured:
-#   - Enumerating this hive with PowerShell cmdlets took 281 s for 853 subkeys.
-#   - `reg query /f 'shell\open\command' /k` matches only a SINGLE key name, so the
-#     pattern never matches across the backslashes and always returns 0 rows.
-# A full `reg query /s` dump is ~25k lines and completes in well under a second.
+# History of this block, because the naive versions are all wrong in different ways:
+#   1. PowerShell's registry provider cmdlets: measured 281 s for 853 subkeys. Far too slow.
+#   2. `reg query 'HKCU\Software\Classes' /s` piped through a line parser: ~4.1 s on this
+#      machine (24k lines). Correct results, but it spawns a process and buffers the whole hive.
+#   3. This version: 0.36 s, and it fixes a data bug the line parser had.
+#
+# The bug in (2): the parser matched 'REG_SZ\s+(.*)$' without checking WHICH value it was.
+# A UWP ProgID stores its handler as a VALUE named DelegateExecute, with no default value:
+#     ...\AppX<id>\Shell\open\command
+#         DelegateExecute    REG_SZ    {A56A841F-E974-45C1-8001-7E3F8A085917}
+# so the parser read that GUID as if it were the command line. 85 of 268 entries on this
+# machine were that shape. GetValue('') reads the actual default value, so those keys now
+# correctly yield "no command" instead of a fabricated one.
+#
+# Two traps confirmed while getting here, both worth keeping:
+#   - Verb and key names are case-INCONSISTENT in this hive ('Shell' vs 'shell'). A
+#     case-sensitive hashtable or -eq comparison silently drops entries; use a
+#     case-insensitive match as below.
+#   - A first attempt that only looked one level deep (Classes\<ProgID>\shell\open\command)
+#     missed every Classes\Applications\<exe>\... entry - 90 of them here. It looked like a
+#     138x speedup and was simply less correct.
 $sw = [Diagnostics.Stopwatch]::StartNew()
-$dump = & reg query 'HKCU\Software\Classes' /s 2>$null
-$sw.Stop()
-Info ("registry dump: {0:N0} lines in {1:N1}s" -f @($dump).Count, $sw.Elapsed.TotalSeconds)
+$cmdMap = @{}       # ProgID (relative path under Classes) -> default-value command line
 
-# Walk the dump linearly: track the current key, and read the (Default) value under any
-# ...\shell\open\command key. This avoids a second lookup per key.
-$cmdMap = @{}       # ProgID -> command line
-$currentKey = $null
-foreach ($line in $dump) {
-    if ($line -match '^(HKEY_[A-Z_]+\\\S.*)$') {
-        $currentKey = $Matches[1]
-        continue
-    }
-    if ($currentKey -and $currentKey -match '\\shell\\open\\command$' -and $line -match 'REG_SZ\s+(.*)$') {
-        $progKey = $currentKey -replace '\\shell\\open\\command$', ''
-        $cmdMap[$progKey] = $Matches[1].Trim()
+function Read-CommandKeys {
+    param([Microsoft.Win32.RegistryKey]$Key, [string]$Prefix, [int]$Depth)
+    if ($Depth -gt 6) { return }
+    foreach ($name in $Key.GetSubKeyNames()) {
+        $child = $null
+        try { $child = $Key.OpenSubKey($name) } catch { }
+        if (-not $child) { continue }
+        $path = if ($Prefix) { "$Prefix\$name" } else { $name }
+        if ($path -match '(?i)\\shell\\open\\command$') {
+            $v = $child.GetValue('')
+            if ($v) { $cmdMap[$path] = [string]$v }
+        }
+        Read-CommandKeys -Key $child -Prefix $path -Depth ($Depth + 1)
+        $child.Close()
     }
 }
+
+$classesRoot = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Software\Classes')
+if ($classesRoot) {
+    Read-CommandKeys -Key $classesRoot -Prefix '' -Depth 0
+    $classesRoot.Close()
+}
+$sw.Stop()
+Info ("scanned HKCU\Software\Classes in {0:N1}s" -f $sw.Elapsed.TotalSeconds)
 Info ("parsed {0} shell\open\command entries" -f $cmdMap.Count)
 
 $deadProgIds = @()

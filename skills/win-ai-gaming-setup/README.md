@@ -382,7 +382,7 @@ pnputil /restart-device "<InstanceId>"     # 或直接跑 reset-failed-devices.p
 |---|---|
 | 系统 | Windows 10/11 |
 | Shell | 建议 PowerShell 7+；**5.1 也能跑，但脚本必须 ASCII-only 或带 BOM** |
-| `scoop` 缺失 | `dev` 阶段会自动安装（用户级，无需提权） |
+| `scoop` 缺失 | **`check` 阶段会自动安装**（用户级，无需提权；官方脚本 `get.scoop.sh`）。注意只有 `check` 会装 —— 直接单跑 `dev` 阶段时 `setup-langs.ps1` 会报 `scoop not found`，这是预期行为 |
 | `.7z` 资产 | 需要 `7z`（`scoop install 7zip`）；`.zip` 不需要外部工具 |
 | 脚本编码 | 本目录所有脚本均为 **ASCII-only**（英文），文档为中文 |
 | 默认程序 | **无法脚本设置** —— `UserChoice` 的 Deny ACL + Hash |

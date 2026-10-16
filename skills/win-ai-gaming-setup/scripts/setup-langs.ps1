@@ -71,17 +71,63 @@ if (-not $scoop) {
         $scoop = Get-Command scoop -ErrorAction SilentlyContinue
     }
 }
-if (-not $scoop) {
-    Fail2 'scoop not found. Install it first (see README "Bootstrap"):'
+# -WhatIf must survive a missing precondition: a dry run exists to show what WOULD happen,
+# so hard-exiting here made `-WhatIf` unusable on a fresh machine - which is exactly the
+# machine a dry run is for. (Measured: `setup-langs.ps1 -WhatIf` exited 1 with
+# "scoop not found" before printing a single planned action.) In a real run the missing
+# dependency still fails, and the exit code at the end reports it.
+$scoopAvailable = [bool]$scoop
+$scoopSource = '(not found)'
+if ($scoopAvailable) { $scoopSource = $scoop.Source }
+
+if (-not $scoopAvailable) {
+    Fail2 'scoop not found - cannot install toolchains. Install it first:'
     Write-Output "            Set-ExecutionPolicy -Scope CurrentUser RemoteSigned"
     Write-Output "            irm get.scoop.sh | iex"
-    exit 1
+    if (-not $WhatIfPreference) { exit 1 }
+    Write-Output '            (-WhatIf: continuing so the remaining planned actions are still shown)'
+} else {
+    Ok "scoop: $scoopSource"
 }
-Ok "scoop: $($scoop.Source)"
 
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     Warn2 'git not on PATH - scoop needs git for its buckets'
 }
+
+# Without scoop, every scoop call site below would dereference a null command. Skip the
+# blocks that need it instead of failing one line at a time with unhelpful errors.
+# Under -WhatIf the planned actions are still listed, because a preview that shows nothing
+# is not a preview - and scoop is installed by `setup.ps1 -Phase check`, so on a fresh
+# machine the missing dependency is expected rather than exceptional.
+if (-not $scoopAvailable) {
+
+# ---------------------------------------------------------------- buckets
+Step '1. Buckets'
+foreach ($b in @('main', 'extras', 'java')) {
+    Warn2 "would add bucket $b (cannot check: scoop unavailable)"
+}
+
+# ---------------------------------------------------------------- install
+Step '2. Install toolchains'
+$map = [ordered]@{
+    python = @('python')
+    node   = @('nodejs')
+    go     = @('go')
+    java   = @('temurin21-jdk')
+    cmake  = @('cmake')
+    dotnet = @('dotnet-sdk')
+    mingw  = @('mingw')
+    uv     = @('uv')
+}
+foreach ($p in $Packages) {
+    if ($p -eq 'rust') { continue }
+    if (-not $map.Contains($p)) { Warn2 "unknown package '$p' - skipped"; continue }
+    foreach ($pkg in $map[$p]) {
+        Warn2 "would scoop install $pkg (cannot install: scoop unavailable)"
+    }
+}
+
+} else {
 
 # ---------------------------------------------------------------- buckets
 Step '1. Buckets'
@@ -116,6 +162,8 @@ foreach ($p in $Packages) {
         }
     }
 }
+
+}   # end of the "scoop is available" guard opened in step 0
 
 # ---------------------------------------------------------------- rust
 if (($Packages -contains 'rust') -and -not $SkipRust) {
@@ -243,3 +291,10 @@ if ($script:failures.Count -eq 0) {
     $script:failures | ForEach-Object { "  - $_" }
 }
 Write-Output 'Open a NEW terminal before using the tools, then run verify-env.ps1.'
+
+# Exit code matters: setup.ps1 decides pass/fail from it (Invoke-Step tests $LASTEXITCODE),
+# so returning 0 after printing "failures (3)" made a broken toolchain look like a clean run.
+# Measured before this fix: the script had no exit statement at all and returned 0 whether or
+# not every package installed.
+if ($script:failures.Count -gt 0) { exit 1 }
+exit 0
