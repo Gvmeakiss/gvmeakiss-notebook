@@ -46,13 +46,16 @@ skills/<name>/
 | Skill | 触发场景 | 入口 |
 |---|---|---|
 | `screenshot-text-edit` | 把图片/截图里的文字或数字改成别的内容（金额、日期、编号、字段名）。核心是字形克隆法，保真度远高于字体重绘 | [skills/screenshot-text-edit/SKILL.md](./skills/screenshot-text-edit/SKILL.md) |
-| `win-ai-gaming-setup` | 把一台新装好的 Windows 机器一条命令配成「AI 开发 + 游戏」机并完成系统优化：引导检查 → 装开发工具链 → 装便携软件 → 驱动分诊 → 安全调优（先快照）→ 注册关联 → 验收，出故障能按基线回滚。唯一入口 `scripts/setup.ps1`（七阶段）。另含「显卡稳定性」小节（崩溃/黑屏/TDR 的取证与处置）。核心纪律三条：不碰按需启动的服务、动系统前先拍快照、改完必须重启再验证 | [skills/win-ai-gaming-setup/SKILL.md](./skills/win-ai-gaming-setup/SKILL.md) |
+| `win-ai-gaming-setup` | 把一台新装好的 Windows 机器一条命令配成「AI 开发 + 游戏」机并完成系统优化：引导检查 → 装开发工具链 → 装便携软件 → 驱动分诊 → 安全调优（先快照）→ 注册关联 → 验收，出故障能按基线回滚。唯一入口 `scripts/setup.ps1`（七阶段），另有 **14 个可单独用的工具脚本**（含 `check-script-hygiene.ps1` 双宿主脚本体检）。含**运行上下文矩阵**（同一段代码在 PS7/5.1、提权/非提权下的结果差异）与「显卡稳定性」小节（崩溃/黑屏/TDR 的取证与处置）。核心纪律三条：不碰按需启动的服务、动系统前先拍快照、改完必须重启再验证 | [skills/win-ai-gaming-setup/SKILL.md](./skills/win-ai-gaming-setup/SKILL.md) |
 
 ## 环境
 
 - 部分脚本依赖 macOS Vision OCR，**仅 macOS 可用**
 - 依赖：`pyobjc-framework-Vision` `pyobjc-framework-Quartz` `pillow`
-- `skills/win-ai-gaming-setup/` 下的脚本**仅 Windows 可用**，依赖 PowerShell 7+
+- `skills/win-ai-gaming-setup/` 下的脚本**仅 Windows 可用**，依赖 PowerShell 7+；
+  **但计划任务与登录脚本会用 Windows PowerShell 5.1 调它们** —— 因此该目录的脚本一律 **ASCII-only**
+  （5.1 按 ANSI 解码无 BOM 文件，任何中文都会让解析失败且表现为"任务静默失败、退出码 0x1"）。
+  **改完该目录任何 `.ps1` 就跑一次 `scripts/check-script-hygiene.ps1`**（双宿主解析，不执行，秒级）
 - 其中 `-Restore` / `-Repair` / `-Reset` 与 `-Phase tune` 需管理员权限；
   快照目录含自启项导出（可能含本机路径），**属私有数据，不要提交**
 

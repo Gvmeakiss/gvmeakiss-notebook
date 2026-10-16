@@ -82,7 +82,7 @@
 | Skill | 用途 | 入口 |
 |---|---|---|
 | **screenshot-text-edit** | 截图文字 / 数字高保真修改：字形克隆法，保真度远高于字体重绘 | [SKILL.md](./skills/screenshot-text-edit/SKILL.md) · [参数速查](./skills/screenshot-text-edit/README.md) |
-| **win-ai-gaming-setup** | 新装 Windows 一条命令配成「AI 开发 + 游戏」机：七阶段自动装软件、做系统优化，可回滚 | [SKILL.md](./skills/win-ai-gaming-setup/SKILL.md) · [参数速查](./skills/win-ai-gaming-setup/README.md) |
+| **win-ai-gaming-setup** | 新装 Windows 一条命令配成「AI 开发 + 游戏」机：七阶段自动装软件、做系统优化、可回滚。含**运行上下文矩阵**与 14 个可单独用的工具脚本 | [SKILL.md](./skills/win-ai-gaming-setup/SKILL.md) · [参数速查](./skills/win-ai-gaming-setup/README.md) |
 
 ### 📖 使用说明
 
@@ -139,7 +139,7 @@
 | [Windows 环境配置记录](./docs/windows-environment-setup.md) | Windows 10 非管理员环境从零配置的实测记录：14 项问题总表 + Windows 专属陷阱 |
 | [Windows 11 优化审计记录](./docs/windows-environment-setup-win11.md) | 一台"已优化过"的 Win11 管理员机逐项复核：真损害、被删的调优值、**以及审计者自己的 3 处误判**；含「判定标准对错对照」 |
 | [系统调优核查记录](./docs/system-tweaks-audit.md) | 系统优化项逐条核查依据，对应 Skill 的 `tune` 阶段 |
-| [win-ai-gaming-setup 参数速查](./skills/win-ai-gaming-setup/README.md) | 七阶段参数、依赖与常见坑 |
+| [win-ai-gaming-setup 参数速查](./skills/win-ai-gaming-setup/README.md) | 七阶段参数、依赖与常见坑；含**运行上下文矩阵**（宿主 / 提权 / 会话）与 14 个工具脚本速查 |
 | [screenshot-text-edit 参数速查](./skills/screenshot-text-edit/README.md) | CLI 脚本参数与调用示例 |
 
 关系说明：**Skill 是可执行的方法，docs 是为什么这么做、以及踩过的坑**。
@@ -230,7 +230,7 @@ This repository collects reusable technical configurations, practical notes and 
 | Skill | Purpose | Entry points |
 |---|---|---|
 | **screenshot-text-edit** | High-fidelity text and digit edits inside screenshots via glyph cloning | [SKILL.md](./skills/screenshot-text-edit/SKILL.md) · [Reference](./skills/screenshot-text-edit/README.md) |
-| **win-ai-gaming-setup** | One command turns a fresh Windows box into an AI-development + gaming machine, with rollback | [SKILL.md](./skills/win-ai-gaming-setup/SKILL.md) · [Reference](./skills/win-ai-gaming-setup/README.md) |
+| **win-ai-gaming-setup** | One command turns a fresh Windows box into an AI-development + gaming machine, with rollback. Includes a **runtime-context matrix** and 14 standalone tool scripts | [SKILL.md](./skills/win-ai-gaming-setup/SKILL.md) · [Reference](./skills/win-ai-gaming-setup/README.md) |
 
 ### 📖 How to use
 
