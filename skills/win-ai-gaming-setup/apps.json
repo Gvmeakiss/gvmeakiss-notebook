@@ -25,7 +25,7 @@
       "sha256": "35235c7576af8a2aa54a64e057738b52150dca37ac09e444311e2868cab96208",
       "exe": "MarkText.exe",
       "assoc": [".md", ".markdown"],
-      "notes": "Markdown with live preview. Electron build, so first launch may raise SmartScreen (unsigned) - choose Run anyway."
+      "notes": "Markdown with live preview. Electron build, so first launch may raise SmartScreen (unsigned) - choose Run anyway. KNOWN TRADE-OFF, measured on a real machine: an Electron editor is the slowest thing in this manifest to start, and its UI is often judged dated next to native editors. If the user's stated priority is 'starts fast, simple UI', do NOT push a fancier Markdown editor at them - Notepad++ (already present on many machines, native, zero plugins) wins that comparison, and VSCode Ctrl+Shift+V covers the 'want live preview' case without adding an app. Ask which of the two they want BEFORE installing anything here."
     },
     {
       "name": "rclone",

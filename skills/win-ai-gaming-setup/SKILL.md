@@ -182,6 +182,27 @@ pwsh -File scripts/snapshot-services.ps1 -OutDir C:\backup\before-tweak
 服务启动类型、网卡电源、输入法栈**都要重启才暴露问题**。真实案例：服务已经 `Running`，
 `ctfmon` 仍然起不来、输入法仍然不能用；**重启后一切正常**。坏掉的登录会话不会自愈。
 
+## 运行上下文矩阵（先问"谁在跑"，再判断结果）
+
+> **同一个 Windows 上，"什么主机、什么权限、什么会话"决定了同一段代码的结果。**
+> 本项目已经因为搞错这一层而误判过两次：一次是把「提权进程看不到非提权映射」当成映射失效，
+> 一次是把「PS7 通过」当成脚本没问题（实际会被 5.1 拒绝）。**判断任何结果前，先定位它在矩阵里的哪一格。**
+
+| 谁在运行 | 宿主 | 提权 | 会话/命名空间 | 由此产生的硬约束 |
+|---|---|---|---|---|
+| 你手动敲 `pwsh` | **PS 7** | 看窗口 | 交互会话 | 最宽松，**但不能代表其它格** |
+| `setup.ps1` 及其子脚本 | **PS 7**（无 pwsh 时**静默降级** 5.1） | 通常提权 | 交互会话 | 日常运行**几乎不会走 5.1 分支** —— 5.1 的问题因此长期不暴露 |
+| **计划任务** | **永远 5.1**（`powershell.exe`） | `RunLevel=Limited` = 非提权 | 用户会话，**独立于你的提权命名空间** | ① 脚本必须 ASCII-only 或带 BOM；② 参数栏不走 Shell，重定向无效；③ 工作目录是 `C:\Windows\System32` |
+| 登录脚本 / 启动文件夹 | 取决于 `.lnk` 里写的是 `pwsh` 还是 `powershell.exe` | 非提权 | 用户会话 | 与 explorer 同级，能建出用户可见的驱动器映射 |
+| explorer.exe | — | **非提权** | 用户会话 | **它只认非提权侧建的驱动器映射** |
+| 提权 PowerShell | PS 7 或 5.1 | **提权** | 同一会话 Id，**但映射命名空间不同** | `Get-SmbMapping` 为空**不代表**用户没映射 |
+
+**三条由矩阵直接推出的操作规则：**
+
+1. **验收要在"目标格"里做** —— 验计划任务就得在计划任务里验（或起一个同权限的子进程），在提权窗口里验非提权行为一定误判。
+2. **写完任何 `.ps1` 先跑 `check-script-hygiene.ps1`** —— 它把"两个宿主会不会分歧"变成一次秒级检查，不依赖你记得这个矩阵。
+3. **`$LASTEXITCODE` 在进程内调用时不更新** —— 想拿子脚本成败，要么真起子进程，要么解析它自己输出的判定表。
+
 ## 陷阱速查（每条都实测过）
 
 | 现象 | 真相 |
@@ -234,8 +255,13 @@ pwsh -File scripts/snapshot-services.ps1 -OutDir C:\backup\before-tweak
 | **大文件下载用 `curl -C -` 续传，SHA256 做裁决** | 网络抖动会中断 `Invoke-WebRequest`（**它不支持续传**），重下 600 MB 代价很高。`curl.exe -L -C -` 断点续传后**必须核对 SHA256**——校验通过才证明续传文件字节级正确（实测 653,644,328 字节精确匹配、哈希一致） |
 | **`Test-Connection` 是 ICMP，会假阴性** | `-Phase check` 报 `github.com not reachable`，而同一条网络上 `Test-NetConnection -Port 443` 通畅、仓库照下不误。**ICMP 被挡是常态**——判断网络用 TCP 443，别用 ping |
 | **便携软件的"省电"设置会让游戏掉线** | 网卡默认**允许系统关闭以省电**，表现为**游戏中随机掉线 / 延迟尖峰**。正解是官方注册表项 `PnPCapabilities = 24 (0x18)`（网卡类键下），**而 `Disable-NetAdapterPowerManagement` 会返回成功却不改值**（见 `docs/system-tweaks-audit.md`）。生效需**重启网卡或系统**。实测出厂值：有线网卡未设置、无线网卡 `16`，两者都应为 **24** |
-| **无 BOM 的中文脚本在 PS 5.1 下会解析失败，而 PS 7 下正常** | 实测：`verify-env.ps1` 含 27 个非 ASCII 字节、**无 BOM**。用 `pwsh`(PS7) 跑完全正常；用 `powershell.exe`(5.1) 跑**直接在 here-string 处解析失败**（报 `The '<' operator is reserved for future use`，因为它把内嵌的 C++ 当 PowerShell 解析）——5.1 按 ANSI 解码 UTF-8 字节，错位后可能吐出引号，把 here-string 提前截断。**这条之所以长期没暴露：`setup.ps1` 调子脚本用的是 `pwsh`。** 纪律：脚本**要么纯 ASCII**（本目录所有脚本都声明 ASCII-only），**要么存成 UTF-8 BOM**。需要中文字面量时用 `\uXXXX` 转义（.NET 正则和 Python 都认），保持文件纯 ASCII |
-| **语法校验通过 ≠ 脚本能跑** | `[Parser]::ParseFile` 读无 BOM 文件时按 **UTF-8** 解码，而 `powershell.exe -File` 按 **ANSI** 解码——**同一个文件，前者报 ok、后者报解析错误**（上面那条就是这么漏掉的）。**判据：改完脚本要用真实宿主各跑一次**，不能只做 AST 解析 |
+| **无 BOM 的中文脚本在 PS 5.1 下会解析失败，而 PS 7 下正常** | 实测：`verify-env.ps1` 含 27 个非 ASCII 字节、**无 BOM**。用 `pwsh`(PS7) 跑完全正常；用 `powershell.exe`(5.1) 跑**直接在 here-string 处解析失败**（报 `The '<' operator is reserved for future use`，因为它把内嵌的 C++ 当 PowerShell 解析）——5.1 按 ANSI 解码 UTF-8 字节，错位后可能吐出引号，把 here-string 提前截断。**这条之所以长期没暴露：`setup.ps1` 调子脚本用的是 `pwsh`。** 纪律：脚本**要么纯 ASCII**（本目录所有脚本都声明 ASCII-only），**要么存成 UTF-8 BOM**。需要中文字面量时用 `\uXXXX` 转义（.NET 正则和 Python 都认），保持文件纯 ASCII。**⚠ 这条写进文档后仍然又发生过一次**（写一个给计划任务调用的 wrapper），详见下方「语法校验通过 ≠ 脚本能跑」与 `check-script-hygiene.ps1` |
+| **语法校验通过 ≠ 脚本能跑** | `[Parser]::ParseFile` 读无 BOM 文件时按 **UTF-8** 解码，而 `powershell.exe -File` 按 **ANSI** 解码——**同一个文件，前者报 ok、后者报解析错误**（上面那条就是这么漏掉的）。**判据改成了工具**：`check-script-hygiene.ps1` 对目录下每个 `.ps1` 做**双宿主解析 + 编码检查**（不执行，秒级），已挂进 `verify-env.ps1`。**为什么必须机械化**：这条纪律靠"记得做"已经被证伪两次 —— 同一个坑先让 `verify-env.ps1` 自己栽过，后来又让一个给计划任务写的 wrapper 栽过（PS7 过、5.1 报 `The string is missing the terminator: '`）。**判据：写完任何 `.ps1` 就跑一次 hygiene 检查，别靠记忆** |
+| **计划任务的「参数」栏不通过 Shell 执行 —— 重定向语法静默失效** | 在任务的参数里写 `cmd /c "... > log 2>&1"`，**重定向不会执行**，日志文件根本不生成，而任务照样报「成功」。**日志必须由脚本自己写**（`Add-Content` / `[IO.File]::WriteAllText`）。同理，任务里的相对路径不可靠——实测任务的工作目录是 `C:\Windows\System32`，一切路径都要写全 |
+| **计划任务报 `0x1` 时，`LastTaskResult` 是唯一的证据 —— 历史记录可能全部显示「成功」** | 实测一次真实事故：任务历史依次是 `100 已启动` → `110 已为用户启动` → `129 启动进程 PID` → `200 操作已启动` → **`201 操作成功完成`** → **`102 任务成功完成`**，而 `Get-ScheduledTaskInfo.LastTaskResult` 是 **`0x1`**。进程确实起来了、1 秒后退出、什么都没做。**排查前提：`TaskScheduler/Operational` 日志默认禁用**，不先 `wevtutil set-log "Microsoft-Windows-TaskScheduler/Operational" /e:true` 就只能靠猜 |
+| **`$LASTEXITCODE` 不会被「进程内调用脚本」设置 —— 会拿到上一个子进程的陈旧值** | `& .\child.ps1` 在当前会话内执行，**`$LASTEXITCODE` 保持之前的值不变**。实测后果：一个本该 FAIL 的校验被读成 PASS（更早的某次子进程调用留下了 0）。**拿子脚本退出码只有两条路**：真的起子进程（`& powershell.exe -File child.ps1`），或者**解析脚本自己输出的判定表、别信退出码** —— 判断成败时至少用其中一条，不能只看 `$LASTEXITCODE` |
+| **驱动器映射按「登录会话 + 提权级别」隔离 —— 提权进程看不到非提权的映射** | 实测同一台机器、同为 SessionId 3：**提权** PowerShell 里 `Test-Path 'Z:\'` = False、`Get-SmbMapping` 为空，而**非提权**的计划任务里同一个 `Z:` = True 且 `Status=OK`。**这不是故障，是设计**：UAC 分裂出的两个令牌各有独立的映射命名空间。**推论**：① 验收"映射是否可用"必须在**非提权**上下文做（explorer 也在非提权侧），否则会把正常隔离误读成失效；② 计划任务要用 `RunLevel=Limited`，映射才会建到 explorer 能看到的那一侧 |
+| **驱动器映射不会在睡眠/唤醒后自动恢复** | 实测：近 3 天睡眠 4 次 / 唤醒 4 次，**每次唤醒后 `Z:` 都消失**（`Get-SmbMapping` 为空）。原因**不是网络** —— 47 次「网卡断开」事件与睡眠时刻**精确对齐到同一秒**，链路本身健康；而是**没有任何东西在唤醒后重连**（启动脚本只在登录时跑一次）。持久映射记录（`HKCU\Network\Z:`）与凭据都在，手动重连 1 秒成功。**修法**：加事件触发的计划任务，订阅 `Microsoft-Windows-NetworkProfile/Operational` 的 **EventID 10000（网络已连接）**，实测每次唤醒后都会触发 |
 | **`Start-Transcript` 抓不到子进程的输出** | 提权脚本用 `Start-Transcript` 记日志时，**只有父进程自己写的东西会进日志**；它 `&` 调起的 `powershell.exe` 子进程输出到控制台，**日志里一片空白**，极易误判成「脚本没跑」。要监控子进程进度就**回读系统状态**（设备状态、注册表值），别指望日志 |
 | **提权脚本有语法错误时日志是空的** | 同上一类的组合陷阱：脚本解析失败 → `Start-Transcript` 那行根本没执行 → **日志文件 0 字节**，看起来像「什么都没发生」。所以**提权运行前先做一次真实宿主试跑**；看到空日志先怀疑语法，别怀疑权限 |
 | **注册表批量写：`reg import` 又快又不会清键** | 30 个值的实测对比：`Set-ItemProperty ×30` = 94 ms、`reg add ×30` = 381 ms（每次一个进程）、**`reg import ×1` = 12 ms**。而且 `reg import` 是**合并**语义，天然不会像 `New-Item -Force` 那样重建键。注意：`.reg` 必须是 **UTF-16LE**（`Set-Content -Encoding Unicode`），DWORD 要 **8 位十六进制**（`dword:0000000a`；不足 8 位会被拒绝，实测 `dword:000000010` 直接不生效） |
