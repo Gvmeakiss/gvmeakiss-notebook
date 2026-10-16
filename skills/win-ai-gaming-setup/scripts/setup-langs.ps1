@@ -29,7 +29,8 @@
   pwsh -File setup-langs.ps1 -Packages python,node,go
 
 .NOTES
-  Requires Scoop. See the README for the bootstrap step.
+  Requires Scoop. Scoop is installed by `setup.ps1 -Phase check`, so a standalone run on a
+  machine without it reports a precondition failure - see README section 4.1.
   ASCII-only on purpose.
 #>
 [CmdletBinding(SupportsShouldProcess = $true)]

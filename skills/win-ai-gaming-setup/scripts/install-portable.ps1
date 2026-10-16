@@ -21,7 +21,10 @@
   tampered download.
 
 .PARAMETER Manifest
-  Path to a JSON manifest. See README "Manifest format".
+  Path to a JSON manifest. The schema is defined by apps.json in the skill root; the two
+  rules that bite are documented in README section 4.4 and in SKILL.md's trap table: every
+  entry needs a SHA256, and each "exe" is a path RELATIVE to the install root (consumers
+  must not reduce it with Split-Path -Leaf).
 
 .PARAMETER Destination
   Root directory for installed apps. Default: $env:USERPROFILE\Apps
