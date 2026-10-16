@@ -129,7 +129,7 @@ pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1
 |---|---|---|
 | **JPEGView** | 看图。秒开，扛得住超大文件夹 | `.png` `.jpg` `.jpeg` `.gif` `.bmp` `.webp` `.tif` `.tiff` |
 | **MPC-BE** | 音视频播放，带正常播放器 UI（播放列表、变速、字幕） | `.mp4` `.mkv` `.avi` `.mov` `.webm` `.mp3` `.flac` `.wav` `.m4a` |
-| **MarkText** | Markdown 实时预览编辑器 | `.md` `.markdown` |
+| **MarkText** | Markdown 实时预览编辑器。**条件安装** —— 先读下方取舍说明再决定装不装 | `.md` `.markdown` |
 | **rclone** | 命令行同步/备份到 NAS（SMB / WebDAV） | —（命令行工具，进 PATH） |
 
 > ⚠ **解压器按容器选**：`.zip` 用系统内置的 ZIP 支持（**不需要任何外部工具**），`.7z` 才需要 7-Zip。
@@ -137,7 +137,7 @@ pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1
 >
 > ⚠ **清单里的 `exe` 是相对安装根目录的路径**：包内有多个顶层目录时"折叠单层"不会触发（JPEGView 就有 `JPEGView32` / `JPEGView32-WinXP` / `JPEGView64` 三个），必须写 `JPEGView64\JPEGView.exe`；消费方也不能用 `Split-Path -Leaf` 取叶子名，那会丢掉子目录。
 >
-> ⚠ **Markdown 编辑器是取舍，不是越花哨越好**：MarkText 是 Electron 应用，**是本清单里启动最慢的一个**，界面也常被嫌旧。如果用户的诉求是"**启动快、界面简单**"，正确的答案是 **Notepad++**（原生、自带 Markdown 高亮、零插件即可用），而不是再找一个界面更漂亮的编辑器；需要实时预览就用已装的 VS Code（`Ctrl+Shift+V`）。**先问清诉求再装。**
+> ⚠ **Markdown 编辑器是取舍，不是越花哨越好**：MarkText 是 Electron 应用，**是本清单里启动最慢的一个**，界面也常被嫌旧。如果用户的诉求是"**启动快、界面简单**"，正确的答案是 **Notepad++**（原生、自带 Markdown 高亮、零插件即可用），而不是再找一个界面更漂亮的编辑器；需要实时预览就用已装的 VS Code（`Ctrl+Shift+V`）。**先问清诉求再装** —— 实测有机器最终就是**不装 MarkText**（`apps.json` 仍声明它，属"可选"而非"必装"，`check-software.ps1` 不会因此报缺）。
 
 > 便携软件**不会出现在系统「应用列表」里**，盘点要用 `check-software.ps1` 扫目录。
 

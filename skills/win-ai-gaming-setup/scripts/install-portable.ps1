@@ -279,7 +279,14 @@ foreach ($app in $apps) {
                 Ok "shortcut: $lnk"
             }
         } else {
-            Warn "exe not found after extraction: $($app.exe) - skipping shortcut"
+            # In a dry run nothing was extracted, so the exe cannot exist yet. Reporting it as
+            # "not found after extraction" reads like a manifest fault and sent a real
+            # investigation down the wrong path - measured on a `-WhatIf` run.
+            if ($WhatIfPreference) {
+                Warn "would create a shortcut to $($app.exe) (cannot verify in a dry run)"
+            } else {
+                Warn "exe not found after extraction: $($app.exe) - skipping shortcut"
+            }
         }
     }
 
@@ -304,8 +311,14 @@ foreach ($app in $apps) {
 # ------------------------------------------------------------------- summary
 Write-Output "`n===== summary ====="
 if ($failures.Count -eq 0) {
-    Write-Output 'all selected apps installed'
-    Write-Output 'Open a NEW terminal for any PATH change to take effect.'
+    # A dry run must not claim it installed anything: measured, `-WhatIf` printed
+    # "all selected apps installed" while having written nothing at all.
+    if ($WhatIfPreference) {
+        Write-Output 'DRY RUN (-WhatIf): nothing was written. Re-run without -WhatIf to install.'
+    } else {
+        Write-Output 'all selected apps installed'
+        Write-Output 'Open a NEW terminal for any PATH change to take effect.'
+    }
 } else {
     Write-Output "failed ($($failures.Count)): $($failures -join ', ')"
     exit 1
