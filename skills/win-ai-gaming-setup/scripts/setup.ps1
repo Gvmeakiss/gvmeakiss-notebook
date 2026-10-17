@@ -132,11 +132,30 @@ function Record { param([string]$Name, [bool]$Ok, [string]$Detail = '')
 }
 # NOTE: the parameter must NOT be named $Args - that shadows the automatic variable and
 # silently drops every argument passed to the child script.
+# A child script that declares SupportsShouldProcess accepts -WhatIf; one that does not
+# rejects it with a parameter-binding error, so the flag cannot be forwarded blindly.
+$script:whatIfSupport = @{}
+function Test-ChildSupportsWhatIf {
+    param([string]$Path)
+    if ($script:whatIfSupport.ContainsKey($Path)) { return $script:whatIfSupport[$Path] }
+    $ok = $false
+    try { $ok = ((Get-Content -LiteralPath $Path -Raw -ErrorAction Stop) -match 'SupportsShouldProcess') } catch { }
+    $script:whatIfSupport[$Path] = $ok
+    return $ok
+}
+
 function Invoke-Step { param([string]$File, [string[]]$Arguments, [string]$What)
     $p = Join-Path $here $File
     if (-not (Test-Path $p)) { Bad "$File not found"; return $false }
     Step $What
-    $out = & $pwshExe -NoProfile -File $p @Arguments 2>&1
+    # Forward -WhatIf to the child, otherwise a dry run of setup.ps1 is only dry for the
+    # writes that happen in THIS script. Measured before this fix: all 11 Invoke-Step call
+    # sites passed no -WhatIf, so `setup.ps1 -Phase dev -WhatIf` really installed toolchains,
+    # `-Phase apps -WhatIf` really downloaded and installed software, and `-Phase link -WhatIf`
+    # really wrote association registrations - while the banner said "nothing will be changed".
+    $callArgs = @($Arguments)
+    if ($WhatIfPreference -and (Test-ChildSupportsWhatIf $p)) { $callArgs += '-WhatIf' }
+    $out = & $pwshExe -NoProfile -File $p @callArgs 2>&1
     $out | ForEach-Object { Write-Host "       $_" -ForegroundColor DarkGray }
     return ($LASTEXITCODE -eq 0)
 }
@@ -522,8 +541,16 @@ if ($phases -contains 'tune') {
         $regFile = Join-Path $env:TEMP ('dsh-tune-' + [Guid]::NewGuid().ToString('N').Substring(0, 8) + '.reg')
         # A .reg file must be UTF-16LE ("Unicode") or reg.exe rejects it.
         $regLines -join "`r`n" | Set-Content -Path $regFile -Encoding Unicode
-        $importOut = & reg.exe import $regFile 2>&1
-        $importCode = $LASTEXITCODE
+        # Under -WhatIf nobody is approved, so there is no .reg to import - and Set-Content
+        # itself honours -WhatIf, meaning the temp file was never created. Running reg.exe
+        # anyway made the PREVIEW print "FAIL reg import: ERROR: Error opening the file":
+        # a failure invented by the dry-run path. Skip the import in that mode.
+        $importOut = @()
+        $importCode = 0
+        if (-not $WhatIfPreference) {
+            $importOut = & reg.exe import $regFile 2>&1
+            $importCode = $LASTEXITCODE
+        }
         Remove-Item $regFile -Force -ErrorAction SilentlyContinue
         if ($importCode -ne 0) { $importOut | ForEach-Object { Bad "reg import: $_" } }
 
@@ -539,7 +566,15 @@ if ($phases -contains 'tune') {
                 else { $failed++; Bad "$k\$($c.Name): not present after the write" }
             }
         }
-        Ok "applied $applied registry change(s), $failed failed (verified by reading each key back)"
+        if ($WhatIfPreference) {
+            # The preview must say how many values WOULD change. Under -WhatIf nobody is
+            # approved, so the old summary read "applied 0 registry change(s)" - which looks
+            # like "there is nothing to do" instead of "12 values would be set".
+            $keyCount = @($changes | ForEach-Object { $_.Path } | Sort-Object -Unique).Count
+            Warn ("WhatIf: {0} registry value(s) across {1} key(s) would be set; nothing written" -f $changes.Count, $keyCount)
+        } else {
+            Ok "applied $applied registry change(s), $failed failed (verified by reading each key back)"
+        }
 
         # MMCSS is a KERNEL DRIVER: every MMCSS value above is INERT while it is stopped, and
         # the registry still looks perfectly correct. Measured: installing a graphics driver

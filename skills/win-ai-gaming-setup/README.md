@@ -262,7 +262,7 @@ scoop 在本技能里是**手段**（保证工具装得上），不是目的。�
 | `-HighPerformancePowerPlan` | 关 | 打开才切高性能（笔记本费电） |
 | `-RegisterAssociations` | 关 | 打开才写关联注册（只写 HKCU） |
 | `-SkipTweaks` | 关 | 只快照、不改系统 |
-| `-WhatIf` | — | 预演，什么都不改 |
+| `-WhatIf` | — | 预演，什么都不改。**会转发给支持 `-WhatIf` 的子脚本**（否则 `-Phase dev/apps/link -WhatIf` 会真的装软件），并报出"将会改多少项" |
 
 ### 6.2 常用组合
 
