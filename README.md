@@ -74,6 +74,8 @@
 | **Windows 环境配置记录** | 实践记录 | Windows 10 非管理员环境从零配到可用的实测记录：14 项问题总表与复现命令 | [阅读](./docs/windows-environment-setup.md) |
 | **Windows 11 优化审计记录** | 实践记录 | 一台"已优化过"的 Win11 管理员机复核：哪些没做成、哪些是我误判的，以及审计判定标准 | [阅读](./docs/windows-environment-setup-win11.md) |
 | **系统调优核查记录** | 实践记录 | 系统优化项的逐条核查依据，与 `win-ai-gaming-setup` 的调优阶段配套 | [阅读](./docs/system-tweaks-audit.md) |
+| **内网 NAS 稳定性记录** | 实践记录 | 把「NAS 不稳」定位到「睡眠唤醒后没有重连」的完整链条：事件时间对齐法、事件触发计划任务、映射的会话/提权隔离、先算链路天花板 | [阅读](./docs/windows-nas-smb-stability.md) |
+| **Skill 自审方法论** | 方法 | 如何把「文档承诺」变成「可验证事实」：5 类真实缺陷、性能优化的等价性证明、环境缺陷与代码缺陷的区分 | [阅读](./docs/skill-self-audit.md) |
 
 #### AI Skills
 
@@ -139,6 +141,8 @@
 | [Windows 环境配置记录](./docs/windows-environment-setup.md) | Windows 10 非管理员环境从零配置的实测记录：14 项问题总表 + Windows 专属陷阱 |
 | [Windows 11 优化审计记录](./docs/windows-environment-setup-win11.md) | 一台"已优化过"的 Win11 管理员机逐项复核：真损害、被删的调优值、**以及审计者自己的 3 处误判**；含「判定标准对错对照」 |
 | [系统调优核查记录](./docs/system-tweaks-audit.md) | 系统优化项逐条核查依据，对应 Skill 的 `tune` 阶段 |
+| [内网 NAS 稳定性记录](./docs/windows-nas-smb-stability.md) | 「NAS 不稳」的真因是唤醒后没有重连：事件时间对齐法、事件触发计划任务、映射的会话/提权隔离、吞吐天花板换算、以及 3 项实测无收益已回滚的尝试 |
+| [Skill 自审方法论](./docs/skill-self-audit.md) | 把文档承诺变成可验证事实：5 类缺陷（描述不符 / 预演不可信 / 退出码失真 / 判定矛盾 / 静默吞错）、性能等价性证明、环境 vs 代码缺陷 |
 | [win-ai-gaming-setup 参数速查](./skills/win-ai-gaming-setup/README.md) | 七阶段参数、依赖与常见坑；含**运行上下文矩阵**（宿主 / 提权 / 会话）与 14 个工具脚本速查 |
 | [screenshot-text-edit 参数速查](./skills/screenshot-text-edit/README.md) | CLI 脚本参数与调用示例 |
 
@@ -222,6 +226,8 @@ This repository collects reusable technical configurations, practical notes and 
 | **Windows setup notes** | Notes | Turning a locked-down Windows 10 machine into a working dev box: 14 issues and reproducible commands | [Read](./docs/windows-environment-setup.md) |
 | **Windows 11 tuning audit** | Notes | Re-checking a Windows 11 machine that was *already* "optimized": what never took effect, what the auditor himself got wrong, and the acceptance criteria that matter | [Read](./docs/windows-environment-setup-win11.md) |
 | **System tweaks audit** | Notes | Item-by-item evidence behind each system tweak, paired with the `win-ai-gaming-setup` tuning phase | [Read](./docs/system-tweaks-audit.md) |
+| **NAS stability notes** | Notes | Tracing "the NAS feels unstable" to "nothing remounts it after sleep": event-time correlation, an event-triggered remount task, session/elevation isolation of drive mappings, and calculating the link ceiling before optimizing | [Read](./docs/windows-nas-smb-stability.md) |
+| **Skill self-audit method** | Method | Turning documented promises into verifiable facts: five defect classes, proving an optimization is coverage-equivalent, and telling an environment quirk apart from a code bug | [Read](./docs/skill-self-audit.md) |
 
 #### AI skills
 
@@ -286,6 +292,8 @@ The public edition excludes local private exceptions; never overwrite your perso
 | [Windows setup notes](./docs/windows-environment-setup.md) | Real-world record of setting up Windows 10 without admin rights: 14 issues plus Windows-specific pitfalls |
 | [Windows 11 tuning audit](./docs/windows-environment-setup-win11.md) | Item-by-item audit of an already-"optimized" Windows 11 box: real damage, values deleted by cumulative updates, **and three false alarms the auditor raised himself** |
 | [System tweaks audit](./docs/system-tweaks-audit.md) | Per-item evidence for each system tweak, matching the skill's `tune` phase |
+| [NAS stability notes](./docs/windows-nas-smb-stability.md) | "Unstable NAS" traced to a missing remount trigger after sleep: event-time correlation, an event-triggered scheduled task, mapping isolation by session/elevation, link-ceiling math, and three attempts that measured no benefit and were rolled back |
+| [Skill self-audit method](./docs/skill-self-audit.md) | Verifying a skill's own claims: five defect classes, coverage-equivalence proof for performance work, and separating machine policy from code defects |
 
 **The skill is the executable method; the docs explain why and what went wrong.**
 

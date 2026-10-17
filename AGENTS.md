@@ -29,7 +29,13 @@ skills/<name>/
   把开发环境与常用软件从零配置到可用的实测记录（14 项问题总表 + Windows 专属陷阱）；
   `windows-environment-setup-win11.md` 是**互补的另一半** —— 一台"已经优化过"的 Windows 11 管理员机的
   逐项复核（真损害 / 被累积更新删掉的调优值 / **审计者自己的 3 处误判**，含「判定标准对错对照」表）。
-  与 `win-ai-gaming-setup` 配套：**Skill 是可执行的方法，docs 是为什么这么做、以及踩过的坑**。
+  `windows-nas-smb-stability.md` 是内网 NAS 稳定性专项：「NAS 不稳」定位到「睡眠唤醒后没有重连」，
+  含事件时间对齐法、事件触发计划任务、**驱动器映射按会话+提权级别隔离**、先算链路天花板再优化，
+  以及 3 项实测无收益并已回滚的尝试。
+  `skill-self-audit.md` 是**方法论**：如何把 skill 的「文档承诺」变成「可验证事实」——
+  5 类缺陷（描述不符 / 预演不可信 / 退出码失真 / 判定矛盾 / 静默吞错）、
+  性能优化的**等价性证明**、环境缺陷与代码缺陷的区分。与 `win-ai-gaming-setup` 配套：
+  **Skill 是可执行的方法，docs 是为什么这么做、以及踩过的坑**。
 - `internal-audit-reform/`：AI复用制作内部审计整改汇报的完整项目包，包含可编辑PPT、逐页口播、复用规范及配图库。使用前阅读其 `README.md` 和项目级 `AGENTS.md`；当前页面中的业务条件和时限只适用于对应示例项目。
 - `assets/`：根 `README.md` 的横幅素材。`banner.svg` 与 `banner-dark.svg` 是同一版式的浅色 / 深色两套，
   由 README 中的 `<picture>` 按 `prefers-color-scheme` 自动切换；**改动需同步两份**。
