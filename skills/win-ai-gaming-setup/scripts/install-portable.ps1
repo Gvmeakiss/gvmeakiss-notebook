@@ -52,7 +52,8 @@ param(
     [string]$Destination = (Join-Path $env:USERPROFILE 'Apps'),
     [string[]]$Only,
     [switch]$AllowUnverified,
-    [switch]$SkipShortcuts
+    [switch]$SkipShortcuts,
+    [switch]$IncludeOptional
 )
 
 $ErrorActionPreference = 'Continue'
@@ -80,6 +81,7 @@ $allApps = @($cfg.apps)
 if ($allApps.Count -eq 0) { Bad 'manifest contains no apps'; exit 1 }
 
 $apps = $allApps
+$explicitNames = @()
 if ($Only) {
     # PowerShell's -File argument parsing does NOT split "A,B" into an array: the whole
     # string arrives as one element. Accept comma-separated text as well as a real array
@@ -87,7 +89,23 @@ if ($Only) {
     #   pwsh -File install-portable.ps1 -Manifest m.json -Only A,B
     #   pwsh -Command "& ./install-portable.ps1 -Manifest m.json -Only A,B"
     $wanted = @($Only | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+    $explicitNames = $wanted
     $apps = @($apps | Where-Object { $n = $_.name; $wanted -contains $n })
+}
+
+# Optional entries ("optional": true) are SKIPPED by default.
+#
+# Why this exists: the manifest's own notes said to ask the user before installing the
+# Markdown editor, and the README called that entry conditional - but the code installed it
+# unconditionally, so the documented intent was never enforced. An entry the docs call
+# conditional must be conditional in code, otherwise the docs describe a different program
+# than the one that runs.
+#
+# Naming an entry explicitly with -Only counts as intent and installs it regardless.
+$skippedOptional = @()
+if (-not $IncludeOptional) {
+    $skippedOptional = @($apps | Where-Object { $_ -and $_.optional -eq $true -and ($explicitNames -notcontains $_.name) })
+    $apps = @($apps | Where-Object { -not ($_ -and $_.optional -eq $true -and ($explicitNames -notcontains $_.name)) })
 }
 if ($apps.Count -eq 0) {
     Bad 'no apps selected'
@@ -154,6 +172,14 @@ if ($sevenZip) {
 }
 
 $failures = @()
+
+# Report the skipped optional entries up front, so the reason is visible next to the run
+# instead of only in the manifest. Not a failure: skipping is the documented default.
+foreach ($s in $skippedOptional) {
+    Write-Output "`n--- $($s.name)"
+    Warn 'optional - skipped (pass -IncludeOptional, or name it with -Only, to install)'
+    if ($s.optionalReason) { Info $s.optionalReason }
+}
 
 foreach ($app in $apps) {
     Write-Output "`n--- $($app.name)"
@@ -310,16 +336,19 @@ foreach ($app in $apps) {
 
 # ------------------------------------------------------------------- summary
 Write-Output "`n===== summary ====="
+$skipNote = if ($skippedOptional.Count -gt 0) {
+    " ($($skippedOptional.Count) optional skipped: $((@($skippedOptional | ForEach-Object { $_.name })) -join ', '))"
+} else { '' }
 if ($failures.Count -eq 0) {
     # A dry run must not claim it installed anything: measured, `-WhatIf` printed
     # "all selected apps installed" while having written nothing at all.
     if ($WhatIfPreference) {
-        Write-Output 'DRY RUN (-WhatIf): nothing was written. Re-run without -WhatIf to install.'
+        Write-Output "DRY RUN (-WhatIf): nothing was written. Re-run without -WhatIf to install.$skipNote"
     } else {
-        Write-Output 'all selected apps installed'
+        Write-Output "all selected apps installed$skipNote"
         Write-Output 'Open a NEW terminal for any PATH change to take effect.'
     }
 } else {
-    Write-Output "failed ($($failures.Count)): $($failures -join ', ')"
+    Write-Output "failed ($($failures.Count)): $($failures -join ', ')$skipNote"
     exit 1
 }

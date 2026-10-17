@@ -44,6 +44,12 @@
 .PARAMETER NoEditor
   Skip VS Code + Windows Terminal in the dev phase.
 
+.PARAMETER IncludeOptionalApps
+  Also install manifest entries marked "optional": true. They are skipped by default because
+  their own notes say to ask the user first (the Markdown editor is the current example: an
+  Electron app that is the slowest thing in the manifest to start, where Notepad++ usually
+  wins a "fast and simple" comparison). Naming one with -Only installs it regardless.
+
 .PARAMETER HighPerformancePowerPlan
   Optional, off by default: switch the active power plan to High performance.
   Left off because it costs battery life on a laptop.
@@ -86,6 +92,7 @@ param(
     # entire toolchain while every later phase still reported success.
     [string[]]$Languages = @('python', 'nodejs', 'go', 'cmake', 'dotnet-sdk', 'mingw', 'uv'),
     [switch]$NoEditor,
+    [switch]$IncludeOptionalApps,
     [switch]$HighPerformancePowerPlan,
     [switch]$DisableMouseAcceleration,
     [switch]$InstallDrivers,
@@ -346,7 +353,12 @@ if ($phases -contains 'apps') {
         Bad "manifest not found: $Manifest"; Record 'apps' $false 'manifest missing'
     }
     else {
-        $a = Invoke-Step 'install-portable.ps1' @('-Manifest', $Manifest, '-Destination', $Destination) 'download, verify, unpack'
+        # Optional entries in the manifest (e.g. the Markdown editor) are skipped by default;
+        # the manifest's own notes say to ask the user first, so this flag is how that
+        # intent gets expressed. See install-portable.ps1 for the mechanics.
+        $ipArgs = @('-Manifest', $Manifest, '-Destination', $Destination)
+        if ($IncludeOptionalApps) { $ipArgs += '-IncludeOptional' }
+        $a = Invoke-Step 'install-portable.ps1' $ipArgs 'download, verify, unpack'
         Invoke-Step 'check-software.ps1' @('-PortableRoot', $Destination) 'inventory' | Out-Null
         Record 'apps' $a 'portable apps installed'
     }

@@ -138,6 +138,10 @@ pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1
 > ⚠ **清单里的 `exe` 是相对安装根目录的路径**：包内有多个顶层目录时"折叠单层"不会触发（JPEGView 就有 `JPEGView32` / `JPEGView32-WinXP` / `JPEGView64` 三个），必须写 `JPEGView64\JPEGView.exe`；消费方也不能用 `Split-Path -Leaf` 取叶子名，那会丢掉子目录。
 >
 > ⚠ **Markdown 编辑器是取舍，不是越花哨越好**：MarkText 是 Electron 应用，**是本清单里启动最慢的一个**，界面也常被嫌旧。如果用户的诉求是"**启动快、界面简单**"，正确的答案是 **Notepad++**（原生、自带 Markdown 高亮、零插件即可用），而不是再找一个界面更漂亮的编辑器；需要实时预览就用已装的 VS Code（`Ctrl+Shift+V`）。**先问清诉求再装** —— 实测有机器最终就是**不装 MarkText**（`apps.json` 仍声明它，属"可选"而非"必装"，`check-software.ps1` 不会因此报缺）。
+>
+> **这个"可选"现在由代码强制**：`apps.json` 里该条目标了 `"optional": true`，`install-portable.ps1` **默认跳过**它并打印跳过原因；
+> 要装就加 `-IncludeOptionalApps`（经 `setup.ps1`）或 `-Only MarkText`（直接调 `install-portable.ps1`）。
+> 早先文档写"条件安装"而代码无条件安装 —— 那种不一致会让文档描述的程序和实际运行的不是同一个。
 
 > 便携软件**不会出现在系统「应用列表」里**，盘点要用 `check-software.ps1` 扫目录。
 
@@ -252,6 +256,7 @@ scoop 在本技能里是**手段**（保证工具装得上），不是目的。�
 | `-SnapshotDir` | `<Destination>\_backup` | 快照与关联备份位置 |
 | `-Languages` | `python,nodejs,go,cmake,dotnet-sdk,mingw,uv` | 开发阶段要装的 Scoop 包。**必须是真实 scoop 清单名**；`node` / `dotnet` / `python3` / `golang` 会被自动归一化 |
 | `-NoEditor` | 关 | 跳过 VS Code + Windows Terminal |
+| `-IncludeOptionalApps` | 关 | 也安装清单里标了 `"optional": true` 的条目（当前只有 MarkText）。**默认跳过**，因为它的 notes 明确写着"安装前先问用户"。给 `install-portable.ps1` 用 `-Only MarkText` 点名也会装 |
 | `-InstallDrivers` | 关 | `drivers` 阶段实际安装 Windows 更新提供的驱动 |
 | `-DisableMouseAcceleration` | 关 | 把鼠标加速曲线清零（FPS 习惯） |
 | `-HighPerformancePowerPlan` | 关 | 打开才切高性能（笔记本费电） |

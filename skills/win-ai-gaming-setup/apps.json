@@ -21,6 +21,8 @@
     },
     {
       "name": "MarkText",
+      "optional": true,
+      "optionalReason": "Electron editor: the slowest thing in this manifest to start, and its UI is often judged dated. Skipped by default - ask the user first. For a fast, simple Markdown editor, Notepad++ (native, zero plugins) usually wins, and VSCode Ctrl+Shift+V covers the live-preview case without adding an app.",
       "url": "https://github.com/marktext/marktext/releases/download/v0.21.1/marktext-win-x64-0.21.1.zip",
       "sha256": "35235c7576af8a2aa54a64e057738b52150dca37ac09e444311e2868cab96208",
       "exe": "MarkText.exe",
