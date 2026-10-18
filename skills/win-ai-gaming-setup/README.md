@@ -331,3 +331,7 @@ pnputil /restart-device "<InstanceId>"     # 或 scripts/reset-failed-devices.ps
 <a href="./SKILL.md">方法论 → SKILL.md</a> &nbsp;·&nbsp;
 <a href="../../docs/windows-environment-setup-win11.md">实测记录 → docs/</a>
 </sub></p>
+
+---
+
+<p align="right"><sub><a href="../../README.md">← 返回笔记本目录</a> · <a href="./SKILL.md">SKILL.md（AI 执行）</a></sub></p>

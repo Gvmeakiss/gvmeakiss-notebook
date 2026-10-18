@@ -153,3 +153,7 @@
 
 本目录不含：真实主机名、用户名、内网 IP、Steam 账号/SteamID、设备序列号或任何凭据。
 硬件型号与游戏版本属通用技术信息，予以保留。
+
+---
+
+<p align="right"><sub><a href="../README.md">← 返回笔记本目录</a> · <a href="./AGENTS.md">执行协议</a> · <a href="./cs2/README.md">CS2 优化</a></sub></p>

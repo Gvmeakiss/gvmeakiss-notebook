@@ -181,3 +181,7 @@ python3 scripts/analyze.py shot.png --x0 80 --x1 136 --y0 255 --y1 272 --light -
 - 案例描述中的真实公司名一律泛化
 - 订单号用占位符或虚构值
 - **原图不要随代码提交**，只提交脚本和方法
+
+---
+
+<p align="right"><sub><a href="../../README.md">← 返回笔记本目录</a> · <a href="./SKILL.md">SKILL.md（AI 执行）</a></sub></p>
