@@ -85,7 +85,7 @@
 | Skill | 用途 | 入口 |
 |---|---|---|
 | **screenshot-text-edit** | 截图文字 / 数字高保真修改：字形克隆法，保真度远高于字体重绘 | [SKILL.md](./skills/screenshot-text-edit/SKILL.md) · [参数速查](./skills/screenshot-text-edit/README.md) |
-| **win-ai-gaming-setup** | 新装 Windows 一条命令配成「AI 开发 + 游戏」机：七阶段自动装软件、做系统优化、可回滚。含**运行上下文矩阵**与 14 个可单独用的工具脚本 | [SKILL.md](./skills/win-ai-gaming-setup/SKILL.md) · [参数速查](./skills/win-ai-gaming-setup/README.md) |
+| **win-ai-gaming-setup** | 新装 Windows 一条命令配成「AI 开发 + 游戏」机：七阶段自动装软件、做系统优化、可回滚。含**运行上下文矩阵**与 13 个可单独用的工具脚本 | [SKILL.md](./skills/win-ai-gaming-setup/SKILL.md) · [参数速查](./skills/win-ai-gaming-setup/README.md) |
 
 ### 📖 使用说明
 
@@ -144,7 +144,7 @@
 | [系统调优核查记录](./docs/system-tweaks-audit.md) | 系统优化项逐条核查依据，对应 Skill 的 `tune` 阶段 |
 | [内网 NAS 稳定性记录](./docs/windows-nas-smb-stability.md) | 「NAS 不稳」的真因是唤醒后没有重连：事件时间对齐法、事件触发计划任务、映射的会话/提权隔离、吞吐天花板换算、以及 3 项实测无收益已回滚的尝试 |
 | [Skill 自审方法论](./docs/skill-self-audit.md) | 把文档承诺变成可验证事实：5 类缺陷（描述不符 / 预演不可信 / 退出码失真 / 判定矛盾 / 静默吞错）、性能等价性证明、环境 vs 代码缺陷 |
-| [win-ai-gaming-setup 参数速查](./skills/win-ai-gaming-setup/README.md) | 七阶段参数、依赖与常见坑；含**运行上下文矩阵**（宿主 / 提权 / 会话）与 14 个工具脚本速查 |
+| [win-ai-gaming-setup 参数速查](./skills/win-ai-gaming-setup/README.md) | 七阶段参数、依赖与常见坑；含**运行上下文矩阵**（宿主 / 提权 / 会话）与 13 个工具脚本速查 |
 | [screenshot-text-edit 参数速查](./skills/screenshot-text-edit/README.md) | CLI 脚本参数与调用示例 |
 
 关系说明：**Skill 是可执行的方法，docs 是为什么这么做、以及踩过的坑**。
