@@ -13,7 +13,7 @@ agent_created: true
 | 维度 | 完成标准 |
 |---|---|
 | 开发 | `scoop` 可用的语言工具链（python/node/go/cmake/dotnet/mingw），PATH 与 Store 存根已修好，**新开终端**里敲 `python --version` 有输出 |
-| 软件 | 便携软件就位（图片/播放器/Markdown/NAS 工具），逐个能启动，SHA256 已校验 |
+| 软件 | 便携软件就位（图片 / 播放器 / 文本编辑 / NAS 同步 / 系统监控），逐个能启动，SHA256 已校验 |
 | 游戏 | GameDVR 关闭、MMCSS 优先级已调；**没有禁用任何服务** |
 | 系统 | 改动前有快照，能逐项对比、能回滚 |
 | 输入法 | 中文能打、`Win+空格` 能切（这条最容易被"优化"搞坏） |
@@ -40,7 +40,7 @@ agent_created: true
 |---|---|---|
 | 语言与构建工具 | python / nodejs / go / cmake / dotnet-sdk / mingw / **uv**（+ rust 由 `setup-langs.ps1` 处理） | Scoop main |
 | 编辑器与终端 | **VS Code**、**Windows Terminal** | Scoop extras（`-NoEditor` 可跳过） |
-| 便携软件 | **JPEGView**（图片）、**MPC-BE**（音视频）、**MarkText**（Markdown）、**rclone**（NAS 同步） | `apps.json`，SHA256 校验 |
+| 便携软件 | **JPEGView**（图片）、**MPC-BE**（音视频）、**Notepad++**（文本/代码/Markdown）、**rclone**（NAS 同步）、**TrafficMonitor**（任务栏 CPU/内存/网速） | `apps.json`，SHA256 校验 |
 | 可选 | GPU 栈、WSL2 / Docker（AI 常见需求，需提权与虚拟化） | 手动 |
 
 ### ③ 执行的命令
@@ -271,7 +271,8 @@ pwsh -File scripts/snapshot-services.ps1 -OutDir C:\backup\before-tweak
 | **写代码的 Agent 自己会违反 ASCII-only 纪律 —— 而且是在刚读完这条纪律之后** | **实测已被触发 4 次**：① `verify-env.ps1` 自己（27 个非 ASCII 字节）② 一个给计划任务写的 wrapper ③ 给 `setup-langs.ps1` / `install-portable.ps1` 补注释时写中文章节名 ④ 给 `install-portable.ps1` 补注释时写了 `条件安装` 四个字（4×3=**12 字节**，与检查器报出的数字完全吻合）。**四次的共同点：都是在"写注释"时发生**，而且都是在**刚讨论过这条纪律之后**。**结论不是"要更小心"，而是：把检查放进流程** —— 改完该目录任何 `.ps1`，先跑 `check-script-hygiene.ps1` 再提交，它会把这类错误在提交前挡下来（本次四次里有三次就是被它挡下的）。**混写风险最高的场景**：文档是中文、脚本是 ASCII-only，**脚本注释里引用文档时只写章节编号，不要抄中文标题**；要表达中文概念就改用英文描述 |
 | **`-WhatIf` 不会自动传给子进程 —— "预演"因此可能真的在装软件** | `setup.ps1` 用 `& $pwshExe -NoProfile -File $child @Arguments` 调子脚本，而 **11 个调用点没有任何一处把 `-WhatIf` 放进 `@Arguments`**（实测核对）。于是 `setup.ps1 -Phase dev -WhatIf` **真的去装工具链**、`-Phase apps -WhatIf` **真的下载并安装软件**、`-Phase link -WhatIf` **真的写关联注册**，而横幅还印着 `WhatIf: nothing will be changed`。**判据：`-WhatIf` 是进程级偏好，不出本进程；每个跨进程调用都要自己转发**。转发时**不能无脑加** —— 不支持 `SupportsShouldProcess` 的子脚本会因为多出 `-WhatIf` 参数而绑定失败（本目录 14 个里有 3 个不支持）。做法：读子脚本源码判断它是否声明 `SupportsShouldProcess`，只对声明了的转发 |
 | **`Set-Content` 自己支持 `-WhatIf` —— 会造出"文件不存在"的假故障** | `-Phase tune -WhatIf` 曾稳定打印 `FAIL reg import: ERROR: Error opening the file`。链条是：`ShouldProcess` 在 `-WhatIf` 下全部返回 false → 待写清单为空 → **`Set-Content` 也遵守 `-WhatIf`，临时 `.reg` 文件根本没被创建** → 但紧接着的 `reg.exe import` 不受影响，去导入一个不存在的文件。**同一个问题的第二面**：汇总行报 `applied 0 registry change(s)`，读起来像"没事可做"，而真相是"23 项会改"。**判据：`-WhatIf` 分支要自己算"将会改多少"并说出来**（现在输出 `WhatIf: 23 registry value(s) across 10 key(s) would be set`），且**预演路径里不许再调外部写入工具** |
-| **文档说"条件安装"而代码无条件安装 —— 那是两份不同的程序** | `apps.json` 的 MarkText 条目 notes 写着"安装前先问用户"，README 把它标为**条件安装**，但 `install-portable.ps1` **无条件安装它**。**判据：文档里的每一个"可选 / 默认关闭 / 建议先问"，代码里都要有一个对应的开关来强制**。修法是给清单条目标 `"optional": true` + `optionalReason`，脚本**默认跳过并打印跳过原因**，要装才加 `-IncludeOptional`（或 `-Only <名字>` 视为明确意图）。这样预演和实跑看到的都是真实意图，而不是文档承诺 |
+| **"清单里声明了" ≠ "必须装"：4 个 Electron 编辑器装完又全卸** | 清单原本声明 MarkText（Electron + 实时预览）。实测把 **MarkText / VNote / Yank Note / Zettlr 四个都装过**，最终**全部卸载**，换成**原生 Notepad++**。原因是一致的：Electron 编辑器是这个清单里**启动最慢**的一类，而用户的真实诉求是"启动快、界面简单"。**判据：清单是"候选集"，不是"必装集"** —— 遇到"简单快速"这类诉求时，先问一句再装；**实时预览不需要新装应用**（已装的 VS Code `Ctrl+Shift+V` 就够）。现在 `apps.json` 已改为 Notepad++（portable 包自带 `doLocalConf.xml`，配置留在程序目录），MarkText 条目删除 |
+| **别的程序的 ini 靠 BOM 判编码 —— 用 `-Encoding Default` 改它必然乱码** | 给 TrafficMonitor 改 `config.ini` 时用了 `Set-Content -Encoding Default`。PowerShell 7 的 `Default` 写**无 BOM** 的 UTF-8，而 TrafficMonitor **靠 BOM 判断编码**，没有 BOM 就按系统 GBK(936) 解码 ⇒ `内存` 变成 `鍐呭瓨`、`↑` 变成 `鈫?`，用户看到的就是"字体混乱"。**注意这跟本项目那条"脚本必须 ASCII-only"是同一个编码家族、方向相反**：那边是**我方脚本被 PS 5.1 当 ANSI 读**，这边是**别人的程序配置被我写成无 BOM**。**判据：改第三方程序的配置文件前，先看它原来的 BOM 再原样保持** —— 用 `[System.Text.UTF8Encoding]::new($true)` 显式带 BOM 写，改完回读中文串确认没有 `鍐/鈫/閸` 之类乱码 |
 | **诊断脚本的"服务不存在"分支容易漏掉状态标志** | `diagnose-ime.ps1` 只在"服务被禁用"时置 `$badService=$true`，**"服务缺失"分支只打印 FAIL 不置标志** ⇒ 第 1 段报 FAIL、第 6 段却判 `The IME stack looks healthy`，且 `-Repair` 走到 `not disabled - nothing to repair here` 什么也不做。**判据：每个失败分支都必须落到同一个判定变量上**，且"缺失"与"被禁用"是两种不同的失败模式（`sc config` 无法创建不存在的服务，要改走 `sfc` / `DISM`） |
 | **脚本注释里指向文档的引用会随文档重构而失效** | 文档重排章节后，`setup-langs.ps1` 仍写 `see the README for the bootstrap step`、`install-portable.ps1` 仍写 `See README "Manifest format"` —— 两个章节名都已不存在。**判据：引用文档时用"可核对的稳定标识"（章节编号 + 一句英文描述），不要抄中文标题**；重组文档后要回头 grep 脚本里的引用是否还成立 |
 | **`Start-Transcript` 抓不到子进程的输出** | 提权脚本用 `Start-Transcript` 记日志时，**只有父进程自己写的东西会进日志**；它 `&` 调起的 `powershell.exe` 子进程输出到控制台，**日志里一片空白**，极易误判成「脚本没跑」。要监控子进程进度就**回读系统状态**（设备状态、注册表值），别指望日志 |

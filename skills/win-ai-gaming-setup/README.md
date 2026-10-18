@@ -33,7 +33,7 @@ pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1
 
 | 维度 | 内容 | 规模 |
 |---|---|---|
-| **装什么** | 引导依赖 4 项 + 开发工具链 7 项 + 编辑器/终端 2 项 + 便携软件 4 项 | **17 项** |
+| **装什么** | 引导依赖 4 项 + 开发工具链 7 项 + 编辑器/终端 2 项 + 便携软件 5 项 | **18 项** |
 | **配什么** | 开发环境 6 类 + 系统优化 6 类 + 文件关联 | **13 类** |
 | **验什么** | 开发环境 6 类 + 软件清单 + 输入法 + 服务漂移 + **tune 存活检查 15 项** + **脚本双宿主校验** | **49 项检查** |
 | **不碰什么** | 不禁用服务、不关 UAC、不改 DPI/分辨率、不动更新策略、不关休眠/快速启动 | — |
@@ -129,19 +129,21 @@ pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1
 |---|---|---|
 | **JPEGView** | 看图。秒开，扛得住超大文件夹 | `.png` `.jpg` `.jpeg` `.gif` `.bmp` `.webp` `.tif` `.tiff` |
 | **MPC-BE** | 音视频播放，带正常播放器 UI（播放列表、变速、字幕） | `.mp4` `.mkv` `.avi` `.mov` `.webm` `.mp3` `.flac` `.wav` `.m4a` |
-| **MarkText** | Markdown 实时预览编辑器。**条件安装** —— 先读下方取舍说明再决定装不装 | `.md` `.markdown` |
+| **Notepad++** | 文本 / 代码 / Markdown 编辑。原生、秒开、零插件即有语法高亮 | `.txt` `.md` `.markdown` `.ini` `.log` `.json` `.xml` `.yml` `.yaml` |
 | **rclone** | 命令行同步/备份到 NAS（SMB / WebDAV） | —（命令行工具，进 PATH） |
+| **TrafficMonitor** | 任务栏常驻显示 **CPU / 内存 / 网速**，开机自启 | —（系统监控，无关联） |
 
 > ⚠ **解压器按容器选**：`.zip` 用系统内置的 ZIP 支持（**不需要任何外部工具**），`.7z` 才需要 7-Zip。
 > **`7zr.exe` 是精简版、没有 ZIP 编解码器** —— 早先误以为它能通吃，结果唯一的 `.7z` 装好了、三个 `.zip` 全挂（exit 2）。
 >
 > ⚠ **清单里的 `exe` 是相对安装根目录的路径**：包内有多个顶层目录时"折叠单层"不会触发（JPEGView 就有 `JPEGView32` / `JPEGView32-WinXP` / `JPEGView64` 三个），必须写 `JPEGView64\JPEGView.exe`；消费方也不能用 `Split-Path -Leaf` 取叶子名，那会丢掉子目录。
 >
-> ⚠ **Markdown 编辑器是取舍，不是越花哨越好**：MarkText 是 Electron 应用，**是本清单里启动最慢的一个**，界面也常被嫌旧。如果用户的诉求是"**启动快、界面简单**"，正确的答案是 **Notepad++**（原生、自带 Markdown 高亮、零插件即可用），而不是再找一个界面更漂亮的编辑器；需要实时预览就用已装的 VS Code（`Ctrl+Shift+V`）。**先问清诉求再装** —— 实测有机器最终就是**不装 MarkText**（`apps.json` 仍声明它，属"可选"而非"必装"，`check-software.ps1` 不会因此报缺）。
->
-> **这个"可选"现在由代码强制**：`apps.json` 里该条目标了 `"optional": true`，`install-portable.ps1` **默认跳过**它并打印跳过原因；
-> 要装就加 `-IncludeOptionalApps`（经 `setup.ps1`）或 `-Only MarkText`（直接调 `install-portable.ps1`）。
-> 早先文档写"条件安装"而代码无条件安装 —— 那种不一致会让文档描述的程序和实际运行的不是同一个。
+> ⚠ **Markdown 编辑器已定案为 Notepad++（原生），Electron 方案已从清单移除**。实测把 MarkText / VNote / Yank Note / Zettlr 四个都装过、又全部卸载 —— 共同结论是"启动快、界面简单"这个诉求下原生编辑器完胜，而**需要实时预览时用已装的 VS Code（`Ctrl+Shift+V`）**，不必为此再装一个应用。清单里已改为 Notepad++（其 portable 包自带 `doLocalConf.xml`，配置留在程序目录）。
+
+> ⚠ **TrafficMonitor 有两个坑，都是实测踩到的**：
+> ① 它读 `TrafficMonitor.ini` 时**靠 BOM 判断编码** —— 如果你用脚本改这个文件却写成无 BOM 的 UTF-8，所有中文标签会变成 `鍐呭瓨` 这类乱码。**改它必须显式带 UTF-8 BOM。**
+> ② 任务栏窗口需要 `show_task_bar_wnd=true` **且** `hide_main_window=1`，否则你得到的是一个悬浮窗 + 空的任务栏。
+> 另外它的 zip **不含** `global_cfg.ini`，便携安装要自己在 exe 旁建一个（内容 `[config]` / `portable_mode = true`），否则配置会写到 `%APPDATA%`。
 
 > 便携软件**不会出现在系统「应用列表」里**，盘点要用 `check-software.ps1` 扫目录。
 
@@ -155,7 +157,7 @@ pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1
 
 ### 4.6 不想用 scoop 的话（WinGet / 官方安装器路线）
 
-scoop 在本技能里是**手段**（保证工具装得上），不是目的。如果你更喜欢 WinGet 或官方安装器，**结果是等价的** —— 只要下表这些"仪器"到位、镜像生效即可。实测有一台机器就是这么配的：**17 项里 16 项到位**（唯一缺的正是 scoop 本身），便携软件版本与 `apps.json` 声明逐一吻合。
+scoop 在本技能里是**手段**（保证工具装得上），不是目的。如果你更喜欢 WinGet 或官方安装器，**结果是等价的** —— 只要下表这些"仪器"到位、镜像生效即可。实测有一台机器就是这么配的：**当时的 17 项里 16 项到位**（唯一缺的正是 scoop 本身；清单后来调整为 18 项，该机的便携软件版本与当时的 `apps.json` 声明逐一吻合）。
 
 代价是**技能的自动安装阶段用不了**（`setup.ps1` 有 44 处引用 scoop），但**验收与故障处置工具链完整可用**（`verify-env.ps1` 与快照/回滚/输入法/设备复位/关联这 6 个脚本都是 0 处引用）。
 
@@ -256,7 +258,7 @@ scoop 在本技能里是**手段**（保证工具装得上），不是目的。�
 | `-SnapshotDir` | `<Destination>\_backup` | 快照与关联备份位置 |
 | `-Languages` | `python,nodejs,go,cmake,dotnet-sdk,mingw,uv` | 开发阶段要装的 Scoop 包。**必须是真实 scoop 清单名**；`node` / `dotnet` / `python3` / `golang` 会被自动归一化 |
 | `-NoEditor` | 关 | 跳过 VS Code + Windows Terminal |
-| `-IncludeOptionalApps` | 关 | 也安装清单里标了 `"optional": true` 的条目（当前只有 MarkText）。**默认跳过**，因为它的 notes 明确写着"安装前先问用户"。给 `install-portable.ps1` 用 `-Only MarkText` 点名也会装 |
+| `-IncludeOptionalApps` | 关 | 也安装清单里标了 `"optional": true` 的条目。**当前清单没有可选条目**（原 Markdown 编辑器已按实测结论替换为 Notepad++，不再是可选项），但机制保留：给 `install-portable.ps1` 用 `-Only <名字>` 点名也会装 |
 | `-InstallDrivers` | 关 | `drivers` 阶段实际安装 Windows 更新提供的驱动 |
 | `-DisableMouseAcceleration` | 关 | 把鼠标加速曲线清零（FPS 习惯） |
 | `-HighPerformancePowerPlan` | 关 | 打开才切高性能（笔记本费电） |

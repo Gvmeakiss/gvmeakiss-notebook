@@ -20,14 +20,20 @@
       "notes": "Video and audio with a normal player UI: playlist, Ctrl+Up/Down speed, Ctrl+L subtitles. Needs a 7-Zip that can read .7z (scoop has it; the reduced 7zr.exe is enough for this one but NOT for the .zip entries)."
     },
     {
-      "name": "MarkText",
-      "optional": true,
-      "optionalReason": "Electron editor: the slowest thing in this manifest to start, and its UI is often judged dated. Skipped by default - ask the user first. For a fast, simple Markdown editor, Notepad++ (native, zero plugins) usually wins, and VSCode Ctrl+Shift+V covers the live-preview case without adding an app.",
-      "url": "https://github.com/marktext/marktext/releases/download/v0.21.1/marktext-win-x64-0.21.1.zip",
-      "sha256": "35235c7576af8a2aa54a64e057738b52150dca37ac09e444311e2868cab96208",
-      "exe": "MarkText.exe",
-      "assoc": [".md", ".markdown"],
-      "notes": "Markdown with live preview. Electron build, so first launch may raise SmartScreen (unsigned) - choose Run anyway. KNOWN TRADE-OFF, measured on a real machine: an Electron editor is the slowest thing in this manifest to start, and its UI is often judged dated next to native editors. If the user's stated priority is 'starts fast, simple UI', do NOT push a fancier Markdown editor at them - Notepad++ (already present on many machines, native, zero plugins) wins that comparison, and VSCode Ctrl+Shift+V covers the 'want live preview' case without adding an app. Ask which of the two they want BEFORE installing anything here."
+      "name": "Notepad++",
+      "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.8.1/npp.8.9.8.1.portable.x64.zip",
+      "sha256": "beddf5548e75c97930d1575ba1c7d113e6e2b33d0a200310e734ca08e225f414",
+      "exe": "notepad++.exe",
+      "addToPath": ".",
+      "assoc": [".txt", ".md", ".markdown", ".ini", ".log", ".json", ".xml", ".yml", ".yaml"],
+      "notes": "Native text editor that replaces the Electron Markdown editor this manifest used to ship. Measured reason for the swap: an Electron editor is the slowest thing in the manifest to start, and on a 'starts fast, simple UI' requirement a native editor wins outright - MarkText / VNote / Yank Note / Zettlr were all tried on a real machine and all removed. Notepad++ gives Markdown syntax highlighting with zero plugins; for live preview use VSCode Ctrl+Shift+V instead of adding another app. This is the portable build: doLocalConf.xml ships inside the zip, so settings stay in the app folder instead of %APPDATA%."
+    },
+    {
+      "name": "TrafficMonitor",
+      "url": "https://github.com/zhongyang219/TrafficMonitor/releases/download/V1.86/TrafficMonitor_V1.86_x64.zip",
+      "sha256": "948ddc12cc582e8cf0b7b32e0064544f6f711265a7671c2e47343a6a0ff4908e",
+      "exe": "TrafficMonitor.exe",
+      "notes": "Taskbar readout for CPU / memory / network speed - the desktop-side companion to an in-game overlay, and it needs no injection so it cannot upset anti-cheat. Low cost: one ~35 MB process polling once per second. TWO THINGS THAT BITE. (1) It stores settings in TrafficMonitor.ini next to the exe and decides the ENCODING by looking for a UTF-8 BOM: rewrite that file without a BOM and every Chinese label turns to mojibake. Always write it with an explicit UTF-8 BOM. (2) The taskbar window only appears when show_task_bar_wnd=true and hide_main_window=1; otherwise you get a floating window and an empty taskbar. The zip does NOT include global_cfg.ini, so a portable install needs one containing [config] / portable_mode = true next to the exe, or settings go to %APPDATA%. Windows 11 24H2+ ships no Microsoft.XboxGamingOverlay, so do not assume Game Bar is available as a fallback."
     },
     {
       "name": "rclone",
