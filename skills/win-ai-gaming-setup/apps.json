@@ -1,7 +1,21 @@
 {
-  "_comment": "Portable app manifest for scripts/install-portable.ps1, driven by scripts/setup.ps1. Every sha256 below is a real value measured from the official release asset. 'assoc' lists the file types this app should be offered for (used by the link phase; Windows still requires one manual click per type to set a DEFAULT - see SKILL.md).",
+  "_comment": "App manifest for scripts/install-portable.ps1, driven by scripts/setup.ps1. Entries with source=winget are installed through winget and verified by the existence of verifyPath AFTER the install (a winget exit code alone does not prove anything). All other entries are portable archives: every sha256 below is a real value measured from the official release asset, and configFiles may point at presets/ to drop a tuned config in after the first install. 'assoc' lists the file types this app should be offered for (used by the link phase; Windows still requires one manual click per type to set a DEFAULT - see SKILL.md).",
   "version": 1,
   "apps": [
+    {
+      "name": "7-Zip",
+      "source": "winget",
+      "wingetId": "7zip.7zip",
+      "verifyPath": "%ProgramFiles%\\7-Zip\\7z.exe",
+      "notes": "Archive tool #1, and the extractor the portable installs rely on. This entry exists because the scoop route failed on a real machine - scoop never bootstrapped, so 7-Zip was absent while the check phase still reported the bundle as handled, and the user had to install it from 7-zip.org by hand. A winget path that does not depend on scoop is the fix. verifyPath is checked with the binary already on disk, so a silent winget failure still shows up as FAIL."
+    },
+    {
+      "name": "WinRAR",
+      "source": "winget",
+      "wingetId": "RARLab.WinRAR",
+      "verifyPath": "%ProgramFiles%\\WinRAR\\WinRAR.exe",
+      "notes": "Archive tool #2, for .rar and for people who prefer its UI. Installed via winget because there is no portable archive to checksum. LICENSING is a real fact, not a caveat to bury: RARLAB ships WinRAR as a 40-day trial that keeps working with a nag dialog afterwards - buy a license if it stays installed past that. The WinRAR UI is a GUI; use Rar.exe for scripting."
+    },
     {
       "name": "JPEGView",
       "url": "https://github.com/sylikc/jpegview/releases/download/v1.3.46/JPEGView_1.3.46.zip",
@@ -21,6 +35,7 @@
     },
     {
       "name": "Notepad++",
+      "altPaths": ["%ProgramFiles%\\Notepad++\\notepad++.exe", "%ProgramFiles(x86)%\\Notepad++\\notepad++.exe"],
       "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.8.1/npp.8.9.8.1.portable.x64.zip",
       "sha256": "beddf5548e75c97930d1575ba1c7d113e6e2b33d0a200310e734ca08e225f414",
       "exe": "notepad++.exe",
@@ -30,6 +45,7 @@
     },
     {
       "name": "TrafficMonitor",
+      "altPaths": ["%LOCALAPPDATA%\\Microsoft\\WinGet\\Packages\\*TrafficMonitor*\\TrafficMonitor\\TrafficMonitor.exe"],
       "url": "https://github.com/zhongyang219/TrafficMonitor/releases/download/V1.86/TrafficMonitor_V1.86_x64.zip",
       "sha256": "948ddc12cc582e8cf0b7b32e0064544f6f711265a7671c2e47343a6a0ff4908e",
       "exe": "TrafficMonitor.exe",

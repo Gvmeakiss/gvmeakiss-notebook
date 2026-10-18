@@ -13,7 +13,7 @@ agent_created: true
 | 维度 | 完成标准 |
 |---|---|
 | 开发 | `scoop` 可用的语言工具链（python/node/go/cmake/dotnet/mingw），PATH 与 Store 存根已修好，**新开终端**里敲 `python --version` 有输出 |
-| 软件 | 便携软件就位（图片 / 播放器 / 文本编辑 / NAS 同步 / 系统监控），逐个能启动，SHA256 已校验 |
+| 软件 | **20 个全部必装**（无"可选/看情况"）：3 基础 + 2 压缩 + 8 开发 + 2 编辑器 + 5 便携；**每一个都回读真实路径**，不是"命令跑完就算装了" |
 | 游戏 | GameDVR 关闭、MMCSS 优先级已调；**没有禁用任何服务** |
 | 系统 | 改动前有快照，能逐项对比、能回滚 |
 | 输入法 | 中文能打、`Win+空格` 能切（这条最容易被"优化"搞坏） |
@@ -40,7 +40,8 @@ agent_created: true
 |---|---|---|
 | 语言与构建工具 | python / nodejs / go / cmake / dotnet-sdk / mingw / **uv**（+ rust 由 `setup-langs.ps1` 处理） | Scoop main |
 | 编辑器与终端 | **VS Code**、**Windows Terminal** | Scoop extras（`-NoEditor` 可跳过） |
-| 便携软件 | **JPEGView**（图片）、**MPC-BE**（音视频）、**Notepad++**（文本/代码/Markdown）、**rclone**（NAS 同步）、**TrafficMonitor**（任务栏 CPU/内存/网速） | `apps.json`，SHA256 校验 |
+| 压缩工具 | **7-Zip**（`winget`，同时是便携包的解压器）、**WinRAR**（`winget`） | `apps.json` 的 `source: winget` + `verifyPath` 回读 |
+| 便携软件 | **JPEGView**（图片）、**MPC-BE**（音视频）、**Notepad++**（文本/代码/Markdown）、**rclone**（NAS 同步）、**TrafficMonitor**（任务栏 CPU/内存/网速） | `apps.json`，SHA256 校验 + `exe` 回读 |
 | 可选 | GPU 栈、WSL2 / Docker（AI 常见需求，需提权与虚拟化） | 手动 |
 
 ### ③ 执行的命令
@@ -238,7 +239,9 @@ pwsh -File scripts/snapshot-services.ps1 -OutDir C:\backup\before-tweak
 | **别信文件夹名，看文件属性** | `C:\Program Files\AMD\Performance Profile Client\AUEPMaster.exe` 看着像性能配置组件，**实际 FileDescription 是 "AMD User Experience Program Master"（纯遥测）**。按文件夹名判断组件用途会做出错误的保留/禁用决策——实测差点为此把 77~90 秒的开机延迟白拿回来。**查 `(Get-Item x.exe).VersionInfo` 的 FileDescription / ProductName** |
 | **scoop 一个坏清单会中止整批** | `scoop install python node go` 里只要有一个清单名在桶里不存在（`node` → 实为 `nodejs`，`dotnet` → 实为 `dotnet-sdk`），**整批立即中止**，后面的包一个都不装，而外层脚本照样往下走。**实测代价：整套语言链全部没装上，却一路报"成功"。** 判据：逐个回读 `~\scoop\apps\<名字>\current` 是否存在，别信退出码（`setup.ps1` 已改为逐个安装 + 逐个回读） |
 | **`7zr.exe` 不认 ZIP** | `7zr.exe` 是 7-Zip 的**精简版**，**没有 ZIP 编解码器**，解 `.zip` 返回 exit 2。实测：唯一的 `.7z` 应用装好，三个 `.zip` 应用全挂。**ZIP 根本不需要外部工具**——用 in-box 的 `[IO.Compression.ZipFile]`（大包比 `Expand-Archive` 快得多）/ `Expand-Archive`；只有 `.7z` 才需要 7-Zip |
-| **清单里的 exe 是相对路径，消费方不能用 `Split-Path -Leaf`** | 包里有多个顶层目录时"单层目录折叠"不会触发（JPEGView 有 `JPEGView32` / `JPEGView32-WinXP` / `JPEGView64` **三个**），清单必须写 `JPEGView64\JPEGView.exe`。**消费方若用 `Split-Path -Leaf` 取叶子名，子目录会被丢掉**，生成的快捷方式/关联指向不存在的文件 |
+| **清单里的 exe 是相对路径，消费方不能用 `Split-Path -Leaf`** | 包里有多个顶层目录时"单层目录折叠"不会触发（JPEGView 有 `JPEGView32` / `JPEGView32-WinXP` / `JPEGView64` **三个**），清单必须写 `JPEGView64\JPEGView.exe`。**消费方若用 `Split-Path -Leaf` 取叶子名，子目录会被丢掉**，生成的快捷方式/关联指向不存在的文件；更稳的做法是直接用 `Join-Path` 拼清单里的相对路径再判存在 |
+| **"安装成功"的判据必须回读，且必须覆盖清单里的【每一个】条目** | 第一版只给新加的 winget 条目加了 `verifyPath` 回读，便携条目仍然"解压完就报成功" —— 于是 `exe` 写错时只 `WARN` 一句"跳过快捷方式"，安装结果照样算数（这正是 JPEGView 那个坑的真实成因）。**判据：给清单加一种新类型时，回读逻辑要抽象成公共函数并让所有类型走同一条路**（现在 `Resolve-InstalledPath` 同时服务 `verifyPath`(winget) 与 `exe`(便携)），汇总里报 **`verified N/M`** 而不是"无失败"。反向测试三条：目录在但 exe 被删 / `exe` 路径写错 / `-WhatIf` 下不得声称已安装 —— 三者都必须 FAIL |
+| **盘点只认一个目录 = 把正常安装误报成缺失** | `check-software.ps1` 早年靠"扫 `~\Apps\` + 猜主 exe"盘点。加上清单回读后立刻暴露问题：**Notepad++ 与 TrafficMonitor 在真实机器上是 winget 装的**（在 `Program Files` / `WinGet\Packages`），只查便携目录会报 `MISS` —— 把正确的安装说成缺失。修法是清单里加 `altPaths`（支持通配符），输出标注来源 `[portable]` / `[vendor]` / `[alt]`。**判据：判"缺失"之前先确认"它本该在几个地方"** |
 | **写检查项的人必须和写实现的人对齐** | `verify-env.ps1` 检查 `Tasks\Games\GPU Priority` / `Scheduling Category`，而 `tune` 阶段原先**从不写它们** ⇒ 这两项在**任何机器上都必然 FAIL**。长期挂着的假失败会把真问题淹没 |
 | **声明的镜像 ≠ 实际生效的镜像** | 每个镜像配置都被 `if (Get-Command <tool>)` 守卫，工具链没装成功就整段跳过——而汇总行仍**硬编码打印"镜像已生效"**。实测：nodejs 下载失败 ⇒ npm 镜像根本没设，汇总却报 `npm=registry.npmmirror.com`。**汇总必须逐项回读**（`npm config get registry`、`pip config get`、`go env GOPROXY`），不能打印期望值 |
 | **`CARGO_HOME` 不一定是 `~\.cargo`** | scoop 的 `rustup` 包把 `CARGO_HOME`/`RUSTUP_HOME` 指向 `scoop\persist\rustup\`。往 `~\.cargo\config.toml` 写镜像会被**静默忽略**；同理在 `RUSTUP_HOME` 未生效的进程里 `cargo` 会报 "no default toolchain"。**写配置和查状态前都要先解析 `$env:CARGO_HOME` / `$env:RUSTUP_HOME`** |

@@ -70,6 +70,31 @@ function Ok   { param([string]$M) Write-Output "    ok      $M" }
 function Warn { param([string]$M) Write-Output "    WARN    $M" }
 function Bad  { param([string]$M) Write-Output "    FAIL    $M" }
 
+# Resolve the path a manifest entry says proves an app is really there.
+#
+# ONE implementation for both entry kinds, deliberately: the first version only checked the
+# portable exe INSIDE the shortcut branch and only raised a Warn, so a wrong 'exe' path
+# (measured: JPEGView needs 'JPEGView64\JPEGView.exe', a bare name never matches) printed
+# "installed to ..." and still counted as success. That is the exact "installed but unusable"
+# failure this repo keeps hitting, so verification is now a hard readback for every entry:
+#   verifyPath - absolute path (winget entries); '%VAR%' is expanded
+#   exe        - path relative to the install root (portable entries)
+# Returns the resolved path, or $null when nothing was found.
+function Resolve-InstalledPath {
+    param($Entry, [string]$Root)
+    if ($Entry.verifyPath) {
+        $p = [Environment]::ExpandEnvironmentVariables([string]$Entry.verifyPath)
+        if (Test-Path -LiteralPath $p) { return $p }
+        return $null
+    }
+    if ($Entry.exe -and $Root) {
+        $p = Join-Path $Root ([string]$Entry.exe)
+        if (Test-Path -LiteralPath $p) { return $p }
+        return $null
+    }
+    return $null
+}
+
 # ------------------------------------------------------------------- manifest
 if (-not (Test-Path $Manifest)) { Bad "manifest not found: $Manifest"; exit 1 }
 try {
@@ -172,6 +197,7 @@ if ($sevenZip) {
 }
 
 $failures = @()
+$verified = @()      # apps whose declared path was read back successfully - reported in the summary
 
 # Report the skipped optional entries up front, so the reason is visible next to the run
 # instead of only in the manifest. Not a failure: skipping is the documented default.
@@ -183,9 +209,61 @@ foreach ($s in $skippedOptional) {
 
 foreach ($app in $apps) {
     Write-Output "`n--- $($app.name)"
+
+    # ---------------------------------------------------------------------- winget entries
+    # Some tools have no portable archive worth trusting (7-Zip, WinRAR). The manifest marks
+    # those with source=winget, and this branch deliberately bypasses the scoop path: on a
+    # real machine scoop failed to bootstrap, so 7-Zip was never installed even though the
+    # check phase reported the bundle as handled. A second, independent path is what makes
+    # the archive tools actually appear.
+    #
+    # Verification is by readback, not by command success: verifyPath must exist AFTER the
+    # install. A winget exit code of 0 has been wrong before, and "installed" that cannot be
+    # located on disk is exactly the failure this repo keeps hitting.
+    if ($app.source -eq 'winget') {
+        $found = Resolve-InstalledPath $app $null
+        if ($found) {
+            Ok "already installed: $found"
+            $verified += $app.name
+            continue
+        }
+        if (-not $app.wingetId) { Bad 'manifest entry has source=winget but no wingetId'; $failures += $app.name; continue }
+        if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+            Bad 'winget not available - install "App Installer" from the Microsoft Store, then re-run'
+            $failures += $app.name
+            continue
+        }
+        if ($Cmdlet.ShouldProcess($app.wingetId, 'winget install')) {
+            & winget install --id $app.wingetId --silent --accept-package-agreements --accept-source-agreements --disable-interactivity 2>&1 |
+                ForEach-Object { Info ([string]$_) }
+            Info "winget exit code: $LASTEXITCODE"
+        }
+        $found = Resolve-InstalledPath $app $null
+        if ($found) {
+            Ok "verified: $found"
+            $verified += $app.name
+        }
+        else {
+            Bad "still missing after install: $($app.verifyPath)"
+            Info 'install it from the vendor site by hand, then re-run this phase'
+            $failures += $app.name
+        }
+        continue
+    }
+
     $target = Join-Path $Destination $app.name
     if (Test-Path $target) {
-        Ok "already installed at $target (delete the folder to reinstall)"
+        # Re-verify on every run: a folder that exists but no longer holds the declared exe
+        # (interrupted extraction, user deleted files) must not read as healthy.
+        $found = Resolve-InstalledPath $app $target
+        if ($found) {
+            Ok "already installed: $found"
+            $verified += $app.name
+        }
+        else {
+            Bad "folder exists but $($app.exe) is missing - delete $target and re-run"
+            $failures += $app.name
+        }
         continue
     }
     if (-not $app.url) { Bad 'manifest entry has no url'; $failures += $app.name; continue }
@@ -288,6 +366,24 @@ foreach ($app in $apps) {
         if (Test-Path $staging) { Remove-Item $staging -Recurse -Force -ErrorAction SilentlyContinue }
         Ok "installed to $target"
 
+        # Readback before anything else claims success. The archive checksum only proves the
+        # DOWNLOAD was intact; it says nothing about whether the extracted layout matches the
+        # 'exe' the manifest promises, which is a separate and historically broken assumption.
+        $found = Resolve-InstalledPath $app $target
+        if ($found) {
+            Ok "verified: $found"
+            $verified += $app.name
+        }
+        elseif ($WhatIfPreference) {
+            Warn 'would verify the declared exe (nothing extracted in a dry run)'
+        }
+        else {
+            Bad "extracted, but $($app.exe) is not there - the manifest 'exe' path is wrong"
+            Info 'list the folder and fix that entry; a wrong path used to only skip the shortcut'
+            $failures += $app.name
+            continue
+        }
+
         # Config presets ("configFiles" in the manifest): <destination file name> -> <path
         # relative to the skill root>. Written ONLY on a fresh install, on purpose: re-running
         # the installer must not overwrite settings the user has since tuned by hand.
@@ -373,10 +469,13 @@ if ($failures.Count -eq 0) {
     if ($WhatIfPreference) {
         Write-Output "DRY RUN (-WhatIf): nothing was written. Re-run without -WhatIf to install.$skipNote"
     } else {
-        Write-Output "all selected apps installed$skipNote"
+        # Report how many were actually read back. "no failure recorded" and "every app is
+        # verifiably on disk" are different claims, and only the second one is useful.
+        Write-Output "all selected apps installed and verified ($($verified.Count)/$($apps.Count))$skipNote"
         Write-Output 'Open a NEW terminal for any PATH change to take effect.'
     }
 } else {
     Write-Output "failed ($($failures.Count)): $($failures -join ', ')$skipNote"
+    Write-Output "verified ($($verified.Count)/$($apps.Count)): $(@($verified) -join ', ')"
     exit 1
 }

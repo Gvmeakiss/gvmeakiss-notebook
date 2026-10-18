@@ -30,6 +30,9 @@
 [CmdletBinding()]
 param(
     [string]$PortableRoot = (Join-Path $env:USERPROFILE 'Apps'),
+    # Manifest for the "declared apps" readback section. Defaults to the one in the skill root.
+    # If it is absent that section just says so; nothing else changes.
+    [string]$Manifest = (Join-Path $PSScriptRoot '..\apps.json'),
     [switch]$Json
 )
 
@@ -109,6 +112,75 @@ if ($portable.Count -eq 0) {
         if (-not $Json) { '  {0,-14} {1,8} MB  {2}' -f $p.Name, $p.SizeMB, $p.MainExe | Write-Output }
     }
 }
+
+# ------------------------------------------------ declared apps (manifest readback)
+# The scan above GUESSES a main exe by filename. Fine for an inventory, but it cannot answer
+# what the manifest actually promises: "is the app I declared really there?". Measured reason
+# to care - an entry whose 'exe' path was wrong installed, produced no shortcut, and still read
+# as healthy. So verify the declared path directly:
+#   verifyPath - absolute path for winget entries ('%VAR%' is expanded)
+#   exe        - path relative to <PortableRoot>\<name> for portable entries
+Section 'Declared apps (manifest)'
+$declared = @()
+if (-not (Test-Path -LiteralPath $Manifest)) {
+    Row 'manifest' "not found: $Manifest"
+}
+else {
+    $man = $null
+    try { $man = Get-Content -LiteralPath $Manifest -Raw -Encoding UTF8 | ConvertFrom-Json }
+    catch { Row 'manifest' "cannot parse: $($_.Exception.Message)" }
+    if ($man -and $man.apps) {
+        foreach ($app in $man.apps) {
+            $foundPath = $null
+            $foundWhere = ''
+            if ($app.verifyPath) {
+                $candidate = [Environment]::ExpandEnvironmentVariables([string]$app.verifyPath)
+                if (Test-Path -LiteralPath $candidate) { $foundPath = $candidate; $foundWhere = 'vendor' }
+            }
+            elseif ($app.exe) {
+                $candidate = Join-Path (Join-Path $PortableRoot $app.name) ([string]$app.exe)
+                if (Test-Path -LiteralPath $candidate) { $foundPath = $candidate; $foundWhere = 'portable' }
+            }
+            # altPaths: places the same app legitimately lives when it was installed by winget or
+            # by hand instead of through this skill. Measured need - Notepad++ and TrafficMonitor
+            # were winget-installed on a real machine, so a portable-only check called them
+            # missing and turned a correct install into a false alarm. Wildcards are allowed.
+            if (-not $foundPath -and $app.altPaths) {
+                foreach ($alt in @($app.altPaths)) {
+                    $candidate = [Environment]::ExpandEnvironmentVariables([string]$alt)
+                    if (Test-Path -LiteralPath $candidate) { $foundPath = $candidate; $foundWhere = 'alt'; break }
+                    if ($candidate -match '[*?]') {
+                        $hit = @(Get-Item -Path $candidate -ErrorAction SilentlyContinue) | Select-Object -First 1
+                        if ($hit) { $foundPath = $hit.FullName; $foundWhere = 'alt'; break }
+                    }
+                }
+            }
+            $declared += [pscustomobject]@{
+                Name   = $app.name
+                Source = $(if ($app.source) { [string]$app.source } else { 'portable' })
+                Found  = [bool]$foundPath
+                Where  = $foundWhere
+                Path   = $foundPath
+            }
+        }
+    }
+}
+
+$declaredMissing = @($declared | Where-Object { -not $_.Found })
+if ($declared.Count -gt 0) {
+    if (-not $Json) {
+        foreach ($d in $declared | Sort-Object Name) {
+            $mark = if ($d.Found) { 'OK   ' } else { 'MISS ' }
+            $shown = if ($d.Found) { "$($d.Path)  [$($d.Where)]" } else { 'not found at any known path' }
+            '  {0} {1,-14} {2}' -f $mark, $d.Name, $shown | Write-Output
+        }
+        Row 'declared apps' "$($declared.Count - $declaredMissing.Count)/$($declared.Count) present"
+    }
+    if ($declaredMissing.Count -gt 0) {
+        Row 'missing' (($declaredMissing | ForEach-Object { $_.Name }) -join ', ')
+    }
+}
+$report['declaredApps'] = $declared
 
 # Recover versions from the main executable's file metadata
 foreach ($p in $portable) {
