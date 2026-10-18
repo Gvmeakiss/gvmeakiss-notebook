@@ -87,3 +87,7 @@ node --test shadowrocket/tests/*.test.mjs merlin/tests/*.test.mjs
 - 客户端规则源及维护方式见 [Shadowrocket README](../shadowrocket/README.md)。
 
 完整路由 JSON 含订阅与节点凭据，只存本地。`.gitignore` 是误提交防护，不替代人工检查。
+
+---
+
+<p align="right"><sub><a href="../README.md">← 返回笔记本目录</a> · <a href="./AGENTS.md">执行协议</a> · <a href="./使用指南.md">使用指南</a></sub></p>

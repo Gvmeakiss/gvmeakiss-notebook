@@ -91,3 +91,7 @@ DOMAIN,api.example.com,PROXY
 对确定需要直连的私有服务，可在广告规则之前添加精确的 `DIRECT` 规则；局域网别名还应确认系统 DNS 能解析。优先使用 `DOMAIN` 限定主机，不要随意扩大为整个云平台的 `DOMAIN-SUFFIX`。
 
 私人规则、节点入口绕过清单、订阅、账号、完整梅林备份和书签原文件均应只保存在本地。更新公开版前先备份本地改动；导入新版后再按需合并，不要上传私有版本。
+
+---
+
+<p align="right"><sub><a href="../README.md">← 返回笔记本目录</a> · <a href="./AGENTS.md">执行协议</a> · <a href="./使用指南.md">使用指南</a></sub></p>
