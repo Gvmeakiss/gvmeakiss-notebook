@@ -30,6 +30,9 @@ skills/<name>/
   `scripts/`（`check-<game>-readiness.ps1` 只读体检 + `apply-<game>-optimizations.ps1`
   可回退应用，支持 `-WhatIf` / `-Revert`）。新增游戏时按该目录 `README.md` 的模板加子目录并更新索引表。
   该目录脚本**同样必须 ASCII-only**（理由见下文「环境」）。
+- `mini-app-spec/`：**企业级「AI Agent 驱动轻应用平台」技术规范**（脱敏方法论版，单文件）。含整套框架设计、
+  前端约定、数据管理、生命周期控制、接口清单与「依照本规范设计轻应用的标准流程」。
+  顶部有「读者路由」表：判断适用性读 §0–§1，要照做读 §7，AI 动手先读 §6 再读 §7。
 - `docs/`：过程与踩坑记录。`windows-environment-setup.md` 是在一台 Windows 10 非管理员机器上
   把开发环境与常用软件从零配置到可用的实测记录（14 项问题总表 + Windows 专属陷阱）；
   `windows-environment-setup-win11.md` 是**互补的另一半** —— 一台"已经优化过"的 Windows 11 管理员机的

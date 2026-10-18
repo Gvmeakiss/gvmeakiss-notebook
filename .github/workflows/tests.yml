@@ -1,9 +1,11 @@
 name: tests
 
-# 仓库内三套测试均为 Node 内置测试运行器（node --test），无第三方依赖，
-# 因此在 Linux 上可直接运行。CI 同时覆盖 macOS/Linux 的 POSIX 权限位断言：
-# merlin 测试中的 0o600/0o700 断言在非 Windows 平台会真正生效，
-# 与 Windows 本地运行互补（Windows 不支持 POSIX 权限位，该断言自动跳过）。
+# 仓库内两套测试：零依赖的 Node 内置测试（shadowrocket / merlin / audit-kanban），
+# 以及需要 npm 依赖的 audit-workbench 工程版。依赖不同，拆成两个 job 并行跑。
+#
+# CI 同时覆盖 macOS/Linux 的 POSIX 权限位断言：merlin 测试中的 0o600/0o700 断言
+# 在非 Windows 平台会真正生效，与 Windows 本地运行互补（Windows 不支持 POSIX 权限位，
+# 该断言自动跳过）。
 
 on:
   push:
@@ -15,7 +17,8 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  zero-deps:
+    name: zero-dependency tests + links
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -30,12 +33,57 @@ jobs:
         run: |
           node --version
           git --version
+          pwsh --version
 
-      - name: shadowrocket + merlin 测试
-        run: node --test shadowrocket/tests/config.test.mjs merlin/tests/generate-us-bypass.test.mjs
+      # 显式收集测试文件：`node --test <目录>` 在 Node 22/24 上不会自动发现用例
+      # （实测传目录得到 pass 0 / fail 3），所以用 find 列出全部 *.test.* 再交给它。
+      # 新增测试文件不需要改 workflow。
+      - name: shadowrocket / merlin / audit-kanban 测试
+        run: node --test $(find shadowrocket merlin audit-kanban \( -name '*.test.mjs' -o -name '*.test.cjs' \) | sort)
 
-      - name: audit-kanban 测试
-        run: node --test audit-kanban/tests/core.test.cjs
+      - name: 文档锚点与相对链接
+        run: pwsh -NoProfile -File scripts/check-links.ps1
 
       - name: 空白字符检查
         run: git diff --check
+
+  workbench:
+    name: audit-workbench (test / typecheck / build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: audit-workbench
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: audit-workbench/package-lock.json
+
+      # 自动测试的另一半依赖 Python 3
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: 显示环境信息
+        run: |
+          node --version
+          npm --version
+          python3 --version
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 单元测试
+        run: npm test
+
+      - name: 类型检查
+        run: npm run typecheck
+
+      - name: 构建（静态导出）
+        run: npm run build
