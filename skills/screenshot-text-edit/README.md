@@ -5,6 +5,21 @@
 适用于 SAP/ERP 截图、报表、台账、单据、各类后台界面截图。
 
 ---
+> **两份文档分工**：本页给人看 —— 是什么、怎么用、坑在哪。
+> 想在 AI 里执行，看 [`SKILL.md`](./SKILL.md)：执行协议（步骤 + 通过判据）、字形源优先级、中文特殊处理。
+
+## 最快上手
+
+```bash
+python3 scripts/locate.py shot.png --cn --find-glyphs 108                  # 1 定位 + 找字形源
+python3 scripts/analyze.py shot.png --x0 840 --x1 900 --y0 380 --y1 402    # 2 分析边界与 pitch
+python3 scripts/edit.py shot.png --config my_edits.json --out result.png --dry-run   # 3 预演
+python3 scripts/edit.py shot.png --config my_edits.json --out result.png             # 3 出图
+python3 scripts/verify.py orig.png result.png --safe … --expect-new … --expect-gone …  # 4 验证
+```
+
+四步的判据、参数怎么取、什么时候该放弃，见 `SKILL.md` 的执行协议。下面几节是细节说明。
+
 
 ## 为什么不用字体重绘
 

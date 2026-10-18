@@ -5,6 +5,39 @@ agent_created: true
 ---
 
 # 截图文字/数字高保真修改（字形克隆法）
+## 执行协议（AI 按此顺序推进）
+
+**先读这一节。** 后面的章节是判据库：字形源优先级、中文特殊处理、参数取值 —— 遇到分歧再查。
+
+| 步 | 命令 | 通过判据 |
+|---|---|---|
+| 0 | 确认这张图允许修改 | 用户明确同意处理该图 |
+| 1 定位 | `python3 scripts/locate.py shot.png [--cn]` | 拿到目标文本块坐标；中文界面**必须** `--cn` |
+| 1b 找字形源 | `python3 scripts/locate.py shot.png --find-glyphs <要出现的数字串>` | 每个字符都有**同行或邻近同字号**源 |
+| 2 分析 | `python3 scripts/analyze.py shot.png --x0 840 --x1 900 --y0 380 --y1 402` | 得到逐字符边界、pitch、垂直范围、背景色、是否点阵字 |
+| 3 替换 | `python3 scripts/edit.py shot.png --config x.json --out result.png --dry-run` → 去掉 `--dry-run` | 预演无报错，再出图 |
+| 4 验证 | `python3 scripts/verify.py orig.png result.png --safe … --expect-new … --expect-gone … --compare … --region …` | 差异只落在预期区域 / 安全区差异为 0 / OCR 回读新值出现、旧值消失 |
+
+**五条硬规则**
+
+1. **没有同字号字形源就不要硬做** —— 跨字号克隆必然看得出，换源或放弃该字符。
+2. **中文先判是否点阵字**，再谈渲染参数（见「先判断是否为点阵字」）。
+3. **渲染参数看墨迹量，不看差异像素** —— 差异像素最少的那组通常偏细（见「渲染参数的正确指标」）。
+4. **每步都出图给用户看**，不要四步跑完才给结果。
+5. **交付前过一遍脱敏清单**（见「脱敏提醒」）。
+
+**脚本 → 用途**
+
+| 脚本 | 用途 |
+|---|---|
+| `locate.py` | 列文本块坐标；`--find-glyphs` 搜索字形源位置 |
+| `analyze.py` | 逐字符边界、pitch、背景色、点阵判定；`--dump` 出细节 |
+| `edit.py` | JSON 配置驱动替换；`--dry-run` 预演 |
+| `verify.py` | 差异区域 / 安全区 / OCR 回读三重校验 |
+| `patch_grid.py` | ALV 数据区整块重绘 |
+
+> 给人看的说明在 [`README.md`](./README.md)。
+
 
 ## 适用场景
 
