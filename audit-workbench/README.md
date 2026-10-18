@@ -27,7 +27,9 @@ npm run typecheck
 
 ## 维护与接入
 
-- `next-app/components/audit/`：业务界面；`lib/domain/`：业务规则；`lib/audit/`：Excel、存储及平台接口边界。
+- **改代码前先读 [\AGENTS.md\](./AGENTS.md)**：九步执行协议、不可改动的十条契约、数据模式与失败定位。
+- 
+ext-app/components/audit/：业务界面；`lib/domain/`：业务规则；`lib/audit/`：Excel、存储及平台接口边界。
 - `db/DDL/` 与 `db/sql/`：通用 SQLite 数据结构和预定义 SQL；不会在前端自动创建服务器数据库。
 - `docs/使用说明.md`：当前操作说明，由 `scripts/generate-help.mjs` 从同一内容源生成。
 - `scripts/generate-demo.mjs`：从已声明虚构的 JSON 生成示例 Excel；生成文件不入库。
