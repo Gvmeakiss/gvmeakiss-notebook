@@ -71,6 +71,7 @@
 |---|---|---|---|
 | **shadowrocket** | 分流配置 | Mac / iPhone 通用分流规则：国内外分流、去广告、长连接优化 | [目录](./shadowrocket) · [说明](./shadowrocket/README.md) · [使用指南](./shadowrocket/使用指南.md) |
 | **merlin** | 配置与工具 | 梅林 fancyss 分流名单、节点入口绕过生成工具 | [目录](./merlin) · [说明](./merlin/README.md) · [使用指南](./merlin/使用指南.md) |
+| **game-optimizations**（各游戏优化） | 游戏优化 | 按游戏分目录的实测优化与可回退脚本。当前收录 **CS2**：核显画质档位、电源方案、独占全屏、帧率上限 | [目录](./game-optimizations) · [CS2](./game-optimizations/cs2/README.md) |
 | **Windows 环境配置记录** | 实践记录 | Windows 10 非管理员环境从零配到可用的实测记录：14 项问题总表与复现命令 | [阅读](./docs/windows-environment-setup.md) |
 | **Windows 11 优化审计记录** | 实践记录 | 一台"已优化过"的 Win11 管理员机复核：哪些没做成、哪些是我误判的，以及审计判定标准 | [阅读](./docs/windows-environment-setup-win11.md) |
 | **系统调优核查记录** | 实践记录 | 系统优化项的逐条核查依据，与 `win-ai-gaming-setup` 的调优阶段配套 | [阅读](./docs/system-tweaks-audit.md) |
@@ -223,6 +224,7 @@ This repository collects reusable technical configurations, practical notes and 
 |---|---|---|---|
 | **shadowrocket** | Routing config | Mac / iPhone rules: CN / global split, ad-block, long-connection tuning | [Folder](./shadowrocket) · [Readme](./shadowrocket/README.md) · [Guide](./shadowrocket/使用指南.md) |
 | **merlin** | Config and tools | Merlin fancyss routing lists and an endpoint bypass generator | [Folder](./merlin) · [Readme](./merlin/README.md) · [Guide](./merlin/使用指南.md) |
+| **game-optimizations** | Game tuning | Per-game, measured optimisation notes with revertable scripts. Currently **CS2**: iGPU quality tiers, power scheme, exclusive fullscreen, frame cap | [Folder](./game-optimizations) · [CS2](./game-optimizations/cs2/README.md) |
 | **Windows setup notes** | Notes | Turning a locked-down Windows 10 machine into a working dev box: 14 issues and reproducible commands | [Read](./docs/windows-environment-setup.md) |
 | **Windows 11 tuning audit** | Notes | Re-checking a Windows 11 machine that was *already* "optimized": what never took effect, what the auditor himself got wrong, and the acceptance criteria that matter | [Read](./docs/windows-environment-setup-win11.md) |
 | **System tweaks audit** | Notes | Item-by-item evidence behind each system tweak, paired with the `win-ai-gaming-setup` tuning phase | [Read](./docs/system-tweaks-audit.md) |

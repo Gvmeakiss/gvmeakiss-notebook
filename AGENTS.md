@@ -25,6 +25,11 @@ skills/<name>/
   它是 `audit-kanban` 的工程版实现，**共用同一入口说明**，在根 `README.md` 中并入「稽核与业务应用」而非单列项目。
 - `shadowrocket/`：Mac / iPhone 通用分流配置、使用指南与离线配置检查。
 - `merlin/`：梅林 fancyss 分流名单、使用指南、美国节点入口绕过生成工具；账号与节点备份仅在本地使用。
+- `game-optimizations/`：**各游戏优化**，按游戏分子目录（当前 `cs2/`）。每个游戏收录
+  `README.md`（硬件评估 · 瓶颈判定 · 系统优化 · 游戏内设置 · 排错 · 回滚）与
+  `scripts/`（`check-<game>-readiness.ps1` 只读体检 + `apply-<game>-optimizations.ps1`
+  可回退应用，支持 `-WhatIf` / `-Revert`）。新增游戏时按该目录 `README.md` 的模板加子目录并更新索引表。
+  该目录脚本**同样必须 ASCII-only**（理由见下文「环境」）。
 - `docs/`：过程与踩坑记录。`windows-environment-setup.md` 是在一台 Windows 10 非管理员机器上
   把开发环境与常用软件从零配置到可用的实测记录（14 项问题总表 + Windows 专属陷阱）；
   `windows-environment-setup-win11.md` 是**互补的另一半** —— 一台"已经优化过"的 Windows 11 管理员机的
