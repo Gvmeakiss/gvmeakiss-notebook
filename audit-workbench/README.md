@@ -2,7 +2,10 @@
 
 独立于 [audit-kanban](../audit-kanban) 的 Next.js / React / TypeScript 工程。保留个人填报、Excel 预览汇总、经理查看、周报留档和备份的工作方式，增加团队分区、七类业务、长期阶段历史、挽损成果与分批明细、归档恢复、关注事项、快速更新、协作跟进和页面备注。
 
-**公开演示：无真实业务数据、公司内部接口或登录实现。** 自选团队只是业务分区；默认数据保存在当前浏览器，各电脑不会自动同步。虚构示例仅用于交互演示。
+> [!WARNING]
+> **公开演示：无真实业务数据、公司内部接口或登录实现。** 自选团队只是业务分区；默认数据保存在当前浏览器，各电脑不会自动同步。虚构示例仅用于交互演示。
+
+**Next.js / React / TypeScript · 静态导出 · 需构建 · 默认 local-reference**
 
 ## 运行
 
@@ -36,3 +39,7 @@ npm run typecheck
 对接其他平台时，保留平台原有认证与构建流程，挂载 `TeamWorkspace`，在业务边界适配数据调用并显式设置 `NEXT_PUBLIC_DATA_MODE=platform`。公开接口桩在未接入时直接报错，绝不回退浏览器存储冒充共享保存。保存必须保留团队与版本条件更新；不要改写既有 DDL、阶段历史、稳定编号或 Excel 冲突选版规则。实际平台认证、跨客户端共享及部署尚未在此公开项目验证。
 
 相比原版新增功能可直接在本机试用；原 `audit-kanban` 保持独立。只包含当前源码、测试和使用资料，不附开发过程或交付压缩包。SheetJS 许可见 `next-app/public/vendor/LICENSE.sheetjs.txt`。
+
+---
+
+<p align="right"><sub><a href="../README.md">← 返回笔记本目录</a> · <a href="./AGENTS.md">执行协议</a> · <a href="./docs/使用说明.md">使用说明</a> · <a href="../audit-kanban/README.md">离线版 audit-kanban</a></sub></p>
