@@ -39,5 +39,13 @@
 *.min.js  -diff linguist-generated
 *.min.css -diff linguist-generated
 
+# 程序配置预设：必须按【原始字节】入库，禁止任何换行/编码规范化。
+# 这些文件由别的程序直接读取，BOM 与 CRLF 本身就是它的判定依据：
+#   - TrafficMonitor 靠 UTF-8 BOM 判断 ini 编码，丢了 BOM 中文标签全变乱码
+#   - 它的 ini 解析按 Windows 惯例用 CRLF；被规范成 LF 可能读不出键值
+# 所以用 -text（覆盖上面的 text=auto eol=lf），让 git 原样存取。
+# 教训：默认规则会让这类文件"看着提交了、clone 下来却不可用"。
+skills/win-ai-gaming-setup/presets/*  -text
+
 # GitHub 语言统计：把 vendored 第三方库排除出统计
 audit-kanban/vendor/* linguist-vendored
