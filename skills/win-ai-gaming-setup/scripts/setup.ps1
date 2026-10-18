@@ -162,6 +162,17 @@ function Invoke-Step { param([string]$File, [string[]]$Arguments, [string]$What)
 # scoop list writes its table through the host stream, so it cannot be captured reliably.
 # Ask the filesystem instead: an installed app has scoop\apps\<name>\current.
 function Test-ScoopApp { param([string]$Name) Test-Path (Join-Path $env:USERPROFILE "scoop\apps\$Name\current") }
+
+# Readback for the archive tool. 7-Zip installs to Program Files and does not have to be on
+# PATH, so asking 'Get-Command 7z' alone is exactly the kind of probe that reports "missing"
+# for a working install - or, worse in the other direction, misses a real absence when a stale
+# shim exists. Check the known install locations first, then fall back to PATH.
+function Test-ArchiveTool {
+    $candidates = @((Join-Path $env:ProgramFiles '7-Zip\7z.exe'))
+    if (${env:ProgramFiles(x86)}) { $candidates += (Join-Path ${env:ProgramFiles(x86)} '7-Zip\7z.exe') }
+    foreach ($c in $candidates) { if (Test-Path -LiteralPath $c) { return $true } }
+    return [bool](Get-Command '7z' -ErrorAction SilentlyContinue)
+}
 function Get-ScoopInstalled {
     Get-ChildItem (Join-Path $env:USERPROFILE 'scoop\apps') -Directory -ErrorAction SilentlyContinue |
         Select-Object -ExpandProperty Name
@@ -266,8 +277,23 @@ if ($phases -contains 'check') {
     }
     else { Ok 'scoop present' }
 
-    # git and 7zip come first: buckets need git, and the .7z app asset needs 7z.
-    if (-not (Scoop-Install @('git', '7zip'))) { $okAll = $false }
+    # git comes first: scoop buckets need it.
+    if (-not (Scoop-Install @('git'))) { $okAll = $false }
+
+    # 7-Zip is attempted through scoop because the apps phase needs an extractor, but it is
+    # NOT allowed to depend on scoop alone. Measured on a real machine: scoop never bootstrapped,
+    # so 7-Zip was never installed while this phase still counted the bundle as handled, and the
+    # user ended up installing it from 7-zip.org by hand. The winget entry in apps.json is the
+    # independent second path; the verdict is a readback of the binary, never the exit code.
+    if (-not (Scoop-Install @('7zip'))) { Warn '7-Zip not installed by scoop - falling back to winget' }
+    if (-not (Test-ArchiveTool)) {
+        if (-not (Invoke-Step 'install-portable.ps1' @('-Only', '7-Zip') '7-Zip fallback (winget entry)')) {
+            Warn 'winget fallback reported a failure'
+        }
+        Reset-Path
+    }
+    if (Test-ArchiveTool) { Ok '7-Zip present' }
+    else { Bad '7-Zip missing after scoop AND winget - install it from 7-zip.org, then re-run'; $okAll = $false }
 
     if (Test-Path $gitExe) {
         if ($PSCmdlet.ShouldProcess('git config --global core.longpaths', 'set true')) {
@@ -318,7 +344,11 @@ if ($phases -contains 'dev') {
     Say '--- dev: toolchain + editors + AI mirrors ---' White
     $ok = $true
 
-    if (-not (Scoop-Install @('git', '7zip'))) { $ok = $false }
+    # Only git here. 7-Zip used to be re-attempted in this phase too, which made two phases
+    # own the same tool and neither of them prove it: the check phase already ensures it with a
+    # winget fallback and a readback, so repeating a scoop-only install here just adds a second
+    # way to report failure for the same missing binary.
+    if (-not (Scoop-Install @('git'))) { $ok = $false }
     # Do NOT pass the package list through -File as a comma string: -File does not split
     # comma lists, so setup-langs would see one bogus package name and skip everything.
     # Install the requested packages here (array binding works in-process), then let

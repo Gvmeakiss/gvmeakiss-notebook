@@ -5,7 +5,7 @@
 <p align="center">
   <b>Windows 10 / 11</b> &nbsp;·&nbsp; <b>PowerShell 7</b> &nbsp;·&nbsp;
   <b>20 个软件</b> &nbsp;·&nbsp; <b>13 类配置</b> &nbsp;·&nbsp;
-  <b>49 项验收</b> &nbsp;·&nbsp; <b>全程可回滚</b>
+  <b>51 项验收</b> &nbsp;·&nbsp; <b>全程可回滚</b>
 </p>
 
 <p align="center"><sub>装什么 · 配什么 · 怎么跑 · 坏了怎么撤，这一份讲完。<br>
@@ -37,7 +37,7 @@ pwsh -File scripts/setup.ps1 -Phase tune -WhatIf
 > **跑完必须重启**，然后新开一个终端再验收。
 > PATH、输入法栈、MMCSS 驱动都在登录时重建 —— 不重启就下结论是最常见的误判。
 
-**索引**：[装什么](#装什么) · [配什么](#配什么) · [怎么跑](#怎么跑) · [跑完必须做](#跑完必须做) · [出问题](#出问题) · [工具箱](#工具箱) · [边界](#边界)
+**索引**：[装什么](#装什么) · [配什么](#配什么) · [怎么跑](#怎么跑) · [跑完必须做](#跑完必须做) · [出问题](#出问题) · [工具箱](#工具箱) · [可能遇到的问题](#可能遇到的问题) · [边界](#边界)
 
 ---
 
@@ -70,22 +70,15 @@ pwsh -File scripts/setup.ps1 -Phase tune -WhatIf
 > `apps.json` 用 `configFiles` 声明它，安装器在**首次安装后按原始字节复制**（保住 UTF-8 BOM），并写入 `global_cfg.ini` 开启便携模式。
 > 预设里的网卡名已清空、`[window_size]` 已剔除，换机器不会失效。
 
-### 压缩工具：为什么单独列
+### 压缩工具
 
-**7-Zip 和 WinRAR 走 `winget`，不走 scoop。** 这不是风格偏好，是修一个真实故障：
+两个都装，都走 `winget`（没有可校验的便携包）。`check` 阶段先试 scoop，失败即回落到这个条目，
+最后**按安装路径回读**；`verify` 阶段有独立的两行检查（`archives` 组）。
 
-> [!WARNING]
-> 7-Zip 原先只由 `check` 阶段的 `scoop install 7zip` 负责。实测一台机器上 **scoop 根本没装上**，
-> 于是 7-Zip 从未安装 —— 而流程仍把这项当作已处理，用户最后自己去 7-zip.org 手动装的。
->
-> 现在两个压缩工具在 `apps.json` 里声明 `source: "winget"`，**与 scoop 完全解耦**，
-> 装完按 `verifyPath` **回读真实文件**（`winget` 返回 0 不算数）。
-
-| 软件 | 包 ID | 回读路径 | 备注 |
+| 软件 | 包 ID | 回读路径 | 说明 |
 |---|---|---|---|
 | **7-Zip** | `7zip.7zip` | `%ProgramFiles%\7-Zip\7z.exe` | 同时是便携软件的解压器依赖 |
-| **WinRAR** | `RARLab.WinRAR` | `%ProgramFiles%\WinRAR\WinRAR.exe` | `.rar` 与它的 UI；**40 天试用后带弹窗继续可用**，长期用请买授权 |
-
+| **WinRAR** | `RARLab.WinRAR` | `%ProgramFiles%\WinRAR\WinRAR.exe` | `.rar` 与它的 UI；40 天试用后带弹窗继续可用，长期用请买授权 |
 ### 清单机制（`apps.json`）
 
 | 字段 | 作用 |
@@ -158,7 +151,7 @@ pwsh -File scripts/setup.ps1 -Phase tune -WhatIf
 | `drivers` | 故障设备清单（含故障码）+ Windows 更新里的驱动；`-InstallDrivers` 直接装 | 是 | 设备管理器可回滚 |
 | `tune` | **先快照**再改；回读 `sc query MMCSS` 是否 RUNNING | 是 | 是 |
 | `link` | 注册关联 + 报告哪些类型需手动点一次 + 孤儿关联检查 | 否 | 是 |
-| `verify` | **49 项验收** | 否 | — |
+| `verify` | **51 项验收** | 否 | — |
 
 `verify` 验什么：
 
@@ -276,6 +269,20 @@ pnputil /restart-device "<InstanceId>"     # 或 scripts/reset-failed-devices.ps
 > 而任务历史仍显示"成功"。它已挂进 `verify-env.ps1`，**WARN 与 FAIL 都拦截**。
 
 ---
+
+## 可能遇到的问题
+
+首页只放结论。下面这些是**已经修好、但重装或换机器时仍可能撞上**的，完整判据（62 条）在
+[`SKILL.md`](./SKILL.md) 的陷阱表里；每条都写了「症状 → 根因 → 判据」。
+
+| 症状 | 一句话根因 | 在哪查 |
+|---|---|---|
+| 软件"装了"但找不到 / 没快捷方式 | `exe` 相对路径写错，或安装器只看命令退出码 | 清单 `exe` + 回读 `verified N/M` |
+| 盘点报某个软件缺失，实际已装 | 只扫了便携目录，winget/官网装的在别处 | 清单 `altPaths` |
+| 计划任务静默失败、退出码 `0x1` | 无 BOM 的 UTF-8 脚本被 5.1 按 ANSI 解码 | 先跑 `check-script-hygiene.ps1` |
+| `.7z` 解不开 | 用了精简版 `7zr.exe`（没有 ZIP 编解码器） | 装完整 7-Zip |
+| 打完累积更新后优化失效 | 更新会**直接删除**注册表值，不是改值 | 重跑 `verify-env.ps1` |
+| 中文标签变乱码 | 改第三方 ini 时丢了 UTF-8 BOM | 显式带 BOM 写 |
 
 ## 边界
 

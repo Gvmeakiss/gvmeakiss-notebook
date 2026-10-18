@@ -26,7 +26,8 @@ agent_created: true
 |---|---|---|
 | PowerShell 7 | 缺就用 Scoop 装（`scoop install pwsh`）；脚本在 5.1 下也能跑，会自动改用 `powershell.exe` 调子脚本 | `check` |
 | Scoop | 缺就按官方式安装（用户级，免提权） | `check` |
-| git / 7-Zip | `scoop install git 7zip`（bucket 需要 git，`.7z` 资产需要 7z） | `check` |
+| git | `scoop install git`（bucket 需要 git） | `check` |
+| 7-Zip / WinRAR | `apps.json` 的 `source: winget` 条目（`7zip.7zip` / `RARLab.WinRAR`）；`check` 阶段先试 scoop，**失败即回落到 winget 条目**，最后按安装路径回读 | `check` + `apps` |
 | **长路径** | `git config --global core.longpaths true` + `HKLM\...\FileSystem\LongPathsEnabled=1`（AI 仓库嵌套极深） | `check` |
 | **开发者模式** | `AppModelUnlock\AllowDevelopmentWithoutDevLicense=1`（HF 缓存 / pnpm 要建符号链接） | `check` |
 | 执行策略 | 当前用户 `RemoteSigned`（Scoop 安装所需） | `check` |
@@ -240,6 +241,7 @@ pwsh -File scripts/snapshot-services.ps1 -OutDir C:\backup\before-tweak
 | **scoop 一个坏清单会中止整批** | `scoop install python node go` 里只要有一个清单名在桶里不存在（`node` → 实为 `nodejs`，`dotnet` → 实为 `dotnet-sdk`），**整批立即中止**，后面的包一个都不装，而外层脚本照样往下走。**实测代价：整套语言链全部没装上，却一路报"成功"。** 判据：逐个回读 `~\scoop\apps\<名字>\current` 是否存在，别信退出码（`setup.ps1` 已改为逐个安装 + 逐个回读） |
 | **`7zr.exe` 不认 ZIP** | `7zr.exe` 是 7-Zip 的**精简版**，**没有 ZIP 编解码器**，解 `.zip` 返回 exit 2。实测：唯一的 `.7z` 应用装好，三个 `.zip` 应用全挂。**ZIP 根本不需要外部工具**——用 in-box 的 `[IO.Compression.ZipFile]`（大包比 `Expand-Archive` 快得多）/ `Expand-Archive`；只有 `.7z` 才需要 7-Zip |
 | **清单里的 exe 是相对路径，消费方不能用 `Split-Path -Leaf`** | 包里有多个顶层目录时"单层目录折叠"不会触发（JPEGView 有 `JPEGView32` / `JPEGView32-WinXP` / `JPEGView64` **三个**），清单必须写 `JPEGView64\JPEGView.exe`。**消费方若用 `Split-Path -Leaf` 取叶子名，子目录会被丢掉**，生成的快捷方式/关联指向不存在的文件；更稳的做法是直接用 `Join-Path` 拼清单里的相对路径再判存在 |
+| **单一安装路径就是单点故障 —— 尤其当这个路径本身没被验证过** | 7-Zip 与 git 曾只由 `Scoop-Install @('git','7zip')` 负责。实测那台机器 **scoop 根本没装上**，于是 7-Zip 从未安装，而 `check` 阶段仍把整个 bundle 记作已处理 —— 用户最后自己去 7-zip.org 手动装的。**根因不是 scoop 坏了，而是"一个工具只有一个来源，且那个来源自己没被回读"**。修法：压缩工具改为 `apps.json` 的 `source: winget` 条目（与 scoop 解耦），`check` 先试 scoop、失败回落 winget，最后 `Test-ArchiveTool` 按**安装路径**回读；`verify` 里给 7-Zip / WinRAR 各一行独立检查。**判据：任何"必需工具"都要有 ≥2 条独立安装路径，且验收只认回读结果** |
 | **"安装成功"的判据必须回读，且必须覆盖清单里的【每一个】条目** | 第一版只给新加的 winget 条目加了 `verifyPath` 回读，便携条目仍然"解压完就报成功" —— 于是 `exe` 写错时只 `WARN` 一句"跳过快捷方式"，安装结果照样算数（这正是 JPEGView 那个坑的真实成因）。**判据：给清单加一种新类型时，回读逻辑要抽象成公共函数并让所有类型走同一条路**（现在 `Resolve-InstalledPath` 同时服务 `verifyPath`(winget) 与 `exe`(便携)），汇总里报 **`verified N/M`** 而不是"无失败"。反向测试三条：目录在但 exe 被删 / `exe` 路径写错 / `-WhatIf` 下不得声称已安装 —— 三者都必须 FAIL |
 | **盘点只认一个目录 = 把正常安装误报成缺失** | `check-software.ps1` 早年靠"扫 `~\Apps\` + 猜主 exe"盘点。加上清单回读后立刻暴露问题：**Notepad++ 与 TrafficMonitor 在真实机器上是 winget 装的**（在 `Program Files` / `WinGet\Packages`），只查便携目录会报 `MISS` —— 把正确的安装说成缺失。修法是清单里加 `altPaths`（支持通配符），输出标注来源 `[portable]` / `[vendor]` / `[alt]`。**判据：判"缺失"之前先确认"它本该在几个地方"** |
 | **写检查项的人必须和写实现的人对齐** | `verify-env.ps1` 检查 `Tasks\Games\GPU Priority` / `Scheduling Category`，而 `tune` 阶段原先**从不写它们** ⇒ 这两项在**任何机器上都必然 FAIL**。长期挂着的假失败会把真问题淹没 |
