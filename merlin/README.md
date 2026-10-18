@@ -16,6 +16,7 @@
 | [scripts/generate-us-bypass.mjs](./scripts/generate-us-bypass.mjs) | 从本地 fancyss 新版 JSON 备份生成全部匹配美国节点的入口绕过清单 |
 | [使用指南.md](./使用指南.md) | 备份、名单合并、应用、联调、外出使用和恢复 |
 | [Shadowrocket 配置](../shadowrocket/shadowrocket-optimized.conf) | Mac / iPhone 共用的客户端规则 |
+| [AGENTS.md](./AGENTS.md) | 给 AI 的执行协议：改哪里、用例各守什么、失败怎么定位 |
 
 公开名单不包含个人已应用名单中的私有服务与真实节点入口，因此条数与本地不同；导入前需合并个人例外，不能覆盖后视为完整私人配置。
 
