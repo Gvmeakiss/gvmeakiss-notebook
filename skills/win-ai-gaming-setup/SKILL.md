@@ -172,35 +172,17 @@ sc.exe config WSearch start= delayed-auto ; sc.exe start WSearch
 ## 唯一入口
 
 ```powershell
-pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1              # 全部阶段，按顺序
-pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1 -Phase check # 只做前置检查
-pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1 -Phase dev,apps
-pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1 -Phase tune -WhatIf
+pwsh -File scripts/setup.ps1               # 全部阶段，按顺序
+pwsh -File scripts/setup.ps1 -Phase check  # 只做前置检查
+pwsh -File scripts/setup.ps1 -Phase tune -WhatIf
 ```
 
-| 阶段 | 做什么 | 需要管理员 |
-|---|---|---|
-| `check` | **前置检查 + 引导安装**：PowerShell 7 / Scoop / git / 7-Zip / 长路径 / 开发者模式 / 网络 / 磁盘 / 提权 / 系统版本（按 UBR 判断补丁级别） | 部分需要 |
-| `dev` | Scoop 装语言与构建工具 + **VS Code / Windows Terminal** + 国内镜像（pip/npm/go/cargo/**HF**）；修 PATH、Store 存根、凭据助手 | 部分需要 |
-| `apps` | 按 `apps.json` 装便携软件：下载 → **校验 SHA256** → 解压 → 折叠单层目录 → 快捷方式/PATH | 否 |
-| `drivers` | 列出故障设备（含故障码）；查询 **Windows 更新里的驱动更新**（`-InstallDrivers` 安装）；厂商驱动缺失时给出检索路径（Microsoft Update Catalog + 装前校验 INF 硬件 ID） | 是 |
-| `tune` | **先快照**，再应用：游戏调优（GameDVR/MMCSS）+ **关闭无效配置**（广告推荐/开始菜单联网搜索/遥测）；可选电源计划与鼠标加速 | 是 |
-| `link` | 注册文件关联让 Windows 能选到这些程序；报告哪些类型还需手动点一次 | 否 |
-| `verify` | 验收：开发环境 / 软件清单 / 输入法健康 / 服务基线漂移 | 否 |
+`-Phase` 取值：`check` `dev` `apps` `drivers` `tune` `link` `verify`。
+每个阶段做什么、对应哪个脚本，见上文「执行协议」的映射表；
+需要管理员的是 `drivers` 与 `tune`（`check` / `dev` 部分需要）。
 
-配套工具箱（同一目录，可单独调用）：
-
-```
-snapshot-services.ps1     -OutDir <dir>               改动前拍照（只读）
-compare-services.ps1      -Snapshot <csv> [-Restore] [-Only X]   对比 / 按基线回滚
-diagnose-ime.ps1          [-Repair]                   输入法故障诊断（含 ctfmon 退出码、语言栏模式、IFEO）
-reset-failed-devices.ps1  [-Reset] [-Class X]         设备故障码分诊与复位
-install-portable.ps1      -Manifest <json>            清单式便携安装
-check-software.ps1        [-Json]                     便携软件盘点（不进系统应用列表）
-set-app-associations.ps1  [-Register -Apps @{}]       关联注册 / 现状报告
-clean-orphan-associations.ps1 [-Clean]                卸载后的关联残留清理
-audit-env.ps1 / fix-env.ps1 / setup-langs.ps1 / verify-env.ps1     开发环境四件套
-```
+其余 13 个脚本都能单独调用，参数见 `README.md` 的「工具箱」与「参数」两节。
+改任何 `.ps1` 之前先跑 `check-script-hygiene.ps1`。
 
 ## 三条纪律（违反就会被坑）
 
