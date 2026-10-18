@@ -409,6 +409,26 @@ foreach ($g in $gpu) {
 }
 Record 'system' 'gpu driver age' $true $gpuDetail -Optional
 
+# Vendor telemetry. Optional on purpose: the skill never promises to turn it off, so an
+# enabled program is a user choice, not a defect - but if it was turned off it should stay
+# off, and only a readback proves that. Measured facts that make this worth a line:
+# AMD ships "AMD User Experience Program", stores consent in AMDAnalytics\AnalyticsAccepted,
+# and uploads through the AUEPLauncher service. Setting the consent alone does not stop the
+# service from being started, so both are checked.
+$amdKey = 'HKLM:\SOFTWARE\AMD\AMDAnalytics'
+if (Test-Path -LiteralPath $amdKey) {
+    $accepted = (Get-ItemProperty -Path $amdKey -Name 'AnalyticsAccepted' -ErrorAction SilentlyContinue).AnalyticsAccepted
+    $auep = Get-Service -Name 'AUEPLauncher' -ErrorAction SilentlyContinue
+    $auepState = if ($auep) { "$($auep.Status)/$($auep.StartType)" } else { 'not installed' }
+    $telemetryOff = -not (($accepted -eq 'true') -or ($auep -and $auep.Status -eq 'Running'))
+    $amdDetail = if ($telemetryOff) { "off (AnalyticsAccepted=$accepted, AUEPLauncher=$auepState)" }
+                 else { "on (AnalyticsAccepted=$accepted, AUEPLauncher=$auepState)" }
+    Record 'system' 'amd telemetry' $telemetryOff $amdDetail -Optional
+}
+else {
+    Record 'system' 'amd telemetry' $true 'no AMD analytics key (non-AMD machine)' -Optional
+}
+
 # ------------------------------------------------------------------ script hygiene
 # Why this is a verification step and not just a note in SKILL.md:
 # a BOM-less file is decoded as UTF-8 by [Parser]::ParseFile but as ANSI by
