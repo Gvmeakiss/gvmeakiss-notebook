@@ -1,34 +1,31 @@
 {
-  "_comment": "Example manifest for install-portable.ps1. Replace every sha256 with the real value from the vendor's release page before installing. An empty sha256 is refused unless -AllowUnverified is passed.",
+  "_comment": "Example manifest for install-portable.ps1. Two entry kinds. (1) Portable archive: url + sha256 + exe (relative to the install root) - replace every sha256 with the real value from the vendor's release page; an empty sha256 is refused unless -AllowUnverified is passed. (2) source=winget: wingetId + verifyPath (absolute, %VAR% expanded) - for tools with no trustworthy portable archive; verification is the readback of verifyPath, never the winget exit code. Optional fields: assoc (file types the link phase offers), addToPath (sub-path to put on PATH), configFiles ({ destination file name: path relative to the skill root }, written only on a fresh install so a re-run never overwrites hand-tuned settings), altPaths (other places the same app legitimately lives; check-software.ps1 looks there before calling it missing), notes (the known traps for this entry).",
   "version": 1,
   "apps": [
+    {
+      "name": "7-Zip",
+      "source": "winget",
+      "wingetId": "7zip.7zip",
+      "verifyPath": "%ProgramFiles%\\7-Zip\\7z.exe",
+      "notes": "Archive tool and the extractor the portable installs rely on. winget entries bypass the scoop route on purpose: a single install path that is itself unverified is a single point of failure."
+    },
     {
       "name": "Notepad++",
       "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.8.1/npp.8.9.8.1.portable.x64.zip",
       "sha256": "",
       "exe": "notepad++.exe",
-      "notes": "Text / Markdown / code editing. Portable zip keeps settings inside its own folder."
+      "addToPath": ".",
+      "assoc": [".txt", ".md", ".markdown", ".ini", ".log"],
+      "altPaths": ["%ProgramFiles%\\Notepad++\\notepad++.exe", "%ProgramFiles(x86)%\\Notepad++\\notepad++.exe"],
+      "notes": "Text / Markdown / code editing. The portable zip ships doLocalConf.xml, so settings stay in the app folder. altPaths covers the winget or system-wide install so a correct install is not reported as missing."
     },
     {
       "name": "JPEGView",
       "url": "https://github.com/sylikc/jpegview/releases/download/v1.3.46/JPEGView_1.3.46.zip",
       "sha256": "",
-      "exe": "JPEGView.exe",
-      "notes": "Fastest image viewer for large folders. Launching it with no argument opens its own NavPanel.png - that is normal."
-    },
-    {
-      "name": "nomacs",
-      "url": "https://github.com/nomacs/nomacs/releases/download/3.22.4/nomacs-portable-win.zip",
-      "sha256": "",
-      "exe": "nomacs.exe",
-      "notes": "Broadest format support, EXIF metadata, batch operations."
-    },
-    {
-      "name": "ImageGlass",
-      "url": "https://github.com/d2phap/ImageGlass/releases/download/10.0.6.906/ImageGlass_10.0.6.906_win-x64.zip",
-      "sha256": "",
-      "exe": "ImageGlass.exe",
-      "notes": "Modern UI. First run shows a Quick Setup wizard; it is portable, config stays in its folder."
+      "exe": "JPEGView64\\JPEGView.exe",
+      "assoc": [".png", ".jpg", ".jpeg", ".gif", ".bmp"],
+      "notes": "Fastest image viewer for large folders. NOTE the exe path: the archive has three top-level folders, so the single-directory collapse cannot flatten it and a bare JPEGView.exe never matches."
     },
     {
       "name": "mpv",
@@ -44,7 +41,8 @@
       "sha256": "",
       "exe": "mpc-be64.exe",
       "addToPath": ".",
-      "notes": "Familiar player UX: playlist, speed (Ctrl+up/down), subtitles (Ctrl+L)."
+      "assoc": [".mp4", ".mkv", ".avi", ".mov", ".flac", ".mp3"],
+      "notes": "Familiar player UX: playlist, speed (Ctrl+up/down), subtitles (Ctrl+L). A .7z asset needs a FULL 7-Zip - the reduced 7zr.exe has no ZIP codec, so do not assume it can unpack the .zip entries too."
     },
     {
       "name": "rclone",
@@ -53,6 +51,18 @@
       "exe": "rclone.exe",
       "addToPath": ".",
       "notes": "Sync/backup to a NAS over SMB or WebDAV. `rclone mount` needs WinFsp, which DOES require elevation - use OS drive mapping for that instead."
+    },
+    {
+      "name": "TrafficMonitor",
+      "url": "https://github.com/zhongyang219/TrafficMonitor/releases/download/V1.86/TrafficMonitor_V1.86_x64.zip",
+      "sha256": "",
+      "exe": "TrafficMonitor.exe",
+      "configFiles": {
+        "config.ini": "presets/TrafficMonitor.config.ini",
+        "global_cfg.ini": "presets/TrafficMonitor.global_cfg.ini"
+      },
+      "altPaths": ["%LOCALAPPDATA%\\Microsoft\\WinGet\\Packages\\*TrafficMonitor*\\TrafficMonitor\\TrafficMonitor.exe"],
+      "notes": "Taskbar CPU / memory / network readout. configFiles drops a tuned preset on a fresh install (copied as raw bytes so the UTF-8 BOM survives - this app decides the ini encoding by looking for that BOM). The zip has no global_cfg.ini, so the preset supplies one to enable portable mode."
     }
   ]
 }

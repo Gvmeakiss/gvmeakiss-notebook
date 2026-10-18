@@ -45,7 +45,7 @@
 #   - 它的 ini 解析按 Windows 惯例用 CRLF；被规范成 LF 可能读不出键值
 # 所以用 -text（覆盖上面的 text=auto eol=lf），让 git 原样存取。
 # 教训：默认规则会让这类文件"看着提交了、clone 下来却不可用"。
-skills/win-ai-gaming-setup/presets/*  -text
+skills/win-ai-gaming-setup/presets/*  -text -whitespace
 
 # GitHub 语言统计：把 vendored 第三方库排除出统计
 audit-kanban/vendor/* linguist-vendored

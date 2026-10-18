@@ -13,7 +13,7 @@ agent_created: true
 | 维度 | 完成标准 |
 |---|---|
 | 开发 | `scoop` 可用的语言工具链（python/node/go/cmake/dotnet/mingw），PATH 与 Store 存根已修好，**新开终端**里敲 `python --version` 有输出 |
-| 软件 | **20 个全部必装**（无"可选/看情况"）：3 基础 + 2 压缩 + 8 开发 + 2 编辑器 + 5 便携；**每一个都回读真实路径**，不是"命令跑完就算装了" |
+| 软件 | 20 个（3 基础 + 2 压缩 + 8 开发 + 2 编辑器 + 5 便携）；每个都按安装路径回读 |
 | 游戏 | GameDVR 关闭、MMCSS 优先级已调；**没有禁用任何服务** |
 | 系统 | 改动前有快照，能逐项对比、能回滚 |
 | 输入法 | 中文能打、`Win+空格` 能切（这条最容易被"优化"搞坏） |
@@ -278,6 +278,7 @@ pwsh -File scripts/snapshot-services.ps1 -OutDir C:\backup\before-tweak
 | **`Set-Content` 自己支持 `-WhatIf` —— 会造出"文件不存在"的假故障** | `-Phase tune -WhatIf` 曾稳定打印 `FAIL reg import: ERROR: Error opening the file`。链条是：`ShouldProcess` 在 `-WhatIf` 下全部返回 false → 待写清单为空 → **`Set-Content` 也遵守 `-WhatIf`，临时 `.reg` 文件根本没被创建** → 但紧接着的 `reg.exe import` 不受影响，去导入一个不存在的文件。**同一个问题的第二面**：汇总行报 `applied 0 registry change(s)`，读起来像"没事可做"，而真相是"23 项会改"。**判据：`-WhatIf` 分支要自己算"将会改多少"并说出来**（现在输出 `WhatIf: 23 registry value(s) across 10 key(s) would be set`），且**预演路径里不许再调外部写入工具** |
 | **"清单里声明了" ≠ "必须装"：4 个 Electron 编辑器装完又全卸** | 清单原本声明 MarkText（Electron + 实时预览）。实测把 **MarkText / VNote / Yank Note / Zettlr 四个都装过**，最终**全部卸载**，换成**原生 Notepad++**。原因是一致的：Electron 编辑器是这个清单里**启动最慢**的一类，而用户的真实诉求是"启动快、界面简单"。**判据：清单是"候选集"，不是"必装集"** —— 遇到"简单快速"这类诉求时，先问一句再装；**实时预览不需要新装应用**（已装的 VS Code `Ctrl+Shift+V` 就够）。现在 `apps.json` 已改为 Notepad++（portable 包自带 `doLocalConf.xml`，配置留在程序目录），MarkText 条目删除 |
 | **别的程序的 ini 靠 BOM 判编码 —— 用 `-Encoding Default` 改它必然乱码** | 给 TrafficMonitor 改 `config.ini` 时用了 `Set-Content -Encoding Default`。PowerShell 7 的 `Default` 写**无 BOM** 的 UTF-8，而 TrafficMonitor **靠 BOM 判断编码**，没有 BOM 就按系统 GBK(936) 解码 ⇒ `内存` 变成 `鍐呭瓨`、`↑` 变成 `鈫?`，用户看到的就是"字体混乱"。**注意这跟本项目那条"脚本必须 ASCII-only"是同一个编码家族、方向相反**：那边是**我方脚本被 PS 5.1 当 ANSI 读**，这边是**别人的程序配置被我写成无 BOM**。**判据：改第三方程序的配置文件前，先看它原来的 BOM 再原样保持** —— 用 `[System.Text.UTF8Encoding]::new($true)` 显式带 BOM 写，改完回读中文串确认没有 `鍐/鈫/閸` 之类乱码 |
+| **"读 → 写" 会累积 BOM，而且没有任何报错** | 用 `GetString([IO.File]::ReadAllBytes(p))` 读一个带 BOM 的文件时，BOM 会变成字符串里的 `U+FEFF` 留在开头；再用 `UTF8Encoding($true)` 写回，就会**再补一个 BOM**。实测同一个文件被读了写两次之后变成 **3 个 BOM**（`EF BB BF` ×3），首行从 `[general]` 变成 `\uFEFF\uFEFF\uFEFF[general]` —— 于是按行首锚定的 `^\[general\]` 正则**静默匹配失败**，配置改了却像没改；这个缺陷同时污染过本机配置和已提交的 `presets/TrafficMonitor.config.ini`。**判据：写回前先 `$t = $t.TrimStart([char]0xFEFF)`，或者"字符串已含 BOM 就用 `UTF8Encoding($false)`"**；改完必须数一下前 3 字节，只允许一组 `EF BB BF` |
 | **诊断脚本的"服务不存在"分支容易漏掉状态标志** | `diagnose-ime.ps1` 只在"服务被禁用"时置 `$badService=$true`，**"服务缺失"分支只打印 FAIL 不置标志** ⇒ 第 1 段报 FAIL、第 6 段却判 `The IME stack looks healthy`，且 `-Repair` 走到 `not disabled - nothing to repair here` 什么也不做。**判据：每个失败分支都必须落到同一个判定变量上**，且"缺失"与"被禁用"是两种不同的失败模式（`sc config` 无法创建不存在的服务，要改走 `sfc` / `DISM`） |
 | **脚本注释里指向文档的引用会随文档重构而失效** | 文档重排章节后，`setup-langs.ps1` 仍写 `see the README for the bootstrap step`、`install-portable.ps1` 仍写 `See README "Manifest format"` —— 两个章节名都已不存在。**判据：引用文档时用"可核对的稳定标识"（章节编号 + 一句英文描述），不要抄中文标题**；重组文档后要回头 grep 脚本里的引用是否还成立 |
 | **`Start-Transcript` 抓不到子进程的输出** | 提权脚本用 `Start-Transcript` 记日志时，**只有父进程自己写的东西会进日志**；它 `&` 调起的 `powershell.exe` 子进程输出到控制台，**日志里一片空白**，极易误判成「脚本没跑」。要监控子进程进度就**回读系统状态**（设备状态、注册表值），别指望日志 |

@@ -8,7 +8,7 @@
   <b>51 项验收</b> &nbsp;·&nbsp; <b>全程可回滚</b>
 </p>
 
-<p align="center"><sub>装什么 · 配什么 · 怎么跑 · 坏了怎么撤，这一份讲完。<br>
+<p align="center"><sub>装什么 · 配什么 · 怎么跑 · 坏了怎么撤。<br>
 判断依据与踩坑实录 → <a href="./SKILL.md"><b>SKILL.md</b></a></sub></p>
 
 ---
@@ -43,7 +43,7 @@ pwsh -File scripts/setup.ps1 -Phase tune -WhatIf
 
 ## 装什么
 
-**20 个软件，全部必装。** 没有"可选"、没有"看情况"：
+共 20 个：
 
 | 组 | 软件 | 数量 | 安装方式 |
 |---|---|:--:|---|
@@ -88,7 +88,7 @@ pwsh -File scripts/setup.ps1 -Phase tune -WhatIf
 | `exe` | **相对安装根目录**的路径（JPEGView 有三个顶层目录，必须写 `JPEGView64\JPEGView.exe`） |
 | `assoc` | 该软件应出现在哪些类型的"打开方式"候选里 |
 | `configFiles` | 首次安装后要落盘的配置文件（`{ 目标文件名: 相对技能根的预设路径 }`），**重跑不覆盖** |
-| `notes` | 给下一个人看的坑，不是装饰 |
+| `notes` | 该条目的已知坑与注意事项 |
 
 > [!NOTE]
 > 便携软件**不会出现在系统「应用列表」里**（winget 装的会）。盘点要跑 `check-software.ps1` 扫目录。
@@ -159,8 +159,8 @@ pwsh -File scripts/setup.ps1 -Phase tune -WhatIf
 |---|:--:|---|
 | `hygiene` | 1 | 每个 `.ps1` 在 **PS 7 与 PS 5.1 下都能解析** |
 | `tweaks` | 15 | 含 **MMCSS 驱动是否真在跑**（只看注册表会漏掉"值在、服务停"） |
-| 各语言链 | 25 | **真编译真运行**，不看 `--version` |
-| 其它 | 8 | 软件清单 / 输入法 / 服务漂移 / git / gh / ssh |
+| 各语言链 | 30 | **真编译真运行**，不看 `--version`（python / node / go / rust / java / dotnet / cpp） |
+| 其它 | 5 | git / gh / ssh / **7-Zip 与 WinRAR**（`archives` 组） |
 
 ### 参数
 
@@ -275,7 +275,7 @@ pnputil /restart-device "<InstanceId>"     # 或 scripts/reset-failed-devices.ps
 首页只放结论。下面这些是**已经修好、但重装或换机器时仍可能撞上**的，完整判据（62 条）在
 [`SKILL.md`](./SKILL.md) 的陷阱表里；每条都写了「症状 → 根因 → 判据」。
 
-| 症状 | 一句话根因 | 在哪查 |
+| 症状 | 根因 | 在哪查 |
 |---|---|---|
 | 软件"装了"但找不到 / 没快捷方式 | `exe` 相对路径写错，或安装器只看命令退出码 | 清单 `exe` + 回读 `verified N/M` |
 | 盘点报某个软件缺失，实际已装 | 只扫了便携目录，winget/官网装的在别处 | 清单 `altPaths` |
