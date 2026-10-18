@@ -5,6 +5,55 @@ agent_created: true
 ---
 
 # Windows 新机配置：AI 开发 + 游戏
+## 执行协议（AI 按此顺序推进，不要跳步）
+
+**先只看这一节。** 下面的章节是判据库，遇到分歧再查；不必通读。
+
+| 步 | 动作 | 命令 | 通过判据 |
+|---|---|---|---|
+| 0 | 确认宿主 | `$PSVersionTable.PSVersion` | 7.x 为主；5.1 能跑但脚本必须 ASCII-only |
+| 1 | 脚本体检 | `check-script-hygiene.ps1` | `0 FAIL, 0 WARN` —— 不通过就先修脚本，否则后面全在 5.1 里静默失败 |
+| 2 | 预演 | `setup.ps1 -Phase <目标> -WhatIf` | 只打印"将会做什么"，**无任何真实写入** |
+| 3 | 干跑 | `setup.ps1 -Phase <目标>` | 退出码 0，且每个软件报 `verified: <真实路径>` |
+| 4 | 重启 | 交给用户 | 重启后**新开终端** |
+| 5 | 验收 | `verify-env.ps1` | 51 项 / 0 失败 |
+| 6 | 归因 | 读输出 | 每个 FAIL 归到「文档错 / 代码错 / 环境差」之一 |
+
+**五条硬规则**
+
+1. **一次只推进一个阶段**，上一阶段没到判据，不进下一阶段。
+2. **任何"成功"都要回读**：软件看 `verified:` 路径、注册表看实际值、服务看 `sc query` 状态。**退出码只作线索**。
+3. **没有快照不许跑 `tune`** —— 先 `snapshot-services.ps1`。
+4. **验收要在目标上下文**里做：验计划任务就在计划任务上下文验；提权窗口里验非提权行为一定误判（见「运行上下文矩阵」）。
+5. **报结论必须带证据**：贴实际读到的值，不要只写"已配置"。
+
+**一次完整执行**
+
+```powershell
+pwsh -File scripts/check-script-hygiene.ps1        # 1 体检
+pwsh -File scripts/setup.ps1 -Phase all -WhatIf     # 2 预演
+pwsh -File scripts/setup.ps1 -Phase all             # 3 干跑
+# 4 重启，新开终端
+pwsh -File scripts/verify-env.ps1                   # 5 验收（51 项）
+```
+
+**阶段 → 脚本映射**（只跑某一段时查这里）
+
+| 目标 | 命令 |
+|---|---|
+| 只看缺什么 | `setup.ps1 -Phase check` |
+| 工具链 + 编辑器 + 镜像 | `setup.ps1 -Phase dev` |
+| 7 个应用（含 SHA256 校验） | `setup.ps1 -Phase apps` |
+| 故障设备清单 / 装驱动 | `setup.ps1 -Phase drivers`（加 `-InstallDrivers` 才装） |
+| 系统优化（先快照） | `setup.ps1 -Phase tune` |
+| 文件关联（只写 HKCU） | `setup.ps1 -Phase link -RegisterAssociations` |
+| 51 项验收 | `setup.ps1 -Phase verify` 或 `verify-env.ps1` |
+| 回滚 | `compare-services.ps1 -Snapshot <csv> -Restore` |
+| 输入法坏了 | `diagnose-ime.ps1 -Repair`（管理员，之后重启） |
+| 设备故障码 | `reset-failed-devices.ps1 -Reset`（管理员） |
+
+> 给人看的说明在 [`README.md`](./README.md)；本文件是执行侧文档。
+
 
 ## 目标（什么叫"配好了"）
 

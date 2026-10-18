@@ -1,6 +1,6 @@
 <h1 align="center">win-ai-gaming-setup</h1>
 
-<p align="center"><b>一台刚装好的 Windows，一条命令变成能干活的 AI 开发机 + 能打游戏的机器</b></p>
+<p align="center"><b>新装的 Windows，跑一条命令配成能干活的 AI 开发机 + 能打游戏的机器</b></p>
 
 <p align="center">
   <b>Windows 10 / 11</b> &nbsp;·&nbsp; <b>PowerShell 7</b> &nbsp;·&nbsp;
@@ -8,38 +8,61 @@
   <b>51 项验收</b> &nbsp;·&nbsp; <b>全程可回滚</b>
 </p>
 
-<p align="center"><sub>装什么 · 配什么 · 怎么跑 · 坏了怎么撤。<br>
-判断依据与踩坑实录 → <a href="./SKILL.md"><b>SKILL.md</b></a></sub></p>
-
 ---
 
-## 快速开始
+## 这是什么
+
+给刚装完系统的 Windows 准备的一组脚本，替你做三件事：
+
+1. **装东西** —— 开发工具链（Python / Node / Go / Rust / .NET / C/C++）、编辑器与终端、压缩工具、常用小工具，共 20 个。
+2. **调系统** —— 关掉后台录制与广告推荐、给游戏让出调度优先级、配好国内镜像。
+3. **留后路** —— 动系统之前先把服务和自启项拍一张快照，改坏了能逐项还原。
+
+用之前不必读完全文，照着下面三步做即可。
+
+> **两份文档分工**：本页给人看 —— 做什么、怎么用、出问题怎么办。
+> 想深究或在 AI 里执行，看 [`SKILL.md`](./SKILL.md)：执行协议、判定规则、62 条实测陷阱。
+
+## 三步上手
+
+**第一步 · 先看缺什么（只读，不改任何东西）**
 
 ```powershell
-# 全部七个阶段（建议：PowerShell 7 + 管理员）
-pwsh -File scripts/setup.ps1
-
-# 只想先看这台机器缺什么，不动任何东西
 pwsh -File scripts/setup.ps1 -Phase check
-
-# 先看 tune 要改哪些注册表项
-pwsh -File scripts/setup.ps1 -Phase tune -WhatIf
 ```
 
-跑完输出一张 PASS/FAIL 表：
+逐项报告 PowerShell 7 / Scoop / Git / 7-Zip / 长路径 / 开发者模式 / GitHub 连通性 / 磁盘空间，缺什么会说。
+
+**第二步 · 装环境与软件（最常用）**
+
+```powershell
+pwsh -File scripts/setup.ps1 -Phase dev,apps
+```
+
+`dev` 装工具链、编辑器、国内镜像；`apps` 装 7 个应用（两个压缩工具 + 五个便携软件，每个都校验 SHA256）。
+
+**第三步 · 重启，然后验收**
+
+```powershell
+pwsh -File scripts/setup.ps1 -Phase verify
+```
+
+51 项检查，每项都是真编译、真运行，不看版本号。**不重启就验收会误判** —— PATH、输入法栈、多媒体调度驱动都在登录时重建。
+
+想动系统优化项（后台录制、广告推荐、遥测等），先看再改：
+
+```powershell
+pwsh -File scripts/setup.ps1 -Phase tune -WhatIf   # 只打印要改什么
+pwsh -File scripts/setup.ps1 -Phase tune           # 确认后再改
+```
 
 | 退出码 | 含义 |
 |---|---|
 | `0` | 选中的阶段全部通过 |
 | 非 `0` | 至少一个阶段有失败项（便于接进脚本流水线） |
 
-> [!IMPORTANT]
-> **跑完必须重启**，然后新开一个终端再验收。
-> PATH、输入法栈、MMCSS 驱动都在登录时重建 —— 不重启就下结论是最常见的误判。
+**索引**：[这是什么](#这是什么) · [三步上手](#三步上手) · [装什么](#装什么) · [配什么](#配什么) · [怎么跑](#怎么跑) · [跑完必须做](#跑完必须做) · [出问题](#出问题) · [工具箱](#工具箱) · [可能遇到的问题](#可能遇到的问题) · [边界](#边界)
 
-**索引**：[装什么](#装什么) · [配什么](#配什么) · [怎么跑](#怎么跑) · [跑完必须做](#跑完必须做) · [出问题](#出问题) · [工具箱](#工具箱) · [可能遇到的问题](#可能遇到的问题) · [边界](#边界)
-
----
 
 ## 装什么
 
