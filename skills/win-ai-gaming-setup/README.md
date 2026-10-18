@@ -145,6 +145,16 @@ pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1
 > ② 任务栏窗口需要 `show_task_bar_wnd=true` **且** `hide_main_window=1`，否则你得到的是一个悬浮窗 + 空的任务栏。
 > 另外它的 zip **不含** `global_cfg.ini`，便携安装要自己在 exe 旁建一个（内容 `[config]` / `portable_mode = true`），否则配置会写到 `%APPDATA%`。
 
+> **TrafficMonitor 自带一份调好的预设**（`presets/TrafficMonitor.config.ini`）：加粗字体、项目间距 10、
+> 背景透明贴合任务栏、网速简洁模式、自定义显示项与顺序、亮/暗主题自动适配。
+> 这份预设来自一台真实机器的实际调校，`apps.json` 用 `configFiles` 字段声明它，
+> `install-portable.ps1` 在**首次安装后按原始字节复制**过去（保住 UTF-8 BOM），
+> 并同时写入 `global_cfg.ini` 开启便携模式。
+> 预设里的 `connection_name` 已清空（每台机器的网卡名不同，程序会自动选择）、`[window_size]` 段已剔除（对话框尺寸无意义）。
+>
+> **`configFiles` 只在"首次安装"时写**，重跑安装器**不会覆盖**你已经手工调过的设置 —— 这是刻意设计。
+> 清单里该字段的格式是 `{ "<目标文件名>": "<相对技能根的预设路径>" }`，可供其它软件复用。
+
 > 便携软件**不会出现在系统「应用列表」里**，盘点要用 `check-software.ps1` 扫目录。
 
 ### 4.5 需要手动装的（有意不自动化）

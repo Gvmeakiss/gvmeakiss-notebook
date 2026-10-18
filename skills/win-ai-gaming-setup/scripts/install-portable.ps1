@@ -287,6 +287,34 @@ foreach ($app in $apps) {
         Move-Item -Path $source -Destination $target -Force
         if (Test-Path $staging) { Remove-Item $staging -Recurse -Force -ErrorAction SilentlyContinue }
         Ok "installed to $target"
+
+        # Config presets ("configFiles" in the manifest): <destination file name> -> <path
+        # relative to the skill root>. Written ONLY on a fresh install, on purpose: re-running
+        # the installer must not overwrite settings the user has since tuned by hand.
+        #
+        # The preset files are copied as raw bytes so their encoding survives. That matters
+        # here: TrafficMonitor decides how to read its ini by looking for a UTF-8 BOM, so a
+        # preset rewritten without one turns every Chinese label into mojibake.
+        if ($app.configFiles) {
+            $skillRoot = Split-Path -Path (Resolve-Path -LiteralPath $Manifest).Path -Parent
+            foreach ($prop in $app.configFiles.PSObject.Properties) {
+                $destName = $prop.Name
+                $srcRel = [string]$prop.Value
+                $srcFile = Join-Path $skillRoot $srcRel
+                if (-not (Test-Path -LiteralPath $srcFile)) {
+                    Warn "config preset missing, skipped: $srcRel"
+                    continue
+                }
+                $dstFile = Join-Path $target $destName
+                if ($Cmdlet.ShouldProcess($dstFile, "write $destName from preset")) {
+                    try {
+                        [System.IO.File]::Copy($srcFile, $dstFile, $true)
+                        Ok "config: $destName <- $srcRel"
+                    }
+                    catch { Warn "could not write $destName : $($_.Exception.Message)" }
+                }
+            }
+        }
     }
 
     # shortcut
