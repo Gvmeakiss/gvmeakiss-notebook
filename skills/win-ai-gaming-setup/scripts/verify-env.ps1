@@ -345,6 +345,70 @@ if ($pfRoot86) { $rarCandidates += (Join-Path $pfRoot86 'WinRAR\WinRAR.exe') }
 $rarHit = @($rarCandidates | Where-Object { Test-Path -LiteralPath $_ }) | Select-Object -First 1
 Record 'archives' 'WinRAR' ([bool]$rarHit) $(if ($rarHit) { $rarHit } else { 'missing - the winget entry RARLab.WinRAR did not land' })
 
+# ------------------------------------------------------------------ system health
+# Four checks that the original checklist did not cover. Each one came from a real
+# measurement on a machine where "everything green" still left room:
+#   * pagefile - system managed is the right default; a hand-set tiny pagefile is not
+#   * startup  - installer leftovers (OneDriveSetup under the service accounts) and
+#                browser auto-launch keep starting things nobody asked for
+#   * nic power - PnPCapabilities=24 is the documented fix; a value of 0 lets Windows
+#                power the adapter down, which shows up as random drops in games
+#   * gpu age  - an old driver is not a defect, so this one is informational only
+$pfManaged = $false
+try { $pfManaged = [bool](Get-CimInstance Win32_ComputerSystem -EA Stop).AutomaticManagedPagefile } catch { }
+$pfSetting = @(Get-CimInstance Win32_PageFileSetting -EA SilentlyContinue)
+$pfDetail = if ($pfManaged) {
+    'system managed' + $(if ($pfSetting.Count -gt 0) { " (explicit entry also present: $($pfSetting[0].InitialSize) MB)" } else { '' })
+}
+else {
+    $size = if ($pfSetting.Count -gt 0) { "$($pfSetting[0].InitialSize) MB" } else { 'no pagefile setting found' }
+    "fixed size: $size"
+}
+Record 'system' 'pagefile' ($pfManaged -or ($pfSetting.Count -gt 0)) $pfDetail
+
+$startupLeftovers = New-Object System.Collections.Generic.List[string]
+foreach ($hive in @('Registry::HKEY_USERS\S-1-5-19\SOFTWARE\Microsoft\Windows\CurrentVersion\Run',
+                    'Registry::HKEY_USERS\S-1-5-20\SOFTWARE\Microsoft\Windows\CurrentVersion\Run')) {
+    if (Test-Path $hive) {
+        $v = Get-ItemProperty -Path $hive -Name 'OneDriveSetup' -ErrorAction SilentlyContinue
+        if ($null -ne $v) { $startupLeftovers.Add('OneDriveSetup') }
+    }
+}
+$hkcuRun = Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -ErrorAction SilentlyContinue
+if ($hkcuRun) {
+    foreach ($p in $hkcuRun.PSObject.Properties) {
+        if ($p.Name -notlike 'PS*' -and $p.Name -like 'MicrosoftEdgeAutoLaunch*') { $startupLeftovers.Add($p.Name) }
+    }
+}
+$startupDetail = if ($startupLeftovers.Count -eq 0) { 'no installer leftovers, no browser auto-launch' }
+                 else { 'leftovers present: ' + (($startupLeftovers | Select-Object -Unique) -join ', ') }
+Record 'system' 'startup leftovers' ($startupLeftovers.Count -eq 0) $startupDetail
+
+$nicBases = @(Get-ChildItem 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e972-e325-11ce-bfc1-08002be10318}' -ErrorAction SilentlyContinue |
+    ForEach-Object { Get-ItemProperty $_.PSPath -ErrorAction SilentlyContinue } |
+    Where-Object { $_.DriverDesc -and $_.DriverDesc -match 'Ethernet' -and $_.PSObject.Properties.Name -contains 'PnPCapabilities' })
+if ($nicBases.Count -eq 0) {
+    Record 'system' 'nic power saving' $true 'no wired adapter with PnPCapabilities exposed (wireless or none)' -Optional
+}
+else {
+    $bad = @($nicBases | Where-Object { [int]$_.PnPCapabilities -ne 24 })
+    $detail = ($nicBases | ForEach-Object {
+        $eee = if ($_.PSObject.Properties.Name -contains '*EEE') { "EEE=$($_.'*EEE')" } else { 'EEE=n/a' }
+        "$($_.DriverDesc): PnPCapabilities=$($_.PnPCapabilities) $eee"
+    }) -join ' | '
+    Record 'system' 'nic power saving' ($bad.Count -eq 0) $detail
+}
+
+$gpu = @(Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue | Where-Object { $_.DriverDate })
+$gpuDetail = 'no video controller reported a driver date'
+$gpuDays = -1
+foreach ($g in $gpu) {
+    $days = [int]((Get-Date) - $g.DriverDate).TotalDays
+    if ($gpuDays -lt 0 -or $days -gt $gpuDays) { $gpuDays = $days }
+    $gpuDetail = "$($g.Name): driver $($g.DriverVersion) dated $($g.DriverDate.ToString('yyyy-MM-dd')), $days days old"
+}
+Record 'system' 'gpu driver age' $true $gpuDetail -Optional
+
 # ------------------------------------------------------------------ script hygiene
 # Why this is a verification step and not just a note in SKILL.md:
 # a BOM-less file is decoded as UTF-8 by [Parser]::ParseFile but as ANSI by
