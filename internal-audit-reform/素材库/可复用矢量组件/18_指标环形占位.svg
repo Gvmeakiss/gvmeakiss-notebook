@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320">
+  <circle cx="160" cy="160" r="116" fill="none" stroke="#FFE3D4" stroke-width="28"/>
+  <path d="M160 44A116 116 0 0 1 267 115" fill="none" stroke="#ED6E40" stroke-width="28" stroke-linecap="round"/>
+  <text x="160" y="170" text-anchor="middle" fill="#333333" font-family="Arial,sans-serif" font-size="44" font-weight="700">00%</text>
+  <text x="160" y="214" text-anchor="middle" fill="#888888" font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="20">指标名称</text>
+</svg>

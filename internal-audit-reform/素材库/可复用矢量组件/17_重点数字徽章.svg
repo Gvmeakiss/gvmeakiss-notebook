@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="240" viewBox="0 0 420 240">
+  <circle cx="104" cy="120" r="78" fill="#ED6E40"/>
+  <text x="104" y="139" text-anchor="middle" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="56" font-weight="700">00</text>
+  <text x="220" y="106" fill="#333333" font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="28" font-weight="700">重点数字</text>
+  <text x="220" y="154" fill="#888888" font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="21">替换为比例、期限或数量</text>
+</svg>

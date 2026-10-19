@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="360" viewBox="0 0 1280 360">
+  <rect x="24" y="24" width="1232" height="312" rx="18" fill="#F2F2F2"/>
+  <rect x="24" y="24" width="18" height="312" rx="9" fill="#EA5A26"/>
+  <text x="82" y="120" fill="#333333" font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="30" font-weight="700">分区标题</text>
+  <path d="M82 150H1180" stroke="#C7C9C9" stroke-width="2"/>
+  <text x="82" y="216" fill="#333333" font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="24">用于承载一段背景说明、范围界定或办理提示。</text>
+  <text x="82" y="264" fill="#888888" font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="20">浅灰底配深灰字，适合正文较多的模块。</text>
+</svg>

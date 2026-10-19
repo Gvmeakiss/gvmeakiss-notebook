@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="460" viewBox="0 0 1280 460">
+  <rect x="24" y="24" width="594" height="412" rx="18" fill="#FFE3D4" stroke="#C7C9C9" stroke-width="2"/>
+  <rect x="662" y="24" width="594" height="412" rx="18" fill="#F2F2F2" stroke="#C7C9C9" stroke-width="2"/>
+  <text x="72" y="98" fill="#333333" font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="30" font-weight="700">调整前</text>
+  <text x="710" y="98" fill="#333333" font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="30" font-weight="700">调整后</text>
+  <path d="M72 126H570M710 126H1208" stroke="#C7C9C9" stroke-width="2"/>
+  <text x="72" y="194" fill="#333333" font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="24">填写原有做法或需要说明的现状。</text>
+  <text x="710" y="194" fill="#333333" font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="24">填写本次调整后的做法和衔接。</text>
+  <circle cx="102" cy="326" r="28" fill="#ED6E40"/><text x="102" y="337" text-anchor="middle" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="28" font-weight="700">→</text>
+  <text x="150" y="334" fill="#888888" font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="20">用一句话写清变化点</text>
+</svg>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="520" viewBox="0 0 1280 520">
+  <rect x="24" y="24" width="1232" height="472" rx="18" fill="#FFFFFF" stroke="#C7C9C9" stroke-width="2"/>
+  <g font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="22" font-weight="700">
+    <rect x="24" y="24" width="188" height="142" rx="18" fill="#ED6E40"/><rect x="24" y="166" width="188" height="142" fill="#FFE3D4"/><path d="M24 308H212V478H42Q24 478 24 460Z" fill="#F2F2F2"/>
+    <text x="118" y="106" text-anchor="middle" fill="#FFFFFF">业务</text><text x="118" y="248" text-anchor="middle" fill="#333333">合规</text><text x="118" y="400" text-anchor="middle" fill="#333333">稽核</text>
+  </g>
+  <g fill="#FFFFFF" stroke="#C7C9C9" stroke-width="2"><rect x="268" y="62" width="270" height="66" rx="14" fill="#ED6E40"/><rect x="628" y="62" width="270" height="66" rx="14" fill="#ED6E40"/><rect x="988" y="62" width="188" height="66" rx="14" fill="#ED6E40"/><rect x="268" y="204" width="270" height="66" rx="14" fill="#FFE3D4"/><rect x="628" y="204" width="270" height="66" rx="14" fill="#FFE3D4"/><rect x="988" y="204" width="188" height="66" rx="14" fill="#FFE3D4"/><rect x="268" y="356" width="270" height="66" rx="14" fill="#F2F2F2"/><rect x="628" y="356" width="270" height="66" rx="14" fill="#F2F2F2"/><rect x="988" y="356" width="188" height="66" rx="14" fill="#F2F2F2"/></g>
+  <g font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="20" text-anchor="middle"><text x="403" y="103" fill="#FFFFFF" font-weight="700">提出/整改</text><text x="763" y="103" fill="#FFFFFF" font-weight="700">审核/督导</text><text x="1082" y="103" fill="#FFFFFF" font-weight="700">验收</text><text x="403" y="245" fill="#333333">规范要求</text><text x="763" y="245" fill="#333333">过程跟进</text><text x="1082" y="245" fill="#333333">收口</text><text x="403" y="397" fill="#333333">复核</text><text x="763" y="397" fill="#333333">抽检</text><text x="1082" y="397" fill="#333333">闭环</text></g>
+</svg>
