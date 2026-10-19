@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="280" viewBox="0 0 1280 280">
+  <path d="M120 110H1160" stroke="#C7C9C9" stroke-width="5" stroke-linecap="round"/>
+  <g fill="#ED6E40" stroke="#FFFFFF" stroke-width="5"><circle cx="120" cy="110" r="42"/><circle cx="467" cy="110" r="42"/><circle cx="814" cy="110" r="42"/><circle cx="1160" cy="110" r="42"/></g>
+  <g fill="#FFFFFF" font-family="Arial,sans-serif" font-size="24" font-weight="700" text-anchor="middle"><text x="120" y="119">01</text><text x="467" y="119">02</text><text x="814" y="119">03</text><text x="1160" y="119">04</text></g>
+  <g fill="#333333" font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="22" font-weight="700" text-anchor="middle"><text x="120" y="202">启动</text><text x="467" y="202">办理</text><text x="814" y="202">复核</text><text x="1160" y="202">闭环</text></g>
+  <g fill="#888888" font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="18" text-anchor="middle"><text x="120" y="236">日期/时点</text><text x="467" y="236">日期/时点</text><text x="814" y="236">日期/时点</text><text x="1160" y="236">日期/时点</text></g>
+</svg>

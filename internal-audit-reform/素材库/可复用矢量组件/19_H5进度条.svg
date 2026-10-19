@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750" height="88" viewBox="0 0 750 88">
+  <rect x="24" y="28" width="702" height="32" rx="16" fill="#FFE3D4"/>
+  <rect x="24" y="28" width="410" height="32" rx="16" fill="#ED6E40"/>
+  <text x="24" y="20" fill="#333333" font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="19" font-weight="700">当前进度</text>
+  <text x="726" y="20" text-anchor="end" fill="#EA5A26" font-family="Arial,sans-serif" font-size="19" font-weight="700">00%</text>
+</svg>

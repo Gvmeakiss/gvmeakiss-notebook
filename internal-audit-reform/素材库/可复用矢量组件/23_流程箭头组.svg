@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="180" viewBox="0 0 1280 180">
+  <path d="M24 24H370L430 90L370 156H24L84 90Z" fill="#ED6E40"/>
+  <path d="M424 24H770L830 90L770 156H424L484 90Z" fill="#FFE3D4"/>
+  <path d="M824 24H1170L1230 90L1170 156H824L884 90Z" fill="#F2F2F2" stroke="#C7C9C9" stroke-width="2"/>
+  <g font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="24" font-weight="700" text-anchor="middle"><text x="220" y="100" fill="#FFFFFF">办理</text><text x="620" y="100" fill="#333333">审核</text><text x="1020" y="100" fill="#333333">闭环</text></g>
+</svg>

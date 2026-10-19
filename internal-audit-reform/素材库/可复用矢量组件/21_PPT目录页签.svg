@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="160" viewBox="0 0 360 160">
+  <rect x="20" y="20" width="320" height="120" rx="16" fill="#F2F2F2" stroke="#C7C9C9" stroke-width="2"/>
+  <rect x="20" y="20" width="92" height="120" rx="16" fill="#ED6E40"/>
+  <text x="66" y="98" text-anchor="middle" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="34" font-weight="700">01</text>
+  <text x="144" y="92" fill="#333333" font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="25" font-weight="700">章节名称</text>
+</svg>

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="720" viewBox="0 0 360 720">
+  <path d="M48 720V246L118 200V720M118 720V108L190 68V720M190 720V250L264 212V720M264 720V148L330 112V720" fill="#FFE3D4" stroke="#ED6E40" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M48 318H118M118 246H190M190 330H264M264 266H330M48 418H118M118 366H190M190 446H264M264 386H330" stroke="#FFFFFF" stroke-width="4" opacity="0.82"/>
+  <path d="M0 720H360" stroke="#EA5A26" stroke-width="6"/>
+</svg>

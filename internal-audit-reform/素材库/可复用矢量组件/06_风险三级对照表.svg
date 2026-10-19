@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="500" viewBox="0 0 1280 500">
+  <rect x="24" y="24" width="1232" height="452" rx="18" fill="#FFFFFF" stroke="#C7C9C9" stroke-width="2"/>
+  <path d="M24 42Q24 24 42 24H1238Q1256 24 1256 42V112H24Z" fill="#ED6E40"/>
+  <text x="72" y="82" fill="#FFFFFF" font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="30" font-weight="700">风险等级与办理路径</text>
+  <g font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="24" fill="#333333">
+    <rect x="54" y="142" width="1172" height="92" rx="10" fill="#FFE3D4"/><text x="90" y="198" font-weight="700">高风险</text><text x="300" y="198">强化审核，明确责任人和完成时点</text>
+    <rect x="54" y="250" width="1172" height="92" rx="10" fill="#F2F2F2"/><text x="90" y="306" font-weight="700">中风险</text><text x="300" y="306">按标准流程整改，保留过程材料</text>
+    <rect x="54" y="358" width="1172" height="92" rx="10" fill="#FFFFFF" stroke="#C7C9C9" stroke-width="1"/><text x="90" y="414" font-weight="700">低风险</text><text x="300" y="414">按要求处理，关注结果和闭环记录</text>
+  </g>
+</svg>

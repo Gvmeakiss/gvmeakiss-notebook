@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="180" viewBox="0 0 1280 180">
+  <rect x="24" y="24" width="1232" height="132" rx="16" fill="#ED6E40"/>
+  <rect x="24" y="24" width="16" height="132" rx="8" fill="#EA5A26"/>
+  <text x="76" y="108" fill="#FFFFFF" font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="42" font-weight="700">模块标题</text>
+  <text x="1040" y="108" fill="#FFFFFF" opacity="0.88" font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="24" font-weight="700">01</text>
+</svg>

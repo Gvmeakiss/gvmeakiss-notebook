@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="180" viewBox="0 0 360 180">
+  <path d="M0 0H360L286 180H0Z" fill="#ED6E40"/>
+  <path d="M0 0H360L346 34H0Z" fill="#EA5A26" opacity="0.86"/>
+  <text x="54" y="94" fill="#FFFFFF" font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="32" font-weight="700">重点提醒</text>
+</svg>

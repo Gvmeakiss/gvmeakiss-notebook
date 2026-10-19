@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="70" viewBox="0 0 1280 70">
+  <path d="M24 18H420" stroke="#EA5A26" stroke-width="4" stroke-linecap="round"/>
+  <text x="24" y="54" fill="#888888" font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="18">部门名称 · 2026</text>
+  <text x="1230" y="54" text-anchor="end" fill="#333333" font-family="Arial,sans-serif" font-size="20" font-weight="700">01</text>
+</svg>

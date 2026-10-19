@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750" height="360" viewBox="0 0 750 360">
+  <rect width="750" height="360" fill="#FFFFFF"/>
+  <path d="M0 0H750V242C596 220 474 122 386 0Z" fill="#FFE3D4"/>
+  <path d="M0 0H750V112C608 100 514 54 466 0Z" fill="#ED6E40" opacity="0.22"/>
+  <rect x="54" y="74" width="114" height="8" rx="4" fill="#EA5A26"/>
+  <text x="54" y="156" fill="#333333" font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="38" font-weight="700">章节标题</text>
+  <text x="54" y="204" fill="#888888" font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="23">副标题或一句话导语</text>
+  <path d="M54 290H696" stroke="#C7C9C9" stroke-width="2"/>
+</svg>
