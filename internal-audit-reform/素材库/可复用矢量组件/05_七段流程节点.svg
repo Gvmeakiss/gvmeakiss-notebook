@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="260" viewBox="0 0 1280 260">
+  <path d="M105 115H1175" stroke="#C7C9C9" stroke-width="4" stroke-linecap="round"/>
+  <g font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" text-anchor="middle" font-weight="700">
+    <g fill="#ED6E40" stroke="#FFFFFF" stroke-width="5">
+      <circle cx="105" cy="115" r="42"/><circle cx="283" cy="115" r="42"/><circle cx="461" cy="115" r="42"/><circle cx="639" cy="115" r="42"/><circle cx="817" cy="115" r="42"/><circle cx="995" cy="115" r="42"/><circle cx="1175" cy="115" r="42"/>
+    </g>
+    <g fill="#FFFFFF" font-size="24"><text x="105" y="123">1</text><text x="283" y="123">2</text><text x="461" y="123">3</text><text x="639" y="123">4</text><text x="817" y="123">5</text><text x="995" y="123">6</text><text x="1175" y="123">7</text></g>
+    <g fill="#333333" font-size="20"><text x="105" y="196">发现</text><text x="283" y="196">移交</text><text x="461" y="196">定责</text><text x="639" y="196">整改</text><text x="817" y="196">审核</text><text x="995" y="196">验收</text><text x="1175" y="196">闭环</text></g>
+  </g>
+</svg>

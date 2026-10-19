@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <rect width="1280" height="720" fill="#FFFFFF"/>
+  <rect x="84" y="84" width="150" height="10" rx="5" fill="#EA5A26"/>
+  <text x="84" y="164" fill="#333333" font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="42" font-weight="700">页面主标题</text>
+  <text x="84" y="208" fill="#888888" font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="22">副标题或本页阅读提示</text>
+  <path d="M1030 0H1280V250C1190 232 1106 176 1030 0Z" fill="#FFE3D4" opacity="0.72"/>
+  <path d="M1150 0H1280V130C1230 113 1190 73 1150 0Z" fill="#ED6E40" opacity="0.16"/>
+</svg>

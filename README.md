@@ -48,7 +48,7 @@
 | 🎙️ **[逐页口播稿](./internal-audit-reform/交付成果/内部审计整改革新_15页PPT配套口播稿.md)** | 与 PPT 逐页对应，另出 [`.docx`](./internal-audit-reform/交付成果/内部审计整改革新_15页PPT配套口播稿.docx) 便于打印与批注 |
 | 🎨 **[复用规范](./internal-audit-reform/复用规范)** | [项目导航与结果导向](./internal-audit-reform/复用规范/00_项目导航与结果导向.md) · [配色与视觉设计](./internal-audit-reform/复用规范/01_配色与视觉设计要求.md) · [H5/海报/邮件长图](./internal-audit-reform/复用规范/06_H5海报与邮件长图设计.md) |
 | 🖼️ **[电脑邮件版海报](./internal-audit-reform/交付成果/宣导海报_电脑邮件版/)** | 两页长图、构建源文件和导出说明，保留流程完整性并适配电脑邮件阅读 |
-| 🖼️ **[素材库](./internal-audit-reform/素材库)** | 背景图、页面元素、侧边元素，成体系的配图资产 |
+| 🖼️ **[素材库](./internal-audit-reform/素材库)** | 背景图、页面元素、侧边元素，以及面向 H5、PPT、海报的[可复用矢量组件](./internal-audit-reform/素材库/可复用矢量组件/README.md) |
 | 📘 **[项目说明](./internal-audit-reform/README.md)** · **[AI 接手说明](./internal-audit-reform/AGENTS.md)** | 项目定位、复用边界与交给 AI 继续做的入口 |
 
 <p align="center"><a href="./internal-audit-reform"><b>进入项目 →</b></a></p>

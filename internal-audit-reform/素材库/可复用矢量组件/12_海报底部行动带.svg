@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2480" height="360" viewBox="0 0 2480 360">
+  <rect x="20" y="20" width="2440" height="320" rx="28" fill="#ED6E40"/>
+  <rect x="20" y="20" width="18" height="320" rx="9" fill="#EA5A26"/>
+  <text x="96" y="156" fill="#FFFFFF" font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="54" font-weight="700">行动提示</text>
+  <text x="96" y="234" fill="#FFFFFF" font-family="STKaiti,KaiTi,Microsoft YaHei,sans-serif" font-size="32">填写办理要求、联系人或后续安排</text>
+  <path d="M2138 112L2284 180L2138 248" fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
