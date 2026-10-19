@@ -38,7 +38,7 @@
 
 **内部审计整改汇报复用包**
 
-*一次做完，下次能直接复用：可编辑终稿、逐页口播稿、内容与视觉规范、配图素材库，另附 AI 接手说明*
+*一次核对并做完，下次能复用：可编辑 PPT、逐页口播稿、H5/海报设计规范、电脑邮件长图、配图素材库，另附 AI 接手说明*
 
 </div>
 
@@ -46,7 +46,8 @@
 |---|---|
 | 🖥️ **[可编辑终稿 PPT](./internal-audit-reform/交付成果/内部审计整改革新_可编辑终稿.pptx)** | 15 页汇报正文，版式与配色已定稿，可直接改写内容复用 |
 | 🎙️ **[逐页口播稿](./internal-audit-reform/交付成果/内部审计整改革新_15页PPT配套口播稿.md)** | 与 PPT 逐页对应，另出 [`.docx`](./internal-audit-reform/交付成果/内部审计整改革新_15页PPT配套口播稿.docx) 便于打印与批注 |
-| 🎨 **[复用规范](./internal-audit-reform/复用规范)** | [配色与视觉设计要求](./internal-audit-reform/复用规范/01_配色与视觉设计要求.md) · [内容整理与页面规划要求](./internal-audit-reform/复用规范/02_内容整理与页面规划要求.md) |
+| 🎨 **[复用规范](./internal-audit-reform/复用规范)** | [项目导航与结果导向](./internal-audit-reform/复用规范/00_项目导航与结果导向.md) · [配色与视觉设计](./internal-audit-reform/复用规范/01_配色与视觉设计要求.md) · [H5/海报/邮件长图](./internal-audit-reform/复用规范/06_H5海报与邮件长图设计.md) |
+| 🖼️ **[电脑邮件版海报](./internal-audit-reform/交付成果/宣导海报_电脑邮件版/)** | 两页长图、构建源文件和导出说明，保留流程完整性并适配电脑邮件阅读 |
 | 🖼️ **[素材库](./internal-audit-reform/素材库)** | 背景图、页面元素、侧边元素，成体系的配图资产 |
 | 📘 **[项目说明](./internal-audit-reform/README.md)** · **[AI 接手说明](./internal-audit-reform/AGENTS.md)** | 项目定位、复用边界与交给 AI 继续做的入口 |
 
@@ -191,7 +192,7 @@ This repository collects reusable technical configurations, practical notes and 
 
 **Internal Audit Reform Presentation Kit**
 
-*Build it once, reuse it next time: a finalized editable deck, a page-matched spoken script, content and visual standards, an image library, and an AI handoff guide*
+*Verify it once, reuse the logic next time: an editable deck, page-matched script, H5/poster standards, desktop email poster, image library, and AI handoff guide*
 
 </div>
 
@@ -199,7 +200,8 @@ This repository collects reusable technical configurations, practical notes and 
 |---|---|
 | 🖥️ **[Editable deck (PPTX)](./internal-audit-reform/交付成果/内部审计整改革新_可编辑终稿.pptx)** | 15 pages with the layout and palette already settled — rewrite the content and reuse |
 | 🎙️ **[Spoken script](./internal-audit-reform/交付成果/内部审计整改革新_15页PPT配套口播稿.md)** | Page-matched to the deck; also shipped as [`.docx`](./internal-audit-reform/交付成果/内部审计整改革新_15页PPT配套口播稿.docx) for printing and comments |
-| 🎨 **[Reuse standards](./internal-audit-reform/复用规范)** | [Colour & visual requirements](./internal-audit-reform/复用规范/01_配色与视觉设计要求.md) · [Content structuring & page planning](./internal-audit-reform/复用规范/02_内容整理与页面规划要求.md) |
+| 🎨 **[Reuse standards](./internal-audit-reform/复用规范)** | [Result-first navigation](./internal-audit-reform/复用规范/00_项目导航与结果导向.md) · [Colour & visual requirements](./internal-audit-reform/复用规范/01_配色与视觉设计要求.md) · [H5/poster/email](./internal-audit-reform/复用规范/06_H5海报与邮件长图设计.md) |
+| 🖼️ **[Desktop email poster](./internal-audit-reform/交付成果/宣导海报_电脑邮件版/)** | Two-panel long image, source HTML/CSS and export instructions |
 | 🖼️ **[Asset library](./internal-audit-reform/素材库)** | Backgrounds, page elements and side elements as a coherent asset set |
 | 📘 **[Project readme](./internal-audit-reform/README.md)** · **[AI handoff](./internal-audit-reform/AGENTS.md)** | Scope, reuse boundaries and the entry point for handing this to an agent |
 
