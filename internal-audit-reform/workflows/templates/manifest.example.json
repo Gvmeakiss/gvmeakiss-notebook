@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "material_id": "example-deck",
+  "active_revision": "user-confirmed-revision",
+  "review_complete": false,
+  "sources": [
+    {
+      "source_id": "source-001",
+      "relative_path": "../../原始材料/example.pdf",
+      "sha256": null,
+      "page_count": null,
+      "kind": "unknown",
+      "extraction_method": null,
+      "parser_version": null
+    }
+  ],
+  "pages": [
+    {
+      "page_id": "p001",
+      "source_id": "source-001",
+      "source_page": 1,
+      "printed_page_label": null,
+      "page_fingerprint": null,
+      "page_fingerprint_method": null,
+      "markdown_path": "pages/p001.md",
+      "content_review": "unreviewed",
+      "structure_review": "unreviewed",
+      "palette_evidence": "unreviewed",
+      "last_review_reason": null,
+      "open_issues": []
+    }
+  ]
+}
