@@ -51,6 +51,8 @@ skills/<name>/
 
 ## 使用流程
 
+照片、截图或PDF用于内容整理及H5/PPT/海报任务时，先执行 [材料审阅工作流](./internal-audit-reform/workflows/照片与PDF材料审阅.md)：首次完整审阅形成资料索引，后续优先读取相关页MD，只在具体疑点或来源变更时回查图像。文字、结构、配色分别核对，不以历史记忆替代本次有效材料。
+
 1. 判断用户诉求是否命中某 Skill 的 `description`
 2. 命中 → **先读 `skills/<name>/SKILL.md`**（完整方法论 + 判断清单），再按其流程执行
 3. 需跑脚本 → 读 `README.md` 确认参数与依赖，优先 `--dry-run` 预演
