@@ -1,0 +1,17 @@
+{
+  "review_date": "2026-10-20",
+  "coverage": "经理版PPT第10页及用户补充要求",
+  "sources": [
+    {
+      "path": "../../../../参考资料/最新经理修改版18页PPT扫描参考/夸克扫描王_内部审计整改流程优化与操作详解（10）.jpg",
+      "page": 10,
+      "sha256": "8785d286aa8f1c452e51a0a2dd73b6cc6e1425d3e4147a67773e26d8923ce64e",
+      "size_bytes": 442814
+    }
+  ],
+  "overrides": "USER_OVERRIDES.md",
+  "visual_basis": "照片估测，重建为可编辑对象",
+  "status": "superseded",
+  "superseded_by": "../内部审计整改流程优化_20261020_19页用户修订版/INDEX.md",
+  "supersession_note": "用户19页完整照片取代局部补充稿，OA顺序及抄送/传阅展示以当前照片记录为准"
+}

@@ -1,3 +1,5 @@
+> 仓库已按用户确认设为私有；GitHub个人主页保持公开。本轮内部审计材料与语言标准见[当前入口](./internal-audit-reform/README.md)。
+
 <div align="center">
 
 <a name="top"></a>
@@ -44,8 +46,8 @@
 
 | 交付物 | 说明 |
 |---|---|
-| 🖥️ **[可编辑 PPT 视觉样例](./internal-audit-reform/交付成果/内部审计整改革新_可编辑终稿.pptx)** | 15页配色、版式与原生对象参考；现行业务内容以经理18页版为准 |
-| 🎙️ **[当前18页口播稿](./internal-audit-reform/案例/20261019_内部审计整改流程优化/内部审计整改流程优化_18页口播稿.md)** | 2026-10-20定稿，对应经理18页扫描版；另出 [Word](./internal-audit-reform/案例/20261019_内部审计整改流程优化/内部审计整改流程优化_18页口播稿.docx) 和[语义核对标准](./internal-audit-reform/复用规范/07_口播语义核对与定稿入库.md) |
+| 🖥️ **[可编辑 PPT 视觉样例](./internal-audit-reform/交付成果/内部审计整改革新_可编辑终稿.pptx)** | 15页配色、版式与原生对象参考；现行业务内容以用户修订19页材料为准 |
+| 🎙️ **[用户口播表达标准](./internal-audit-reform/案例/20261020_用户修订与口播标准/资料索引/用户修改口播稿_20261020/INDEX.md)** | 用户修改的18节语言样本；[19页业务来源](./internal-audit-reform/案例/20261020_用户修订与口播标准/资料索引/内部审计整改流程优化_20261020_19页用户修订版/INDEX.md)与表达样本分开使用 |
 | 🎨 **[复用规范](./internal-audit-reform/复用规范)** | [项目导航与结果导向](./internal-audit-reform/复用规范/00_项目导航与结果导向.md) · [配色与视觉设计](./internal-audit-reform/复用规范/01_配色与视觉设计要求.md) · [H5/海报/邮件长图](./internal-audit-reform/复用规范/06_H5海报与邮件长图设计.md) |
 | 🖼️ **[电脑邮件版海报](./internal-audit-reform/交付成果/宣导海报_电脑邮件版/)** | 两页长图、构建源文件和导出说明，保留流程完整性并适配电脑邮件阅读 |
 | 🖼️ **[素材库](./internal-audit-reform/素材库)** | 背景图、页面元素、侧边元素，以及面向 H5、PPT、海报的[可复用矢量组件](./internal-audit-reform/素材库/可复用矢量组件/README.md) |
@@ -198,8 +200,8 @@ This repository collects reusable technical configurations, practical notes and 
 
 | Deliverable | What it is |
 |---|---|
-| 🖥️ **[Editable visual sample (PPTX)](./internal-audit-reform/交付成果/内部审计整改革新_可编辑终稿.pptx)** | 15-page layout, palette and editable-object reference; current content follows the manager's 18-page version |
-| 🎙️ **[Current 18-page script](./internal-audit-reform/案例/20261019_内部审计整改流程优化/内部审计整改流程优化_18页口播稿.md)** | Finalized on 2026-10-20 and matched to the 18-page scans; [Word](./internal-audit-reform/案例/20261019_内部审计整改流程优化/内部审计整改流程优化_18页口播稿.docx) and [semantic review standard](./internal-audit-reform/复用规范/07_口播语义核对与定稿入库.md) included |
+| 🖥️ **[Editable visual sample (PPTX)](./internal-audit-reform/交付成果/内部审计整改革新_可编辑终稿.pptx)** | 15-page layout, palette and editable-object reference; current business content follows the user's updated 19-page material |
+| 🎙️ **[User-approved narration standard](./internal-audit-reform/workflows/口播稿撰写标准.md)** | Use the user-edited 18-section text as a language reference; verify facts and page order against the new 19-page source in the [current material pack](./internal-audit-reform/案例/20261020_用户修订与口播标准/README.md) |
 | 🎨 **[Reuse standards](./internal-audit-reform/复用规范)** | [Result-first navigation](./internal-audit-reform/复用规范/00_项目导航与结果导向.md) · [Colour & visual requirements](./internal-audit-reform/复用规范/01_配色与视觉设计要求.md) · [H5/poster/email](./internal-audit-reform/复用规范/06_H5海报与邮件长图设计.md) |
 | 🖼️ **[Desktop email poster](./internal-audit-reform/交付成果/宣导海报_电脑邮件版/)** | Two-panel long image, source HTML/CSS and export instructions |
 | 🖼️ **[Asset library](./internal-audit-reform/素材库)** | Backgrounds, page elements and side elements as a coherent asset set |
