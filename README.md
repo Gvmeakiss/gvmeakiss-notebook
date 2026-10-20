@@ -65,6 +65,7 @@
 | **audit-workbench** | 工程项目 | 同主题的 Next.js / React / TypeScript 工程版：团队分区、阶段历史、挽损分批、归档恢复与 SQLite DDL。需 `npm ci` 后构建 | [目录](./audit-workbench) · [说明](./audit-workbench/README.md) · [使用说明](./audit-workbench/docs/使用说明.md) |
 | **mini-app-spec** | 技术规范 | 企业级「AI Agent 驱动轻应用平台」的方法论、接口与开发约定 | [目录](./mini-app-spec) · [说明](./mini-app-spec/README.md) |
 | **internal-audit-reform** | AI 复用项目 | 内部审计整改汇报复用包：可编辑 PPT、逐页口播稿、复用规范与配图素材库 | [目录](./internal-audit-reform) · [说明](./internal-audit-reform/README.md) |
+| **任中离任报告撰写规范** | 撰写规范 | 照片 OCR 建档、模板与范文建模、语义边界、来源纠错、建议回对及完整修订稿验收 | [目录](./任中离任报告撰写规范) · [使用入口](./任中离任报告撰写规范/README.md) |
 
 #### 配置与工具
 
@@ -219,6 +220,7 @@ This repository collects reusable technical configurations, practical notes and 
 | **audit-workbench** | Engineering project | The Next.js / React / TypeScript build: team partitions, stage history, salvage batches, archive restore, SQLite DDL. Needs `npm ci` | [Folder](./audit-workbench) · [Readme](./audit-workbench/README.md) · [Manual](./audit-workbench/docs/使用说明.md) |
 | **mini-app-spec** | Technical spec | Methods, APIs and development conventions for an AI-agent-driven light-app platform | [Folder](./mini-app-spec) · [Readme](./mini-app-spec/README.md) |
 | **internal-audit-reform** | AI-assisted project | Internal audit reform presentation kit: editable deck, page-matched script, reuse standards, image library | [Folder](./internal-audit-reform) · [Readme](./internal-audit-reform/README.md) |
+| **任中离任报告撰写规范** | Writing standard | Source roles, OCR, template and reference modelling, semantic checks, correction recovery and editable draft acceptance | [Folder](./任中离任报告撰写规范) · [Readme](./任中离任报告撰写规范/README.md) |
 
 #### Configurations and tools
 
