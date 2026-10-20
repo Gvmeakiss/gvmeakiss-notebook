@@ -25,6 +25,7 @@
       "markdown_path": "pages/p001.md",
       "content_review": "unreviewed",
       "structure_review": "unreviewed",
+      "palette_role_review": "unreviewed",
       "palette_evidence": "unreviewed",
       "last_review_reason": null,
       "open_issues": []
