@@ -78,6 +78,7 @@
 | **系统调优核查记录** | 实践记录 | 系统优化项的逐条核查依据，与 `win-ai-gaming-setup` 的调优阶段配套 | [阅读](./docs/system-tweaks-audit.md) |
 | **内网 NAS 稳定性记录** | 实践记录 | 把「NAS 不稳」定位到「睡眠唤醒后没有重连」的完整链条：事件时间对齐法、事件触发计划任务、映射的会话/提权隔离、先算链路天花板 | [阅读](./docs/windows-nas-smb-stability.md) |
 | **Skill 自审方法论** | 方法 | 如何把「文档承诺」变成「可验证事实」：5 类真实缺陷、性能优化的等价性证明、环境缺陷与代码缺陷的区分 | [阅读](./docs/skill-self-audit.md) |
+| **Windows 优化证据审查** | 证据 | 只读审阅 10+ 个流行优化项目的真实源码，逐条判定「有测量 / 有机制无测量 / 机制就是错的」：HPET、MMCSS、核心停靠、服务禁用、hosts 阻断为何不该做 | [阅读](./docs/windows-tweak-evidence-review.md) |
 
 #### AI Skills
 
@@ -145,6 +146,7 @@
 | [系统调优核查记录](./docs/system-tweaks-audit.md) | 系统优化项逐条核查依据，对应 Skill 的 `tune` 阶段 |
 | [内网 NAS 稳定性记录](./docs/windows-nas-smb-stability.md) | 「NAS 不稳」的真因是唤醒后没有重连：事件时间对齐法、事件触发计划任务、映射的会话/提权隔离、吞吐天花板换算、以及 3 项实测无收益已回滚的尝试 |
 | [Skill 自审方法论](./docs/skill-self-audit.md) | 把文档承诺变成可验证事实：5 类缺陷（描述不符 / 预演不可信 / 退出码失真 / 判定矛盾 / 静默吞错）、性能等价性证明、环境 vs 代码缺陷 |
+| [Windows 优化证据审查](./docs/windows-tweak-evidence-review.md) | 10+ 个优化项目的源码级审查：哪些 tweak 真有用、哪些是神话、哪些会造成破坏，以及「先测量再优化」的工具与协议 |
 | [win-ai-gaming-setup 参数速查](./skills/win-ai-gaming-setup/README.md) | 七阶段参数、依赖与常见坑；含**运行上下文矩阵**（宿主 / 提权 / 会话）与 13 个工具脚本速查 |
 | [screenshot-text-edit 参数速查](./skills/screenshot-text-edit/README.md) | CLI 脚本参数与调用示例 |
 
@@ -232,6 +234,7 @@ This repository collects reusable technical configurations, practical notes and 
 | **System tweaks audit** | Notes | Item-by-item evidence behind each system tweak, paired with the `win-ai-gaming-setup` tuning phase | [Read](./docs/system-tweaks-audit.md) |
 | **NAS stability notes** | Notes | Tracing "the NAS feels unstable" to "nothing remounts it after sleep": event-time correlation, an event-triggered remount task, session/elevation isolation of drive mappings, and calculating the link ceiling before optimizing | [Read](./docs/windows-nas-smb-stability.md) |
 | **Skill self-audit method** | Method | Turning documented promises into verifiable facts: five defect classes, proving an optimization is coverage-equivalent, and telling an environment quirk apart from a code bug | [Read](./docs/skill-self-audit.md) |
+| **Windows tweak evidence review** | Evidence | Source-level review of 10+ popular optimizer projects, sorting every tweak into measured / mechanism-only / wrong-in-principle | [Read](./docs/windows-tweak-evidence-review.md) |
 
 #### AI skills
 
@@ -298,6 +301,7 @@ The public edition excludes local private exceptions; never overwrite your perso
 | [System tweaks audit](./docs/system-tweaks-audit.md) | Per-item evidence for each system tweak, matching the skill's `tune` phase |
 | [NAS stability notes](./docs/windows-nas-smb-stability.md) | "Unstable NAS" traced to a missing remount trigger after sleep: event-time correlation, an event-triggered scheduled task, mapping isolation by session/elevation, link-ceiling math, and three attempts that measured no benefit and were rolled back |
 | [Skill self-audit method](./docs/skill-self-audit.md) | Verifying a skill's own claims: five defect classes, coverage-equivalence proof for performance work, and separating machine policy from code defects |
+| [Windows tweak evidence review](./docs/windows-tweak-evidence-review.md) | What 10+ optimizer projects actually do: the tweaks that work, the ones that are myths, the ones that break machines, plus a measure-first toolkit |
 
 **The skill is the executable method; the docs explain why and what went wrong.**
 

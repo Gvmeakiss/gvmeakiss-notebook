@@ -5,7 +5,7 @@
 <p align="center">
   <b>Windows 10 / 11</b> &nbsp;·&nbsp; <b>PowerShell 7</b> &nbsp;·&nbsp;
   <b>20 个软件</b> &nbsp;·&nbsp; <b>13 类配置</b> &nbsp;·&nbsp;
-  <b>62 项验收</b> &nbsp;·&nbsp; <b>全程可回滚</b>
+  <b>63 项验收</b> &nbsp;·&nbsp; <b>全程可回滚</b>
 </p>
 
 ---
@@ -21,7 +21,7 @@
 用之前不必读完全文，照着下面三步做即可。
 
 > **两份文档分工**：本页给人看 —— 做什么、怎么用、出问题怎么办。
-> 想深究或在 AI 里执行，看 [`SKILL.md`](./SKILL.md)：执行协议、判定规则、62 条实测陷阱。
+> 想深究或在 AI 里执行，看 [`SKILL.md`](./SKILL.md)：执行协议、判定规则、实测陷阱速查（每条含「症状 → 根因 → 判据」）。
 
 ## 三步上手
 
@@ -47,7 +47,7 @@ pwsh -File scripts/setup.ps1 -Phase dev,apps
 pwsh -File scripts/setup.ps1 -Phase verify
 ```
 
-62 项检查，每项都是真编译、真运行，不看版本号。**不重启就验收会误判** —— PATH、输入法栈、多媒体调度驱动都在登录时重建。
+63 项检查，每项都是真编译、真运行，不看版本号。**不重启就验收会误判** —— PATH、输入法栈、多媒体调度驱动都在登录时重建。
 
 想动系统优化项（后台录制、广告推荐、遥测等），先看再改：
 
@@ -137,16 +137,22 @@ pwsh -File scripts/setup.ps1 -Phase tune           # 确认后再改
 
 ### 系统优化（6 类）
 
-**先拍快照再动手**（服务启动类型 + 自启项），每一条都是单个注册表写入、逐条报告。
+**先创建还原点、再拍快照**：还原点为注册表写入提供回滚路径（`Checkpoint-Computer` 默认有 24 小时去重，脚本会临时把 `SystemRestorePointCreationFrequency` 置 0，创建后回读列表，再恢复护栏）；快照记录服务启动类型 + 自启项。每一条都是单个注册表写入、逐条报告。
 
 | 类 | 内容 |
 |---|---|
 | **游戏** | 关 Xbox Game DVR；MMCSS `SystemResponsiveness=10`、`NetworkThrottlingIndex=0xffffffff`；`Games` 任务四项（GPU Priority 8 / Priority 6 / Scheduling Category High / SFIO High） |
 | **广告与推荐** | 静默推广 App、开始菜单建议、锁屏广告、Windows 提示、资源管理器同步广告 —— 全关（共 9 项） |
 | **开始菜单联网搜索** | 走**策略键** `DisableSearchBoxSuggestions=1` + `ConnectedSearchUseWeb=0`、`AllowCortana=0` |
-| **遥测** | 策略 `AllowTelemetry=0` —— **改策略，不是杀服务** |
+| **遥测** | 策略 `AllowTelemetry` —— **按 SKU 门控**：企业版/教育版/Server 写 `0`，家庭版/专业版写 `1`。改策略，不是杀服务 |
 | **电源 / 鼠标** | 默认不动；`-HighPerformancePowerPlan`、`-DisableMouseAcceleration` 显式开启才生效 |
 | **文件关联** | 让装好的程序进入候选，报告哪些类型仍需手动点一次 |
+
+> [!IMPORTANT]
+> **`AllowTelemetry=0` 在家庭版/专业版上是空操作。** `0`（Security/Off）只有企业版、教育版、Server 接受；
+> 消费版会静默忽略它 —— 于是脚本"成功"、注册表里也确实写着 0，而诊断数据照传。
+> winutil、Win11Debloat、Sycnex、W4RH4WK 全都无条件写 0，只有 Sophia-Script 做了 SKU 门控。
+> 本项目跟着做门控，`verify-env.ps1` 也按 SKU 计算期望值，不再把"写了没人读的值"当成果。
 
 > [!NOTE]
 > 联网搜索为什么不用 `BingSearchEnabled`：`HKCU\...\CurrentVersion\Search` 在 Windows 11 24H2+ 上
@@ -159,6 +165,25 @@ pwsh -File scripts/setup.ps1 -Phase tune           # 确认后再改
 - **不关 UAC、不改 DPI / 分辨率、不动 Windows 更新策略**
 - **不关休眠 / 快速启动** —— 关休眠会连带关掉快速启动，开机反而更慢
 - **不装第三方「优化大师 / 加速器」** —— 本方案就是那类东西的安全替代
+
+### 别人写错了，我们不复刻（逐条有出处）
+
+审阅 winutil / Win11Debloat / Sophia / Bloatynosy / Hyyote / PC-Tuning / W4RH4WK / Sycnex 的真实源码后，
+以下做法在**机制层面就是错的或有害**，本项目一条都不采用：
+
+| 常见做法 | 为什么不做 |
+|---|---|
+| `bcdedit /set useplatformclock true`、`disabledynamictick yes`、改写 ACPI 表禁用 HPET | 方向相反。Win8+ 用 invariant TSC，平台计时器 "access latency 更高、多核共享"（[Microsoft QPC 文档](https://learn.microsoft.com/en-us/windows/win32/sysinfo/acquiring-high-resolution-time-stamps)） |
+| MMCSS `SystemResponsiveness` 调到 0 或 1 | **文档化 no-op**：低于 10 会被夹到 20（默认值）。所以本方案写 10，恰好是有效边界 |
+| 直接改 `...\PowerSettings\...\ValueMax/ValueMin` 来"关核心停靠" | 那是**元数据树**，不是活动方案。正确写法 `powercfg /setacvalueindex scheme_current sub_processor CPMINCORES 100` |
+| 批量 `Stop-Service`/`Set-Service -StartupType Disabled`（含 `SharedAccess`、`WbioSrvc`、Xbox 三服务） | 热点断、Windows Hello 指纹失效、Game Pass 起不来。winutil 的**标准预设**里就含 `SharedAccess` 禁用 |
+| hosts 阻断 `*.msftncsi.com` / `sls.update.microsoft.com` / Store 端点 | W4RH4WK 自己的注释：系统误判无网络、更新失败、Store 打不开 |
+| `Disable-BitLocker` 当"必备优化" | 解密在用卷，撤销无法恢复原保护器 |
+| 硬编码 `ControlSet001` | 应使用 `CurrentControlSet`（控制集编号会变） |
+| `Dism /ResetBase` | 之后无法卸载已安装的更新 |
+| 强制删 OneDrive / Edge | 无空目录检查会删掉用户已同步的文件；Edge 强删连带 WebView2 依赖 |
+| `Disable-ScheduledTask -TaskName "\完整\路径\任务名"` | 路径不解析，静默 no-op（要 `-TaskPath` + `-TaskName` 分开传） |
+| 删 ETW 通道 / 事件日志 / 桩化 `wer.dll`（"Nuke" 类脚本） | 摧毁**验证延迟所需的追踪能力**，之后无法证明任何优化有效 |
 
 ---
 
@@ -174,7 +199,7 @@ pwsh -File scripts/setup.ps1 -Phase tune           # 确认后再改
 | `drivers` | 故障设备清单（含故障码）+ Windows 更新里的驱动；`-InstallDrivers` 直接装 | 是 | 设备管理器可回滚 |
 | `tune` | **先快照**再改；回读 `sc query MMCSS` 是否 RUNNING | 是 | 是 |
 | `link` | 注册关联 + 报告哪些类型需手动点一次 + 孤儿关联检查 | 否 | 是 |
-| `verify` | **62 项验收** | 否 | — |
+| `verify` | **63 项验收** | 否 | — |
 
 `verify` 验什么：
 
@@ -184,7 +209,7 @@ pwsh -File scripts/setup.ps1 -Phase tune           # 确认后再改
 | `tweaks` | 15 | 含 **MMCSS 驱动是否真在跑**（只看注册表会漏掉"值在、服务停"） |
 | 各语言链 | 30 | **真编译真运行**，不看 `--version`（python / node / go / rust / java / dotnet / cpp） |
 | 其它 | 5 | git / gh / ssh / **7-Zip 与 WinRAR**（`archives` 组） |
-| `system` | 5 | 页面文件是否系统管理 / 启动项有无安装残留 / 网卡省电 PnPCapabilities=24 / 显卡驱动年龄（信息项） / AMD 遥测是否关闭（信息项） |
+| `system` | 6 | 页面文件是否系统管理 / 启动项有无安装残留 / 网卡省电 PnPCapabilities=24 / 显卡驱动年龄（信息项） / AMD 遥测是否关闭（信息项） / **是否存在可用还原点**（信息项） |
 | `runtimes` | 6 | **VC++ 2005/2008（SxS）、2010、2012、2013、2015-2022 逐代检查 x86+x64**；.NET 3.5 为信息项（镜像是系统外的必需件，游戏起不来时最常见的原因） |
 
 ### 参数
@@ -289,6 +314,24 @@ pnputil /restart-device "<InstanceId>"     # 或 scripts/reset-failed-devices.ps
 | **故障与验收** | `diagnose-ime.ps1` | 输入法诊断与修复 |
 | | `verify-env.ps1` | **验收**：真编译真运行 + 软件清单 + 输入法 + 服务漂移 + tune 存活 15 项 + 脚本 hygiene |
 
+### 测量优先：先证明再优化
+
+优化最贵的成本不是改错，而是**改完不知道有没有用**。下面这些工具全部能在 winget 装到，
+而且都是"从进程外观察"的方式 —— 注入式覆盖层在 CS2 的 Trusted Mode / Vanguard 下会被直接拦掉，
+ETW 采集不受影响。
+
+| 工具 | 证明什么 | 安装 |
+|---|---|---|
+| **PresentMon** | 逐帧 CPU/GPU 时长 + 显示延迟（ETW，**不注入游戏进程**） | `winget install Intel.PresentMon.Console` |
+| **CapFrameX** | 在 PresentMon 之上算 1% / 0.1% 低帧与卡顿，判断"平均提升"还是"一致性提升" | `winget install CXWorld.CapFrameX` |
+| **HWiNFO** | 真实功耗、频率、温度、**降频原因标记** —— 判断是被功耗墙还是被带宽卡住 | `winget install REALiX.HWiNFO` |
+| **LatencyMon** | DPC/ISR 耗时与硬缺页 —— 判断卡顿来自驱动而不是显卡 | `winget install Resplendence.LatencyMon` |
+| **GPU-Z** | 适配器型号、显存类型、**总线位宽**、驱动版本 | `winget install TechPowerUp.GPU-Z` |
+| **DDU** | 驱动残留清理。**只在驱动装坏或换厂商时用**，不是日常维护 | [Wagnardsoft](https://www.wagnardsoft.com/display-driver-uninstaller-ddu) |
+
+最小协议：同一场景跑 3 次、丢掉第一次热身、同时记录 HWiNFO，**一次只改一个变量**，
+结论里同时给平均帧、1% 低帧与显示延迟。只报平均帧的"优化"基本不可信。
+
 > **`check-script-hygiene.ps1` 为什么必须早跑**：无 BOM 的 UTF-8 脚本会被 `ParseFile` 按 UTF-8 读、
 > 被 `powershell.exe -File` 按 ANSI 读 ⇒ **"校验通过"是假通过**。计划任务永远用 5.1，这类脚本会以 `0x1` 静默失败，
 > 而任务历史仍显示"成功"。它已挂进 `verify-env.ps1`，**WARN 与 FAIL 都拦截**。
@@ -297,7 +340,7 @@ pnputil /restart-device "<InstanceId>"     # 或 scripts/reset-failed-devices.ps
 
 ## 可能遇到的问题
 
-首页只放结论。下面这些是**已经修好、但重装或换机器时仍可能撞上**的，完整判据（62 条）在
+首页只放结论。下面这些是**已经修好、但重装或换机器时仍可能撞上**的，完整判据（63 条）在
 [`SKILL.md`](./SKILL.md) 的陷阱表里；每条都写了「症状 → 根因 → 判据」。
 
 | 症状 | 根因 | 在哪查 |
@@ -325,7 +368,7 @@ pnputil /restart-device "<InstanceId>"     # 或 scripts/reset-failed-devices.ps
 ---
 
 <p align="center"><sub>
-<b>SKILL.md</b> = 方法论与判断依据（含 62 条踩坑判据） &nbsp;·&nbsp;
+<b>SKILL.md</b> = 方法论与判断依据（含实测踩坑判据） &nbsp;·&nbsp;
 <b>docs/</b> = 实测记录与审计方法
 </sub></p>
 

@@ -457,8 +457,36 @@ if ($phases -contains 'drivers') {
 }
 # ------------------------------------------------------------------ tune
 if ($phases -contains 'tune') {
-    Say '--- tune: snapshot, then gaming tweaks + turning off useless stuff ---' White
+    Say '--- tune: restore point + snapshot, then gaming tweaks + turning off useless stuff ---' White
     New-Item -ItemType Directory -Force -Path $SnapshotDir | Out-Null
+
+    # A services snapshot is NOT a rollback path: it records what the services looked like,
+    # not the machine. System Restore is the only built-in undo for the registry writes below.
+    # Two measured facts force the shape of this block:
+    #   1. Checkpoint-Computer is de-duplicated by default (SystemRestorePointCreationFrequency
+    #      = 1440 minutes). A second call within 24h returns silently and creates nothing, so
+    #      "I made a restore point first" can be false while the script reports success.
+    #   2. Restore points live on the volume, so replacing/restoring the system disk wipes them.
+    #      A machine checked after a disk migration had exactly 0 restore points.
+    # Hence: drop the frequency to 0, create, read back the list, then restore the guardrail.
+    if ($PSCmdlet.ShouldProcess('system restore point', 'create')) {
+        $srKey = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore'
+        $prevFreq = (Get-ItemProperty -Path $srKey -Name 'SystemRestorePointCreationFrequency' -ErrorAction SilentlyContinue).SystemRestorePointCreationFrequency
+        try {
+            Enable-ComputerRestore -Drive "$env:SystemDrive\" -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $srKey -Name 'SystemRestorePointCreationFrequency' -Value 0 -Type DWord -ErrorAction SilentlyContinue
+            Checkpoint-Computer -Description "win-ai-gaming-setup tune $(Get-Date -Format 'yyyy-MM-dd HH:mm')" -RestorePointType 'MODIFY_SETTINGS' -ErrorAction Stop
+            $rpCount = @(Get-ComputerRestorePoint -ErrorAction SilentlyContinue).Count
+            if ($rpCount -gt 0) { Ok "restore point created (listed: $rpCount)" }
+            else { Warn 'Checkpoint-Computer returned but Get-ComputerRestorePoint lists none - the tune phase has no undo point' }
+        }
+        catch { Warn "restore point failed: $($_.Exception.Message) - continuing without an undo point" }
+        finally {
+            if ($null -eq $prevFreq) { Remove-ItemProperty -Path $srKey -Name 'SystemRestorePointCreationFrequency' -ErrorAction SilentlyContinue }
+            else { Set-ItemProperty -Path $srKey -Name 'SystemRestorePointCreationFrequency' -Value $prevFreq -Type DWord -ErrorAction SilentlyContinue }
+        }
+    }
+
     $ok = Invoke-Step 'snapshot-services.ps1' @('-OutDir', $SnapshotDir) 'snapshot before touching anything'
 
     if ($SkipTweaks) {
@@ -467,6 +495,14 @@ if ($phases -contains 'tune') {
     }
     else {
         # Each entry is a single registry write with a reason. Nothing here disables a service.
+        #
+        # AllowTelemetry is SKU-gated on purpose. 0 (Security/Off) is only honoured on
+        # Enterprise / Education / Server; on Home and Pro it is silently ignored, so writing
+        # 0 there looks like a win and achieves nothing. Measured on a Windows 11 Pro machine:
+        # AllowTelemetry=0 was present and diagnostics still uploaded. Sophia-Script gates this
+        # the same way; winutil / Win11Debloat / Sycnex all write 0 unconditionally.
+        $edition = (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name 'EditionID' -ErrorAction SilentlyContinue).EditionID
+        $telemetryMax = if ($edition -match 'Enterprise|Education|Server') { 0 } else { 1 }
         $changes = @(
             @{ Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR'; Name = 'AllowGameDVR'; Value = 0; Type = 'DWord';
                Why = 'GameDVR background recording costs frames' }
@@ -489,8 +525,8 @@ if ($phases -contains 'tune') {
                Why = 'MMCSS: game task storage IO priority' }
             @{ Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent'; Name = 'DisableWindowsConsumerFeatures'; Value = 1; Type = 'DWord';
                Why = 'stop silent app installs / promoted apps' }
-            @{ Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection'; Name = 'AllowTelemetry'; Value = 0; Type = 'DWord';
-               Why = 'telemetry off (policy, not a service kill)' }
+            @{ Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection'; Name = 'AllowTelemetry'; Value = $telemetryMax; Type = 'DWord';
+               Why = "telemetry at the strictest level this SKU honours ($edition -> $telemetryMax)" }
             @{ Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Name = 'SilentInstalledAppsEnabled'; Value = 0; Type = 'DWord'; Why = 'no silent Store installs' }
             @{ Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Name = 'SystemPaneSuggestionsEnabled'; Value = 0; Type = 'DWord'; Why = 'no Start menu suggestions' }
             @{ Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Name = 'SubscribedContent-338388Enabled'; Value = 0; Type = 'DWord'; Why = 'no Start recommendations' }

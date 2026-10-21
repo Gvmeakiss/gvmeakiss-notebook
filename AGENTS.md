@@ -44,6 +44,9 @@ skills/<name>/
   5 类缺陷（描述不符 / 预演不可信 / 退出码失真 / 判定矛盾 / 静默吞错）、
   性能优化的**等价性证明**、环境缺陷与代码缺陷的区分。与 `win-ai-gaming-setup` 配套：
   **Skill 是可执行的方法，docs 是为什么这么做、以及踩过的坑**。
+  `windows-tweak-evidence-review.md` 是**证据审查**：只读审阅 10+ 个流行优化项目（winutil / Win11Debloat /
+  Sophia / Bloatynosy / Hyyote / PC-Tuning …）的真实源码，把每条 tweak 判定为「有测量 / 有机制无测量 /
+  机制就是错的」，并给出「先测量再优化」的工具与协议。它回答的是**为什么大多数流行做法不该做**。
 - `internal-audit-reform/`：AI复用制作内部审计汇报、H5、海报和电脑邮件长图的完整项目包，包含可编辑PPT、逐页口播、结果导向的内容/视觉规范、海报源文件及配图库。使用前阅读其 `README.md` 和项目级 `AGENTS.md`；当前页面中的业务条件和时限只适用于对应示例项目。
 - `assets/`：根 `README.md` 的横幅素材。`banner.svg` 与 `banner-dark.svg` 是同一版式的浅色 / 深色两套，
   由 README 中的 `<picture>` 按 `prefers-color-scheme` 自动切换；**改动需同步两份**。

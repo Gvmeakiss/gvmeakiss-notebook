@@ -429,6 +429,16 @@ else {
     Record 'system' 'amd telemetry' $true 'no AMD analytics key (non-AMD machine)' -Optional
 }
 
+# A restore point is the only built-in undo the skill can offer before registry edits, and it
+# is easy to have zero without noticing: they live on the volume, so a disk migration or a
+# system reset wipes them (measured: 0 present after a clone). Informational - a machine that
+# has not been tuned yet is not broken - but the moment tune runs, this is what makes it
+# reversible.
+$rpCount = @(Get-ComputerRestorePoint -ErrorAction SilentlyContinue).Count
+$rpDetail = if ($rpCount -gt 0) { "$rpCount restore point(s) available" }
+            else { 'none - run setup.ps1 -Phase tune (it creates one with the 24h dedupe bypassed), or Checkpoint-Computer' }
+Record 'system' 'restore point' ($rpCount -gt 0) $rpDetail -Optional
+
 # ------------------------------------------------------------------ game runtimes
 # A freshly cloned or freshly installed Windows can pass every language check and still be
 # unable to start a game, because the Visual C++ runtimes are not part of the OS. Measured on
@@ -547,7 +557,14 @@ $tweaks = @(
        AltWhy = 'policy route (the Search key can be kernel-protected; policy wins over user scope anyway)' },
     @{ Check = 'web search policy';     Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search';                 Name = 'ConnectedSearchUseWeb';           Want = '0'
        AltWhy = 'machine-wide: no web results in Start search' },
-    @{ Check = 'telemetry policy';      Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection';                 Name = 'AllowTelemetry';                  Want = '0' }
+    # AllowTelemetry expects the strictest value the SKU honours, not a flat 0. 0 (Security/Off)
+    # is only accepted on Enterprise / Education / Server; Home and Pro silently ignore it, so a
+    # flat Want='0' would report FAIL on a correctly configured Pro box (or PASS on a box that
+    # wrote a value Windows never reads - measured: Win11 Pro carried AllowTelemetry=0 and still
+    # uploaded diagnostics).
+    @{ Check = 'telemetry policy';      Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection';                 Name = 'AllowTelemetry'
+       Want = $(if ((Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name 'EditionID' -ErrorAction SilentlyContinue).EditionID -match 'Enterprise|Education|Server') { '0' } else { '1' })
+       AltWhy = 'strictest level the edition honours (0 is Enterprise/Education-only)' }
 )
 foreach ($t in $tweaks) {
     # Read each KEY once and look every value up inside it, instead of one Get-ItemProperty
