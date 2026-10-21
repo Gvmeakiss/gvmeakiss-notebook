@@ -5,7 +5,7 @@
 <p align="center">
   <b>Windows 10 / 11</b> &nbsp;·&nbsp; <b>PowerShell 7</b> &nbsp;·&nbsp;
   <b>20 个软件</b> &nbsp;·&nbsp; <b>13 类配置</b> &nbsp;·&nbsp;
-  <b>63 项验收</b> &nbsp;·&nbsp; <b>全程可回滚</b>
+  <b>71 项验收</b> &nbsp;·&nbsp; <b>全程可回滚</b>
 </p>
 
 ---
@@ -47,7 +47,7 @@ pwsh -File scripts/setup.ps1 -Phase dev,apps
 pwsh -File scripts/setup.ps1 -Phase verify
 ```
 
-63 项检查，每项都是真编译、真运行，不看版本号。**不重启就验收会误判** —— PATH、输入法栈、多媒体调度驱动都在登录时重建。
+71 项检查，每项都是真编译、真运行，不看版本号。**不重启就验收会误判** —— PATH、输入法栈、多媒体调度驱动都在登录时重建。
 
 想动系统优化项（后台录制、广告推荐、遥测等），先看再改：
 
@@ -145,6 +145,11 @@ pwsh -File scripts/setup.ps1 -Phase tune           # 确认后再改
 | **广告与推荐** | 静默推广 App、开始菜单建议、锁屏广告、Windows 提示、资源管理器同步广告 —— 全关（共 9 项） |
 | **开始菜单联网搜索** | 走**策略键** `DisableSearchBoxSuggestions=1` + `ConnectedSearchUseWeb=0`、`AllowCortana=0` |
 | **遥测** | 策略 `AllowTelemetry` —— **按 SKU 门控**：企业版/教育版/Server 写 `0`，家庭版/专业版写 `1`。改策略，不是杀服务 |
+| **遥测任务与出网** | 逐条禁用遥测计划任务（**存在才处理**，清单随 build 变化）+ 防火墙按组阻断 `DiagTrack`（可 `-Action Allow` 回退，不删规则） |
+| **安全兜底** | `EnablePeriodicBackup=1` + 启用 `RegIdleBackup`（Windows 自带注册表周期备份）；`PreventDeviceEncryption=1`（只拦未来的自动加密，不动已加密卷） |
+| **网络礼貌** | `DODownloadMode=1`：更新交付留在局域网，不向互联网上传 |
+| **磁盘保洁** | Storage Sense 清回收站（保留 30 天）。**下载目录自动删除保持关闭** —— 会误删用户下载的安装包，省的空间不值这个风险 |
+| **右键菜单** | 恢复 Win11 折叠之前的经典菜单（CLSID `InprocServer32` 默认值置空），重启 Explorer 生效 |
 | **电源 / 鼠标** | 默认不动；`-HighPerformancePowerPlan`、`-DisableMouseAcceleration` 显式开启才生效 |
 | **文件关联** | 让装好的程序进入候选，报告哪些类型仍需手动点一次 |
 
@@ -185,6 +190,62 @@ pwsh -File scripts/setup.ps1 -Phase tune           # 确认后再改
 | `Disable-ScheduledTask -TaskName "\完整\路径\任务名"` | 路径不解析，静默 no-op（要 `-TaskPath` + `-TaskName` 分开传） |
 | 删 ETW 通道 / 事件日志 / 桩化 `wer.dll`（"Nuke" 类脚本） | 摧毁**验证延迟所需的追踪能力**，之后无法证明任何优化有效 |
 
+### 可选手工项（脚本故意不做，但确实有效）
+
+这三件事无法安全脚本化，或者属于取舍，所以不放进 `-Phase tune`：
+
+**① 杀毒软件信任区（对游戏载入最有效的一条）**
+
+实时扫描会对**每一次文件读取**做检查。把游戏与开发目录加入信任区，能明显减少载入等待与补丁校验卡顿。
+
+| 目录 | 典型体积 |
+|---|---|
+| `C:\Program Files (x86)\Steam\steamapps` | 74 GB |
+| WeGame 游戏目录（如 `C:\WeGameApps`） | 52 GB |
+| 代码仓库根目录 | 视项目 |
+
+- **Windows Defender**：设置 → 病毒和威胁防护 → 排除项 → 添加文件夹
+- **火绒**：安全设置 → 信任区 → 添加目录（配置是二进制，只能手工点）
+
+> 注意：这是一次**安全面收缩**。只排除"只读的游戏/代码内容"，不要排除 `Downloads`、`AppData` 或整个盘。
+
+**② 预装 App 清理（省磁盘，不省性能）**
+
+实测一台机器 144 个 AppX 包里：34 个框架包、53 个系统不可移除、**62 个可移除**，合计约 9 GB ——
+但后台真正在跑的只有 OneDrive。所以这事的收益是**磁盘**，不是帧率。
+
+**两条纪律，否则会出事：**
+
+1. **显式清单，不做"白名单反转"**。Sycnex 的写法是"不在白名单里就删"，
+   而按体积排序第一个可移除包往往是**用户自己装的软件**（实测是 4.5 GB 的编辑器）。
+2. **必须用 Windows PowerShell 5.1 执行**。PS 7 下 `Remove-AppxPackage -AllUsers` 报
+   「拒绝访问」、`Get-AppxProvisionedPackage` 报「没有注册类」—— 这是 WinRT 互操作差异，不是权限问题。
+
+安全清单（游戏机不需要，且不连带依赖）：
+
+```
+Microsoft.GamingApp / Microsoft.XboxGamingOverlay / Microsoft.GamingServices
+Clipchamp.Clipchamp / Microsoft.MicrosoftSolitaireCollection / Microsoft.Todos
+Microsoft.WindowsFeedbackHub / Microsoft.GetHelp / Microsoft.MicrosoftOfficeHub
+Microsoft.MicrosoftStickyNotes
+```
+
+**绝不要动**：`Microsoft.PowerShell`、`Microsoft.WindowsStore`、`Microsoft.Windows.Photos`、
+`Microsoft.Paint`、`Microsoft.ScreenSketch`、`MicrosoftWindows.Client.WebExperience`（Shell 体验）、
+语言包、`Microsoft.VCLibs.*` / `Microsoft.UI.Xaml.*`（框架）、以及任何非 Microsoft 发布者。
+
+删完记得**反预置**（`Remove-AppxProvisionedPackage`），否则新用户或功能更新会装回来。
+
+**③ 休眠（按机器取舍）**
+
+`powercfg /hibernate off` 删除 `hiberfil.sys`（实测 21.8 GB 内存的机器上是 **8.72 GB**），
+代价是失去休眠与**快速启动**。两个细节：
+
+- `powercfg /h off` **不会**把 `HiberbootEnabled` 改成 0，要单独写，否则"关机"仍是伪关机
+- 快速启动的收益在 NVMe 上有限（实测冷启动 26–36 秒），而它是"关机后状态不干净"类怪问题的常见来源
+
+本技能**默认不动休眠**（见「明确不做」），这条留给需要空间的机器自己决定。
+
 ---
 
 ## 怎么跑
@@ -199,14 +260,14 @@ pwsh -File scripts/setup.ps1 -Phase tune           # 确认后再改
 | `drivers` | 故障设备清单（含故障码）+ Windows 更新里的驱动；`-InstallDrivers` 直接装 | 是 | 设备管理器可回滚 |
 | `tune` | **先快照**再改；回读 `sc query MMCSS` 是否 RUNNING | 是 | 是 |
 | `link` | 注册关联 + 报告哪些类型需手动点一次 + 孤儿关联检查 | 否 | 是 |
-| `verify` | **63 项验收** | 否 | — |
+| `verify` | **71 项验收** | 否 | — |
 
 `verify` 验什么：
 
 | 组别 | 项数 | 判据要点 |
 |---|:--:|---|
 | `hygiene` | 1 | 每个 `.ps1` 在 **PS 7 与 PS 5.1 下都能解析** |
-| `tweaks` | 15 | 含 **MMCSS 驱动是否真在跑**（只看注册表会漏掉"值在、服务停"） |
+| `tweaks` | 23 | 含 **MMCSS 驱动是否真在跑**（只看注册表会漏掉「值在、服务停」）、**还原点/注册表备份/BitLocker 自动加密拦截**、经典右键菜单、遥测任务与 DiagTrack 防火墙 |
 | 各语言链 | 30 | **真编译真运行**，不看 `--version`（python / node / go / rust / java / dotnet / cpp） |
 | 其它 | 5 | git / gh / ssh / **7-Zip 与 WinRAR**（`archives` 组） |
 | `system` | 6 | 页面文件是否系统管理 / 启动项有无安装残留 / 网卡省电 PnPCapabilities=24 / 显卡驱动年龄（信息项） / AMD 遥测是否关闭（信息项） / **是否存在可用还原点**（信息项） |
@@ -340,7 +401,7 @@ ETW 采集不受影响。
 
 ## 可能遇到的问题
 
-首页只放结论。下面这些是**已经修好、但重装或换机器时仍可能撞上**的，完整判据（63 条）在
+首页只放结论。下面这些是**已经修好、但重装或换机器时仍可能撞上**的，完整判据在
 [`SKILL.md`](./SKILL.md) 的陷阱表里；每条都写了「症状 → 根因 → 判据」。
 
 | 症状 | 根因 | 在哪查 |

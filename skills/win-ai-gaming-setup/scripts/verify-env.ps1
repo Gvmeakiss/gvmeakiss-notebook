@@ -562,6 +562,18 @@ $tweaks = @(
     # flat Want='0' would report FAIL on a correctly configured Pro box (or PASS on a box that
     # wrote a value Windows never reads - measured: Win11 Pro carried AllowTelemetry=0 and still
     # uploaded diagnostics).
+    # Safety nets and network/disk housekeeping added after the evidence review. Each one is a
+    # write that setup.ps1 -Phase tune performs, and a write with no check is an unchecked claim.
+    @{ Check = 'registry backup';       Path = 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Configuration Manager'; Name = 'EnablePeriodicBackup'; Value = 1; Want = '1'
+       AltWhy = 'Windows keeps periodic registry hive backups' },
+    @{ Check = 'bitlocker auto-encrypt'; Path = 'HKLM:\SYSTEM\CurrentControlSet\Control\BitLocker';                            Name = 'PreventDeviceEncryption'; Want = '1'
+       AltWhy = 'future automatic device encryption blocked (existing volumes untouched)' },
+    @{ Check = 'delivery optimization'; Path = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DeliveryOptimization\Config'; Name = 'DODownloadMode';            Want = '1'
+       AltWhy = 'updates stay on the LAN instead of uploading to the internet' },
+    @{ Check = 'recycle bin cleanup';   Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy'; Name = '08';               Want = '1'
+       AltWhy = 'Storage Sense empties the recycle bin' },
+    @{ Check = 'recycle retention';     Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy'; Name = '32';               Want = '30'
+       AltWhy = 'recycle bin retention: 30 days' },
     @{ Check = 'telemetry policy';      Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection';                 Name = 'AllowTelemetry'
        Want = $(if ((Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name 'EditionID' -ErrorAction SilentlyContinue).EditionID -match 'Enterprise|Education|Server') { '0' } else { '1' })
        AltWhy = 'strictest level the edition honours (0 is Enterprise/Education-only)' }
@@ -595,6 +607,45 @@ foreach ($t in $tweaks) {
               else { "=$val" }
     Record 'tweaks' $t.Check $ok $detail
 }
+# The classic context menu is toggled through the DEFAULT value of a CLSID key, which the
+# table above cannot express (it looks values up by name). Absent key = the Win11 folded menu.
+$ctxKey = 'HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32'
+$ctxVal = (Get-ItemProperty -Path $ctxKey -ErrorAction SilentlyContinue).'(default)'
+$ctxDetail = if ($null -eq $ctxVal) { 'override key absent - the Win11 folded menu is in use' } else { "InprocServer32 default='$ctxVal'" }
+Record 'tweaks' 'classic context menu' ($ctxVal -eq '') $ctxDetail
+
+# Telemetry scheduled tasks: informational because the list is build-dependent. Measured on
+# this build: "Microsoft Compatibility Appraiser" and "ProgramDataUpdater" do not exist, so a
+# hard expectation would be a permanent false FAIL.
+$telList = @(
+    @{ Path = '\Microsoft\Windows\Application Experience\'; Name = 'Microsoft Compatibility Appraiser' }
+    @{ Path = '\Microsoft\Windows\Application Experience\'; Name = 'ProgramDataUpdater' }
+    @{ Path = '\Microsoft\Windows\Application Experience\'; Name = 'StartupAppTask' }
+    @{ Path = '\Microsoft\Windows\Customer Experience Improvement Program\'; Name = 'Consolidator' }
+    @{ Path = '\Microsoft\Windows\Customer Experience Improvement Program\'; Name = 'UsbCeip' }
+    @{ Path = '\Microsoft\Windows\DiskDiagnostic\'; Name = 'Microsoft-Windows-DiskDiagnosticDataCollector' }
+    @{ Path = '\Microsoft\Windows\Autochk\'; Name = 'Proxy' }
+)
+$telPresent = 0; $telStillOn = @()
+foreach ($t in $telList) {
+    $task = Get-ScheduledTask -TaskPath $t.Path -TaskName $t.Name -ErrorAction SilentlyContinue
+    if (-not $task) { continue }
+    $telPresent++
+    if ($task.State -ne 'Disabled') { $telStillOn += $t.Name }
+}
+Record 'tweaks' 'telemetry tasks' ($telStillOn.Count -eq 0) $(
+    if ($telPresent -eq 0) { 'no known telemetry tasks on this build' }
+    elseif ($telStillOn.Count -eq 0) { "$telPresent present, all disabled" }
+    else { "$($telStillOn.Count)/$telPresent still enabled: $($telStillOn -join ', ')" }) -Optional
+
+# DiagTrack egress: recommendable by firewall group. Informational since the group may not
+# exist on every build.
+$diagRules = @(Get-NetFirewallRule -Group 'DiagTrack' -ErrorAction SilentlyContinue)
+$diagBlocked = @($diagRules | Where-Object { $_.Action -eq 'Block' -and $_.Enabled -eq 'True' })
+Record 'tweaks' 'diagtrack firewall' ($diagRules.Count -gt 0 -and $diagBlocked.Count -eq $diagRules.Count) $(
+    if ($diagRules.Count -eq 0) { 'no DiagTrack firewall group on this build' }
+    else { "$($diagBlocked.Count)/$($diagRules.Count) rule(s) blocked" }) -Optional
+
 $mmcssOut = sc.exe query MMCSS 2>&1 | Out-String
 $mmcssUp  = $mmcssOut -match 'RUNNING'
 Record 'tweaks' 'MMCSS driver running' $mmcssUp $(

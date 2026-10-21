@@ -548,6 +548,27 @@ if ($phases -contains 'tune') {
             @{ Path = 'HKCU:\Software\Policies\Microsoft\Windows\Explorer'; Name = 'DisableSearchBoxSuggestions'; Value = 1; Type = 'DWord'; Why = 'Start search stops offering web suggestions' }
             @{ Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search'; Name = 'ConnectedSearchUseWeb'; Value = 0; Type = 'DWord'; Why = 'no web results in Start search (machine policy)' }
             @{ Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search'; Name = 'AllowCortana'; Value = 0; Type = 'DWord'; Why = 'no cloud search consent' }
+
+            # --- safety nets, not perf -------------------------------------------------
+            # These three come from Sophia-Script / Bloatynosy and are the "make the machine
+            # recoverable" half of the tune phase. Each was measured absent on a real machine.
+            @{ Path = 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Configuration Manager'; Name = 'EnablePeriodicBackup'; Value = 1; Type = 'DWord';
+               Why = 'let Windows keep periodic registry hive backups (RegIdleBackup exists but does nothing without this)' }
+            @{ Path = 'HKLM:\SYSTEM\CurrentControlSet\Control\BitLocker'; Name = 'PreventDeviceEncryption'; Value = 1; Type = 'DWord';
+               Why = 'block FUTURE automatic device encryption; never touches volumes that are already encrypted' }
+
+            # --- network politeness -----------------------------------------------------
+            @{ Path = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DeliveryOptimization\Config'; Name = 'DODownloadMode'; Value = 1; Type = 'DWord';
+               Why = 'update delivery stays on the LAN instead of uploading to the internet' }
+
+            # --- disk housekeeping ------------------------------------------------------
+            # Storage Sense is on by default but only for temp files. Recycle-bin cleanup is
+            # opt-in. The downloads rule is deliberately NOT enabled: auto-deleting files from
+            # the Downloads folder can eat a user's installer, and the saving is trivial.
+            @{ Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy'; Name = '08'; Value = 1; Type = 'DWord';
+               Why = 'Storage Sense empties the recycle bin' }
+            @{ Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy'; Name = '32'; Value = 30; Type = 'DWord';
+               Why = 'recycle bin retention: 30 days' }
         )
         if ($DisableMouseAcceleration) {
             $changes += @{ Path = 'HKCU:\Control Panel\Mouse'; Name = 'MouseSpeed'; Value = 0; Type = 'String'; Why = 'mouse acceleration off (gaming preference)' }
@@ -659,6 +680,75 @@ if ($phases -contains 'tune') {
             Warn "MMCSS is NOT running ($mmcssLine) - every MMCSS value above is INERT."
             Warn '  it is a boot-loaded kernel driver and cannot be started on demand: REBOOT,'
             Warn '  then confirm with  sc query MMCSS  and re-run -Phase tune if values are gone'
+        }
+
+        # ------------------------------------------------------------------ post-write
+        # Win11 hides the classic context menu behind a shell extension. An EMPTY default
+        # value on its InprocServer32 disables that extension, which restores the old menu.
+        # It is kept out of the .reg batch above on purpose: the batch's read-back looks up
+        # named values, and a default value cannot be read that way.
+        $ctxKey = 'HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32'
+        if ($PSCmdlet.ShouldProcess($ctxKey, 'set default "" - restore the classic context menu')) {
+            New-Item -Path $ctxKey -Force | Out-Null
+            Set-ItemProperty -Path $ctxKey -Name '(default)' -Value '' -Type String
+            if ((Get-ItemProperty -Path $ctxKey -ErrorAction SilentlyContinue).'(default)' -eq '') {
+                Ok 'classic context menu enabled (takes effect after Explorer restarts)'
+            }
+            else { Bad 'classic context menu: default value is not empty after the write' }
+        }
+
+        # Registry periodic backup: the task exists on every install, but it only does anything
+        # once EnablePeriodicBackup above is set, and some debloat scripts disable it outright.
+        $regTaskPath = '\Microsoft\Windows\Registry\'
+        $regTask = Get-ScheduledTask -TaskPath $regTaskPath -TaskName 'RegIdleBackup' -ErrorAction SilentlyContinue
+        if ($regTask) {
+            if ($PSCmdlet.ShouldProcess('RegIdleBackup', 'enable scheduled registry hive backup')) {
+                if ($regTask.State -eq 'Disabled') { Enable-ScheduledTask -TaskPath $regTaskPath -TaskName 'RegIdleBackup' | Out-Null }
+                $st = (Get-ScheduledTask -TaskPath $regTaskPath -TaskName 'RegIdleBackup').State
+                if ($st -ne 'Disabled') { Ok "RegIdleBackup: $st" } else { Warn "RegIdleBackup is still $st" }
+            }
+        }
+        else { Warn 'RegIdleBackup task not present on this build - registry backups will not run' }
+
+        # Telemetry scheduled tasks. TWO rules learned from reading these projects' code:
+        #  1. The list is build-dependent. On the machine this was written on, "Microsoft
+        #     Compatibility Appraiser" and "ProgramDataUpdater" DO NOT EXIST any more, so a
+        #     hardcoded list must test for existence or the whole run throws.
+        #  2. A full path passed as -TaskName does not resolve (W4RH4WK's script does this and
+        #     silently no-ops). -TaskPath and -TaskName are separate parameters.
+        $telemetryTasks = @(
+            @{ Path = '\Microsoft\Windows\Application Experience\'; Name = 'Microsoft Compatibility Appraiser' }
+            @{ Path = '\Microsoft\Windows\Application Experience\'; Name = 'ProgramDataUpdater' }
+            @{ Path = '\Microsoft\Windows\Application Experience\'; Name = 'StartupAppTask' }
+            @{ Path = '\Microsoft\Windows\Customer Experience Improvement Program\'; Name = 'Consolidator' }
+            @{ Path = '\Microsoft\Windows\Customer Experience Improvement Program\'; Name = 'UsbCeip' }
+            @{ Path = '\Microsoft\Windows\DiskDiagnostic\'; Name = 'Microsoft-Windows-DiskDiagnosticDataCollector' }
+            @{ Path = '\Microsoft\Windows\Autochk\'; Name = 'Proxy' }
+        )
+        $telSeen = 0; $telOff = 0; $telMissing = 0
+        foreach ($t in $telemetryTasks) {
+            $task = Get-ScheduledTask -TaskPath $t.Path -TaskName $t.Name -ErrorAction SilentlyContinue
+            if (-not $task) { $telMissing++; continue }
+            $telSeen++
+            if ($t.Name -and $PSCmdlet.ShouldProcess($t.Name, 'disable telemetry task')) {
+                if ($task.State -ne 'Disabled') { Disable-ScheduledTask -TaskPath $t.Path -TaskName $t.Name -ErrorAction SilentlyContinue | Out-Null }
+                if ((Get-ScheduledTask -TaskPath $t.Path -TaskName $t.Name).State -eq 'Disabled') { $telOff++ }
+            }
+        }
+        if ($WhatIfPreference) { Warn "WhatIf: $telSeen telemetry task(s) present, would disable them ($telMissing not in this build)" }
+        elseif ($telSeen -eq 0) { Warn 'no known telemetry scheduled tasks on this build' }
+        else { Ok "telemetry tasks: $telOff/$telSeen disabled ($telMissing not present on this build)" }
+
+        # DiagTrack egress blocked by FIREWALL GROUP rather than by deleting rules: the group
+        # can be flipped back to Allow, a deleted rule cannot be un-deleted.
+        if ($PSCmdlet.ShouldProcess('firewall group DiagTrack', 'block')) {
+            $diagRules = @(Get-NetFirewallRule -Group 'DiagTrack' -ErrorAction SilentlyContinue)
+            if ($diagRules.Count -gt 0) {
+                $diagRules | Set-NetFirewallRule -Enabled True -Action Block -ErrorAction SilentlyContinue
+                $blocked = @(Get-NetFirewallRule -Group 'DiagTrack' -ErrorAction SilentlyContinue | Where-Object { $_.Action -eq 'Block' -and $_.Enabled -eq 'True' })
+                Ok "DiagTrack firewall: $($blocked.Count)/$($diagRules.Count) rule(s) blocked (revert with -Action Allow)"
+            }
+            else { Warn 'no DiagTrack firewall group on this build' }
         }
 
         if ($HighPerformancePowerPlan) {
