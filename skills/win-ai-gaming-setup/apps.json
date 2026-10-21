@@ -62,6 +62,48 @@
       "exe": "rclone.exe",
       "addToPath": ".",
       "notes": "Command-line sync/backup to a NAS over SMB or WebDAV. `rclone mount` needs WinFsp (elevation) - map the drive with the OS instead."
+    },
+    {
+      "name": "VC++ 2010 x86",
+      "source": "winget",
+      "wingetId": "Microsoft.VCRedist.2010.x86",
+      "verifyPath": "%SystemRoot%\\SysWOW64\\msvcr100.dll",
+      "notes": "Game runtime, 32-bit half. Measured gap: after a disk migration this machine had VC++ 2005/2015-2022 but no 2010/2012/2013 at all, while every other verification check was green - the runtimes are not part of Windows, so nothing else notices they are missing. Many older games and launchers fail with a bare 'missing msvcr100.dll' popup. Both halves are listed separately because a 64-bit game does not get the 32-bit DLL."
+    },
+    {
+      "name": "VC++ 2010 x64",
+      "source": "winget",
+      "wingetId": "Microsoft.VCRedist.2010.x64",
+      "verifyPath": "%SystemRoot%\\System32\\msvcr100.dll",
+      "notes": "Game runtime, 64-bit half. See the x86 entry for why both are needed."
+    },
+    {
+      "name": "VC++ 2012 x86",
+      "source": "winget",
+      "wingetId": "Microsoft.VCRedist.2012.x86",
+      "verifyPath": "%SystemRoot%\\SysWOW64\\msvcr110.dll",
+      "notes": "Game runtime, 32-bit half. VC++ 2012+ installs plain DLLs into System32/SysWOW64, unlike 2005/2008 which only exist as WinSxS side-by-side assemblies."
+    },
+    {
+      "name": "VC++ 2012 x64",
+      "source": "winget",
+      "wingetId": "Microsoft.VCRedist.2012.x64",
+      "verifyPath": "%SystemRoot%\\System32\\msvcr110.dll",
+      "notes": "Game runtime, 64-bit half."
+    },
+    {
+      "name": "VC++ 2013 x86",
+      "source": "winget",
+      "wingetId": "Microsoft.VCRedist.2013.x86",
+      "verifyPath": "%SystemRoot%\\SysWOW64\\msvcr120.dll",
+      "notes": "Game runtime, 32-bit half. This is the generation League of Legends-era launchers most often complain about."
+    },
+    {
+      "name": "VC++ 2013 x64",
+      "source": "winget",
+      "wingetId": "Microsoft.VCRedist.2013.x64",
+      "verifyPath": "%SystemRoot%\\System32\\msvcr120.dll",
+      "notes": "Game runtime, 64-bit half."
     }
   ]
 }
