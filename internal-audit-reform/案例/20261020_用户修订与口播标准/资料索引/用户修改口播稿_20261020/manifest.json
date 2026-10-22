@@ -1,0 +1,77 @@
+{
+  "material_id": "用户修改口播稿_20261020",
+  "date": "2026-10-20",
+  "status": "current_language_reference",
+  "authority": "用户明确以本轮修改稿作为以后语言标准",
+  "image_count": 5,
+  "script_sections": 18,
+  "business_authority": "业务时效、OA和页序另查当前19页PPT",
+  "raw_ocr": "../../核对依据/OCR/口播_5图.json",
+  "pages": [
+    {
+      "image": 1,
+      "source_path": "../../内部审计整改流程优化/制作源文件/夸克扫描王_修改后口播稿/夸克扫描王_文字（1）.jpg",
+      "sha256": "983a6ea189a74a1f05c0e09d7b7b723a9659f47142c843512318d45eab72acae",
+      "size_bytes": 611728,
+      "record": "pages/p001.md",
+      "coverage": "第1–3节及第4节前四段",
+      "content_review": "已核对",
+      "structure_review": "已核对",
+      "color_roles_review": "已核对",
+      "precise_styles": "未知：非原生文档"
+    },
+    {
+      "image": 2,
+      "source_path": "../../内部审计整改流程优化/制作源文件/夸克扫描王_修改后口播稿/夸克扫描王_文字（2）.jpg",
+      "sha256": "c40dae6ee57c23c8f2b446d7b9f939a7f54a4de6e369f601d418715cf2f41c2c",
+      "size_bytes": 702695,
+      "record": "pages/p002.md",
+      "coverage": "第4节末段、第5–8节及第9节标题",
+      "content_review": "已核对",
+      "structure_review": "已核对",
+      "color_roles_review": "已核对",
+      "precise_styles": "未知：非原生文档"
+    },
+    {
+      "image": 3,
+      "source_path": "../../内部审计整改流程优化/制作源文件/夸克扫描王_修改后口播稿/夸克扫描王_文字（3）.jpg",
+      "sha256": "9686b0cca11e24d358c2e42445ead77a2928a2cea1dcfd451464a506fe3a913d",
+      "size_bytes": 671933,
+      "record": "pages/p003.md",
+      "coverage": "第9–11节及第12节首段",
+      "content_review": "已核对",
+      "structure_review": "已核对",
+      "color_roles_review": "已核对",
+      "precise_styles": "未知：非原生文档"
+    },
+    {
+      "image": 4,
+      "source_path": "../../内部审计整改流程优化/制作源文件/夸克扫描王_修改后口播稿/夸克扫描王_文字（4）.jpg",
+      "sha256": "26a805110bce07cf6af25b7e7dfed96a38b4975e4fdadf678fe71db3dc3567f5",
+      "size_bytes": 716126,
+      "record": "pages/p004.md",
+      "coverage": "第12节续文、第13–14节及第15节前三段",
+      "content_review": "已核对",
+      "structure_review": "已核对",
+      "color_roles_review": "已核对",
+      "precise_styles": "未知：非原生文档"
+    },
+    {
+      "image": 5,
+      "source_path": "../../内部审计整改流程优化/制作源文件/夸克扫描王_修改后口播稿/夸克扫描王_文字（5）.jpg",
+      "sha256": "59661def8778172f0cbb56820765c2140636e5ff1fe3615c28f4a500e0c20bee",
+      "size_bytes": 669720,
+      "record": "pages/p005.md",
+      "coverage": "第15节续文及第16–18节",
+      "content_review": "部分核对：一处遮挡",
+      "structure_review": "已核对",
+      "color_roles_review": "已核对",
+      "precise_styles": "未知：非原生文档"
+    }
+  ],
+  "git_publication": {
+    "visibility": "private",
+    "repository": "Gvmeakiss/gvmeakiss-notebook",
+    "authorized_date": "2026-10-21"
+  }
+}
