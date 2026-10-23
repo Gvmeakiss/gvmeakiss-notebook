@@ -553,7 +553,7 @@ if ($phases -contains 'tune') {
             # These three come from Sophia-Script / Bloatynosy and are the "make the machine
             # recoverable" half of the tune phase. Each was measured absent on a real machine.
             @{ Path = 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Configuration Manager'; Name = 'EnablePeriodicBackup'; Value = 1; Type = 'DWord';
-               Why = 'let Windows keep periodic registry hive backups (RegIdleBackup exists but does nothing without this)' }
+               Why = 'attempt periodic registry hive backup; MEASURED no-op on Win11 26xxx (empty RegIdleBackup, SIT gone) - the restore point is the real undo' }
             @{ Path = 'HKLM:\SYSTEM\CurrentControlSet\Control\BitLocker'; Name = 'PreventDeviceEncryption'; Value = 1; Type = 'DWord';
                Why = 'block FUTURE automatic device encryption; never touches volumes that are already encrypted' }
 
@@ -699,13 +699,32 @@ if ($phases -contains 'tune') {
 
         # Registry periodic backup: the task exists on every install, but it only does anything
         # once EnablePeriodicBackup above is set, and some debloat scripts disable it outright.
+        #
+        # MEASURED LIMIT, Windows 11 26xxx: this build ships RegIdleBackup as an EMPTY SHELL -
+        # State=Ready but zero triggers and zero actions - and the SIT service that used to do the
+        # copying no longer exists. After a reboot AND after Start-ScheduledTask, the hives in
+        # %SystemRoot%\System32\config\RegBack were still 0 bytes. So the switch is written (it is
+        # correct and harmless on builds where it works), but it is NOT reported as a working
+        # safety net. The real undo path on such a build is the restore point created earlier.
         $regTaskPath = '\Microsoft\Windows\Registry\'
         $regTask = Get-ScheduledTask -TaskPath $regTaskPath -TaskName 'RegIdleBackup' -ErrorAction SilentlyContinue
         if ($regTask) {
             if ($PSCmdlet.ShouldProcess('RegIdleBackup', 'enable scheduled registry hive backup')) {
                 if ($regTask.State -eq 'Disabled') { Enable-ScheduledTask -TaskPath $regTaskPath -TaskName 'RegIdleBackup' | Out-Null }
-                $st = (Get-ScheduledTask -TaskPath $regTaskPath -TaskName 'RegIdleBackup').State
-                if ($st -ne 'Disabled') { Ok "RegIdleBackup: $st" } else { Warn "RegIdleBackup is still $st" }
+                $regBackBytes = 0
+                $regBackDir = Join-Path $env:SystemRoot 'System32\config\RegBack'
+                if (Test-Path $regBackDir) {
+                    $regBackBytes = @(Get-ChildItem $regBackDir -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum
+                    if ($null -eq $regBackBytes) { $regBackBytes = 0 }
+                }
+                if ($regBackBytes -gt 1MB) {
+                    Ok "registry hive backup: hives present ($([math]::Round($regBackBytes/1MB,1)) MB)"
+                }
+                else {
+                    Warn 'registry hive backup is a NO-OP on this build: RegIdleBackup has no triggers/actions'
+                    Warn '  and the SIT service is gone, so RegBack stays empty - do not count it as a safety net.'
+                    Warn '  the restore point created earlier in this phase is the real undo path.'
+                }
             }
         }
         else { Warn 'RegIdleBackup task not present on this build - registry backups will not run' }

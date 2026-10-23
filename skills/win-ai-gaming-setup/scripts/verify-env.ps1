@@ -564,8 +564,11 @@ $tweaks = @(
     # uploaded diagnostics).
     # Safety nets and network/disk housekeeping added after the evidence review. Each one is a
     # write that setup.ps1 -Phase tune performs, and a write with no check is an unchecked claim.
-    @{ Check = 'registry backup';       Path = 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Configuration Manager'; Name = 'EnablePeriodicBackup'; Value = 1; Want = '1'
-       AltWhy = 'Windows keeps periodic registry hive backups' },
+    # NOTE: EnablePeriodicBackup is deliberately NOT checked here as a registry value. Measured
+    # on Windows 11 26xxx: the value reads back as 1, the RegIdleBackup task exists but has NO
+    # trigger and NO action, the SIT service no longer exists, and the hives in
+    # C:\Windows\System32\config\RegBack stay 0 bytes. Checking the switch would report a safety
+    # net that does not exist - the outcome is checked as 'registry hive backup' further down.
     @{ Check = 'bitlocker auto-encrypt'; Path = 'HKLM:\SYSTEM\CurrentControlSet\Control\BitLocker';                            Name = 'PreventDeviceEncryption'; Want = '1'
        AltWhy = 'future automatic device encryption blocked (existing volumes untouched)' },
     @{ Check = 'delivery optimization'; Path = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DeliveryOptimization\Config'; Name = 'DODownloadMode';            Want = '1'
@@ -613,6 +616,23 @@ $ctxKey = 'HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\I
 $ctxVal = (Get-ItemProperty -Path $ctxKey -ErrorAction SilentlyContinue).'(default)'
 $ctxDetail = if ($null -eq $ctxVal) { 'override key absent - the Win11 folded menu is in use' } else { "InprocServer32 default='$ctxVal'" }
 Record 'tweaks' 'classic context menu' ($ctxVal -eq '') $ctxDetail
+
+# Registry hive backup - checks the OUTCOME, not the switch. setup.ps1 sets
+# EnablePeriodicBackup=1 and enables RegIdleBackup, but on Windows 11 26xxx both are vestigial:
+# the task has no trigger and no action, the SIT service is gone, and RegBack holds 0-byte files.
+# Measured after a reboot AND after manually starting the task: still 0 bytes.
+# Informational, because nothing the user can do makes this build back hives up - the real
+# safety net here is the restore point checked above.
+$regBack = 'C:\Windows\System32\config\RegBack'
+$regBackBytes = 0
+if (Test-Path $regBack) {
+    $regBackBytes = @(Get-ChildItem $regBack -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum
+    if ($null -eq $regBackBytes) { $regBackBytes = 0 }
+}
+$regBackDetail = if (-not (Test-Path $regBack)) { 'RegBack folder absent' }
+                 elseif ($regBackBytes -gt 1MB) { "hive copies present ($([math]::Round($regBackBytes/1MB,1)) MB)" }
+                 else { "switch is on but the hives are $regBackBytes byte(s): this Windows build removed the periodic backup (RegIdleBackup has no trigger/action, SIT service gone) - rely on the restore point" }
+Record 'tweaks' 'registry hive backup' ($regBackBytes -gt 1MB) $regBackDetail -Optional
 
 # Telemetry scheduled tasks: informational because the list is build-dependent. Measured on
 # this build: "Microsoft Compatibility Appraiser" and "ProgramDataUpdater" do not exist, so a

@@ -146,7 +146,7 @@ pwsh -File scripts/setup.ps1 -Phase tune           # 确认后再改
 | **开始菜单联网搜索** | 走**策略键** `DisableSearchBoxSuggestions=1` + `ConnectedSearchUseWeb=0`、`AllowCortana=0` |
 | **遥测** | 策略 `AllowTelemetry` —— **按 SKU 门控**：企业版/教育版/Server 写 `0`，家庭版/专业版写 `1`。改策略，不是杀服务 |
 | **遥测任务与出网** | 逐条禁用遥测计划任务（**存在才处理**，清单随 build 变化）+ 防火墙按组阻断 `DiagTrack`（可 `-Action Allow` 回退，不删规则） |
-| **安全兜底** | `EnablePeriodicBackup=1` + 启用 `RegIdleBackup`（Windows 自带注册表周期备份）；`PreventDeviceEncryption=1`（只拦未来的自动加密，不动已加密卷） |
+| **安全兜底** | **还原点**是真正的回滚路径；`PreventDeviceEncryption=1`（只拦未来的自动加密，不动已加密卷）；`EnablePeriodicBackup=1` 顺带写（见下方警告：新版本上是空操作） |
 | **网络礼貌** | `DODownloadMode=1`：更新交付留在局域网，不向互联网上传 |
 | **磁盘保洁** | Storage Sense 清回收站（保留 30 天）。**下载目录自动删除保持关闭** —— 会误删用户下载的安装包，省的空间不值这个风险 |
 | **右键菜单** | 恢复 Win11 折叠之前的经典菜单（CLSID `InprocServer32` 默认值置空），重启 Explorer 生效 |
@@ -158,6 +158,12 @@ pwsh -File scripts/setup.ps1 -Phase tune           # 确认后再改
 > 消费版会静默忽略它 —— 于是脚本"成功"、注册表里也确实写着 0，而诊断数据照传。
 > winutil、Win11Debloat、Sycnex、W4RH4WK 全都无条件写 0，只有 Sophia-Script 做了 SKU 门控。
 > 本项目跟着做门控，`verify-env.ps1` 也按 SKU 计算期望值，不再把"写了没人读的值"当成果。
+> [!WARNING]
+> **`EnablePeriodicBackup` + `RegIdleBackup` 在 Windows 11 26xxx 上是空操作。**
+> 实测：值读回来是 1、任务状态 Ready，但该任务**没有触发器、动作是空的**，曾经负责复制的 `SIT` 服务已不存在，
+> `C:\Windows\System32\config\RegBack` 里的 hive 副本**始终 0 字节** —— 重启后如此，手动 `Start-ScheduledTask` 后也如此。
+> 所以本项目只把它当"顺手写对的值"，**不当安全网**；`verify-env.ps1` 检查的是
+> **RegBack 的实际字节数**（结果项），不是那个开关。这类"开关对、结果空"的项，只能靠检查结果才能发现。
 
 > [!NOTE]
 > 联网搜索为什么不用 `BingSearchEnabled`：`HKCU\...\CurrentVersion\Search` 在 Windows 11 24H2+ 上
