@@ -137,6 +137,12 @@ pwsh -File scripts/setup.ps1 -Phase tune           # 确认后再改
 
 ### 系统优化（6 类）
 
+> [!WARNING]
+> **`reg import` 会静默漏写。** 实测 Windows 11 26xxx：`reg import` 返回 `The operation completed successfully`（退出码 0），
+> 但在 `HKCU\...\CurrentVersion\ContentDeliveryManager` 下**一个新值都没创建** —— 连全新建的值名都被丢弃；
+> 同一时刻用 `reg add` 或 `Set-ItemProperty` 写同一个值则成功。
+> 本项目原来就靠批量 `.reg` 写入（比逐条写快 8 倍），因此这一路静默失败表现为「tune 报 2 个失败但没人能解释」。
+> 现在每个值导入后都会回读，**没落地的用注册表提供程序补写一次再回读**，并在日志里点名哪几个值走了兜底。
 **先创建还原点、再拍快照**：还原点为注册表写入提供回滚路径（`Checkpoint-Computer` 默认有 24 小时去重，脚本会临时把 `SystemRestorePointCreationFrequency` 置 0，创建后回读列表，再恢复护栏）；快照记录服务启动类型 + 自启项。每一条都是单个注册表写入、逐条报告。
 
 | 类 | 内容 |

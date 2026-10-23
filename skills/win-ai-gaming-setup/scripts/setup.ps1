@@ -54,6 +54,12 @@
   Optional, off by default: switch the active power plan to High performance.
   Left off because it costs battery life on a laptop.
 
+.PARAMETER DisableSleepOnAC
+  Optional, off by default: never sleep on AC power (the display still turns off).
+  Intended for desktops and mini PCs, where S0 modern standby can fail to wake: measured
+  evidence was five sleep cycles that each "resumed" within seconds and then sat in standby,
+  one of which never woke at all and ended as a forced power-off (logged as Id=41 + 6008).
+
 .PARAMETER DisableMouseAcceleration
   Optional, off by default: zero the Windows mouse acceleration curve (a gaming preference,
   not a universal win).
@@ -95,6 +101,7 @@ param(
     [switch]$IncludeOptionalApps,
     [switch]$HighPerformancePowerPlan,
     [switch]$DisableMouseAcceleration,
+    [switch]$DisableSleepOnAC,
     [switch]$InstallDrivers,
     [switch]$RegisterAssociations,
     [switch]$SkipTweaks,
@@ -645,13 +652,37 @@ if ($phases -contains 'tune') {
         # Read each KEY once, not each value. Measured: 30 x (Get-ItemProperty -Name) =
         # 154 ms versus one read per key = 4 ms. A write returning success is not evidence;
         # this is the evidence.
-        $applied = 0; $failed = 0
+        #
+        # PER-VALUE FALLBACK, measured on Windows 11 26xxx. `reg import` reports
+        # "The operation completed successfully" (exit 0) and yet silently creates NOTHING under
+        # at least HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager - even a
+        # brand-new value name that exists nowhere was dropped, while `reg add` and
+        # Set-ItemProperty both wrote the same value successfully in the same session.
+        # Two of the tune values live in that key, so the phase used to report 2 failures that
+        # nothing explained. Rather than distrust the batch entirely (it is 8x faster), retry a
+        # value that did not land using the registry provider, then re-read it.
+        $applied = 0; $failed = 0; $recovered = New-Object System.Collections.Generic.List[string]
         foreach ($k in $byKey.Keys) {
             $props = Get-ItemProperty -Path $k -ErrorAction SilentlyContinue
             foreach ($c in $byKey[$k]) {
-                if (($null -ne $props) -and ($null -ne $props.($c.Name))) { $applied++ }
-                else { $failed++; Bad "$k\$($c.Name): not present after the write" }
+                $present = ($null -ne $props) -and ($null -ne $props.($c.Name))
+                if (-not $present -and -not $WhatIfPreference) {
+                    try {
+                        Set-ItemProperty -Path $k -Name $c.Name -Value $c.Value -Type $c.Type -ErrorAction Stop
+                        $recheck = Get-ItemProperty -Path $k -Name $c.Name -ErrorAction SilentlyContinue
+                        if (($null -ne $recheck) -and ($null -ne $recheck.($c.Name))) {
+                            $present = $true
+                            $recovered.Add("$k\$($c.Name)")
+                        }
+                    }
+                    catch { }
+                }
+                if ($present) { $applied++ }
+                else { $failed++; Bad "$k\$($c.Name): not present after reg import AND a direct write" }
             }
+        }
+        if ($recovered.Count -gt 0) {
+            Warn "reg import silently skipped $($recovered.Count) value(s); written directly instead: $($recovered -join ', ')"
         }
         if ($WhatIfPreference) {
             # The preview must say how many values WOULD change. Under -WhatIf nobody is
@@ -777,6 +808,44 @@ if ($phases -contains 'tune') {
             }
         }
         else { Warn 'power plan left as-is (pass -HighPerformancePowerPlan to switch)' }
+
+        # Sleep on a desktop / mini PC. Opt-in, because it is a genuine tradeoff: the machine
+        # stays powered, but it also stops failing to come back.
+        #
+        # MEASURED REASON: five sleep cycles in five days on a mini PC looked like this -
+        #   Id=187 "wake source could not be identified" -> 42 enter sleep -> 107 resume (2-4 s
+        #   later) -> hours of S0 modern standby -> 507 exit modern standby.
+        # One of those standby periods never produced a 507 at all: the display stayed black and
+        # the owner force-powered the machine off, which Windows then logged as Id=41 + 6008
+        # ("unexpected shutdown"). No crash dump, no WHEA, no app hang - i.e. it was not a bug,
+        # the machine simply never woke from S0.
+        # Disabling the sleep timer (not the display timer) removes that failure class entirely.
+        if ($DisableSleepOnAC) {
+            if ($PSCmdlet.ShouldProcess('power timeouts', 'disable sleep/hibernate on AC power (display timeout kept)')) {
+                & powercfg /change standby-timeout-ac 0 | Out-Null
+                & powercfg /change hibernate-timeout-ac 0 | Out-Null
+                # Read the AC index back WITHOUT matching the label: powercfg prints localized
+                # text (the AC index line is translated on non-English Windows), and this script
+                # must stay ASCII-only. The AC and DC index lines are the LAST two hex lines,
+                # AC first, so take that pair positionally - locale-independent.
+                $acIndex = {
+                    param($sub, $setting)
+                    $out = (powercfg /query SCHEME_CURRENT $sub $setting 2>&1 | Out-String) -split "`n"
+                    $hex = @($out | Where-Object { $_ -match '0x[0-9a-fA-F]{8}' })
+                    if ($hex.Count -ge 2) {
+                        $pair = $hex[($hex.Count - 2)..($hex.Count - 1)]
+                        if ($pair[0] -match '0x([0-9a-fA-F]{8})') { return [Convert]::ToInt32($Matches[1], 16) }
+                    }
+                    return -1
+                }
+                $slpSec = & $acIndex 'SUB_SLEEP' 'STANDBYIDLE'
+                $dispSec = & $acIndex 'SUB_VIDEO' 'VIDEOIDLE'
+                if ($slpSec -eq 0) { Ok "sleep disabled on AC (display still turns off after $dispSec s)" }
+                else { Warn "sleep timeout is still $slpSec s - -DisableSleepOnAC did not take effect" }
+            }
+        }
+        else { Warn 'sleep left as-is (pass -DisableSleepOnAC on a desktop/mini PC that fails to wake)' }
+
         if (-not $DisableMouseAcceleration) { Warn 'mouse acceleration left as-is (pass -DisableMouseAcceleration to zero it)' }
 
         Warn 'deliberately NOT done: no service disabled, no UAC change, no DPI change, no update policy change'
