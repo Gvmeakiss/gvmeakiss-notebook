@@ -165,11 +165,12 @@ pwsh -File scripts/setup.ps1 -Phase tune           # 确认后再改
 > winutil、Win11Debloat、Sycnex、W4RH4WK 全都无条件写 0，只有 Sophia-Script 做了 SKU 门控。
 > 本项目跟着做门控，`verify-env.ps1` 也按 SKU 计算期望值，不再把"写了没人读的值"当成果。
 > [!WARNING]
-> **`EnablePeriodicBackup` + `RegIdleBackup` 在 Windows 11 26xxx 上是空操作。**
-> 实测：值读回来是 1、任务状态 Ready，但该任务**没有触发器、动作是空的**，曾经负责复制的 `SIT` 服务已不存在，
-> `C:\Windows\System32\config\RegBack` 里的 hive 副本**始终 0 字节** —— 重启后如此，手动 `Start-ScheduledTask` 后也如此。
-> 所以本项目只把它当"顺手写对的值"，**不当安全网**；`verify-env.ps1` 检查的是
-> **RegBack 的实际字节数**（结果项），不是那个开关。这类"开关对、结果空"的项，只能靠检查结果才能发现。
+> **`EnablePeriodicBackup` 会延迟生效，别把它当"立刻可用"的安全网。**
+> 实测时间线：写入后立即查 `RegBack` 是 **0 字节**（重启后、手动 `Start-ScheduledTask` 后都是 0），
+> 同期该任务的触发器与动作在注册表视图里也是空的，`SIT` 服务早已不存在 —— 于是我一度判定"这个 build 已移除该功能"。
+> **两天两次重启后再查：`RegBack` 里是 110 MB 真实 hive。** 结论修正为：Windows 在下一次启动/空闲点填充它，不响应手动触发。
+> 因此 `verify-env.ps1` 检查的是 **`RegBack` 的实际字节数**而不是开关值，
+> 未填充时只报信息项并提示"以还原点为准"。**这条教训值得记住：把"暂时没有"当"永远没有"，也是一次误判。**
 
 > [!NOTE]
 > 联网搜索为什么不用 `BingSearchEnabled`：`HKCU\...\CurrentVersion\Search` 在 Windows 11 24H2+ 上
@@ -290,6 +291,7 @@ Microsoft.MicrosoftStickyNotes
 | 参数 | 默认 | 说明 |
 |---|---|---|
 | `-Phase` | `all` | `check,dev,apps,drivers,tune,link,verify` 任意组合 |
+| `-Profile` | 空 | **预设包，覆盖 `-Phase`**：`minimal`（check/apps/link，不碰系统）· `dev`（+开发链+验收）· `full`（含 drivers/tune） |
 | `-Manifest` | `apps.json` | 应用清单 |
 | `-Destination` | `%USERPROFILE%\Apps` | 便携软件根目录 |
 | `-SnapshotDir` | `<Destination>\_backup` | 快照与关联备份 |
@@ -298,6 +300,7 @@ Microsoft.MicrosoftStickyNotes
 | `-InstallDrivers` | 关 | `drivers` 阶段实际安装驱动 |
 | `-HighPerformancePowerPlan` | 关 | 切高性能电源计划 |
 | `-DisableMouseAcceleration` | 关 | 鼠标加速曲线清零 |
+| `-DisableSleepOnAC` | 关 | 交流供电下不睡眠（保留关屏）。给 S0 现代待机会"睡死"的台式机/迷你主机用 |
 | `-RegisterAssociations` | 关 | 写关联注册（**只写 HKCU**） |
 | `-SkipTweaks` | 关 | 只快照、不改系统 |
 | `-IncludeOptionalApps` | 关 | 安装清单里 `optional: true` 的条目。**当前清单没有可选条目**，机制保留 |
@@ -342,6 +345,16 @@ pwsh -File scripts/compare-services.ps1 -Snapshot ... -Restore -WhatIf
 pwsh -File scripts/compare-services.ps1 -Snapshot ... -Restore -Only TabletInputService
 ```
 
+`-Phase tune` 每次还会写两样东西到 `-SnapshotDir`（默认 `%USERPROFILE%\Apps\_backup`）：
+
+| 产物 | 用途 |
+|---|---|
+| `setup-<时间戳>.log` | **完整 transcript**。出问题先看它，不用凭记忆复述 |
+| `tune-undo-<时间戳>.ps1` | **逐项撤销脚本**：记录每个值在写入**之前**的实际内容，按项回退；原来不存在的值会被删除，而不是写一个猜的默认值 |
+
+> 还原点是"整机回到某一刻"的粗粒度回退；`tune-undo-*.ps1` 是"只退这一条"的手术刀。两者都要有。
+> 撤销脚本在提权用户会话里跑：`pwsh -File <撤销脚本>`。
+
 ### 输入法坏了
 
 ```powershell
@@ -369,7 +382,14 @@ pnputil /restart-device "<InstanceId>"     # 或 scripts/reset-failed-devices.ps
 
 ## 工具箱
 
-13 个可单独用的脚本 + 唯一入口 `setup.ps1`。全部自包含、支持 `Get-Help`。
+13 个可单独用的脚本 + 入口 `setup.ps1` + 自举 `bootstrap.ps1` + 自测 `test-tune-core.ps1`。
+全部自包含、支持 `Get-Help`。
+
+| 新东西 | 解决什么 |
+|---|---|
+| `bootstrap.ps1` | **无 git 自举**：新机没 git 就 clone 不了仓库，而仓库负责装 git —— 死循环。它用 HTTPS 下载仓库 zip 解压后转交 `setup.ps1` |
+| `test-tune-core.ps1` | 纯函数自测（18 条断言，零依赖、秒级）：DWORD 渲染、撤销脚本转义、版本门控 |
+| `lib/tune-core.ps1` | 上述纯函数的实现，被 `setup.ps1` dot-source；`check-script-hygiene.ps1` 现在**递归**扫描（否则会漏掉它） |
 
 | 组 | 脚本 | 用途 |
 |---|---|---|
@@ -424,6 +444,9 @@ ETW 采集不受影响。
 | `.7z` 解不开 | 用了精简版 `7zr.exe`（没有 ZIP 编解码器） | 装完整 7-Zip |
 | 打完累积更新后优化失效 | 更新会**直接删除**注册表值，不是改值 | 重跑 `verify-env.ps1` |
 | 中文标签变乱码 | 改第三方 ini 时丢了 UTF-8 BOM | 显式带 BOM 写 |
+| **Edge 自启项删了又回来** | Edge 更新（实测 156.x）会重新写 `HKCU\...\Run\MicrosoftEdgeAutoLaunch_*` | `verify-env.ps1` 的 `startup leftovers` 会红；删值重跑即可 |
+| **提权下 `-Phase check` 失败** | scoop 安装器拒绝以管理员运行（`Abort.`），而旧版 check 无条件装 scoop | 已修：`dev` 阶段才要求 scoop，且提权时给出手动命令 |
+| 撤销脚本跑完仍有遗留 | 只覆盖注册表/任务/防火墙/电源四类写入，文件级操作不在内 | 看撤销脚本里的 `# ` 注释清点范围 |
 
 ## 边界
 

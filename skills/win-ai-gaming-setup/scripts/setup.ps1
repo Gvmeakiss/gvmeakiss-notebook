@@ -89,6 +89,9 @@ param(
     # No ValidateSet here on purpose: invoked with -File, "dev,tune" arrives as ONE string
     # (only -Command splits comma lists). The body splits and validates instead.
     [string[]]$Phase = @('all'),
+    # Named bundles instead of asking the user to combine nine switches. Overrides -Phase.
+    [ValidateSet('', 'minimal', 'dev', 'full')]
+    [string]$Profile = '',
     [string]$Manifest,
     [string]$Destination = (Join-Path $env:USERPROFILE 'Apps'),
     [string]$SnapshotDir,
@@ -110,8 +113,50 @@ param(
 
 if ($Help) { Get-Help $PSCommandPath -Detailed; return }
 
+# ------------------------------------------------------------------ context guards
+# RUN-AS-SYSTEM TRAP. Under the SYSTEM account, HKCU resolves to the SYSTEM hive, not the
+# interactive user's. Every user-scope write in the tune/link phases would land in the wrong
+# profile - and, worse, the read-back added later in those phases would read that SAME wrong
+# hive and report PASS. A machine that silently "passes" while the user gets nothing is the one
+# failure mode this project cannot detect afterwards, so refuse instead of producing it.
+$identityName = [Security.Principal.WindowsIdentity]::GetCurrent().Name
+$isSystemContext = ($identityName -match '(^|\\)SYSTEM$')
+$osBuildNumber = [Environment]::OSVersion.Version.Build
+if ($isSystemContext) {
+    $wantsUserScope = @($Phase | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim().ToLower() }) |
+        Where-Object { $_ -in @('tune', 'link', 'all') }
+    if ($wantsUserScope) {
+        Write-Host '     FAIL  running as SYSTEM - refusing the phases that write HKCU' -ForegroundColor Red
+        Write-Host "           identity : $identityName" -ForegroundColor Red
+        Write-Host '           under SYSTEM, HKCU is the SYSTEM hive: user-scope tweaks would be written' -ForegroundColor Red
+        Write-Host '           to the wrong profile AND the read-back would still report PASS.' -ForegroundColor Red
+        Write-Host '           run this from an elevated USER prompt (right-click > Run as administrator),' -ForegroundColor Red
+        Write-Host '           not from a scheduled task whose principal is SYSTEM.' -ForegroundColor Red
+        exit 3
+    }
+}
+
+# ------------------------------------------------------------------ persistent log
+# Without a transcript, a failure investigated later is guesswork: the "2 registry writes
+# failed" bug in this project took hours to chase precisely because nothing was on disk. The
+# log lands next to the snapshot so it travels with the rollback material.
+$logDir = if ($SnapshotDir) { $SnapshotDir } else { Join-Path $Destination '_backup' }
+$script:logFile = $null
+try {
+    New-Item -ItemType Directory -Force -Path $logDir -ErrorAction Stop | Out-Null
+    $script:logFile = Join-Path $logDir ('setup-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '.log')
+    Start-Transcript -Path $script:logFile -Force -ErrorAction Stop | Out-Null
+}
+catch {
+    $script:logFile = $null
+    Write-Host "     WARN  transcript disabled: $($_.Exception.Message)" -ForegroundColor Yellow
+}
+
 $ErrorActionPreference = 'Continue'
 $here = $PSScriptRoot
+# Pure helpers (DWORD rendering, undo formatting, build gating) live in lib/ so that
+# scripts/test-tune-core.ps1 can exercise them without touching a live machine.
+. (Join-Path $here 'lib/tune-core.ps1')
 $gitExe = Join-Path $env:USERPROFILE 'scoop\shims\git.exe'
 
 # Rebuild PATH from the registry: a stale parent environment must not decide what is installed.
@@ -136,6 +181,49 @@ function Bad { param([string]$M) Write-Host "     FAIL  $M" -ForegroundColor Red
 $results = New-Object System.Collections.Generic.List[object]
 function Record { param([string]$Name, [bool]$Ok, [string]$Detail = '')
     $script:results.Add([pscustomobject]@{ Phase = $Name; Result = $(if ($Ok) { 'PASS' } else { 'FAIL' }); Detail = $Detail })
+}
+
+# ------------------------------------------------------------------ per-item undo
+# A system restore point is a coarse undo: it reverts EVERY change made since it was taken, so a
+# single bad tweak costs the good ones too. Mature projects solve this with per-feature undo
+# metadata (Win11Debloat pairs every feature with a RegistryUndoKey and a 1:1 undo .reg).
+# This goes one step further and records the ACTUAL previous state, because "restore the
+# Microsoft default" is not the same as "restore what this machine had".
+# Every write site appends one entry; the whole list is emitted as a runnable revert script.
+$script:undoEntries = New-Object System.Collections.Generic.List[object]
+function Add-Undo {
+    param([string]$What, [string]$Revert)
+    if ([string]::IsNullOrWhiteSpace($Revert)) { return }
+    $script:undoEntries.Add([pscustomobject]@{ What = $What; Revert = $Revert })
+}
+
+function Write-UndoScript {
+    param([string]$Dir)
+    if (-not $script:undoEntries.Count) { return $null }
+    $path = Join-Path $Dir ('tune-undo-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '.ps1')
+    $lines = New-Object System.Collections.Generic.List[string]
+    $lines.Add('# Revert script generated by win-ai-gaming-setup.')
+    $lines.Add('# Run in an ELEVATED USER session:  pwsh -File <this file>')
+    $lines.Add('# It restores the values that were present BEFORE the tune phase, one item at a time.')
+    $lines.Add('# Items whose original state was "absent" are removed again, not set to a guessed default.')
+    $lines.Add('')
+    $lines.Add('$ErrorActionPreference = ''Continue''')
+    $lines.Add('$failed = 0')
+    foreach ($e in $script:undoEntries) {
+        $lines.Add('')
+        $lines.Add('# ' + $e.What)
+        $lines.Add('try {')
+        $lines.Add('    ' + $e.Revert)
+        $lines.Add('} catch { Write-Host "  FAIL  ' + ($e.What -replace '"', '') + ': $($_.Exception.Message)"; $failed++ }')
+    }
+    $lines.Add('')
+    $lines.Add('if ($failed -eq 0) { Write-Host "  ok    all items reverted" } else { Write-Host "  FAIL  $failed item(s) could not be reverted" }')
+    $lines.Add('exit $failed')
+    try {
+        Set-Content -Path $path -Value ($lines -join "`r`n") -Encoding UTF8 -ErrorAction Stop
+        return $path
+    }
+    catch { return $null }
 }
 # NOTE: the parameter must NOT be named $Args - that shadows the automatic variable and
 # silently drops every argument passed to the child script.
@@ -241,6 +329,26 @@ if ($badPhase.Count) {
     exit 2
 }
 if ($phases -contains 'all') { $phases = @('check', 'dev', 'apps', 'drivers', 'tune', 'link', 'verify') }
+
+# ------------------------------------------------------------------ profiles
+# The nine switches below are fine for someone who has read README.md; a profile is for the
+# "new machine, one command" case. A profile WINS over -Phase on purpose: mixing both would
+# silently apply half of each.
+if ($Profile) {
+    $profilePhases = switch ($Profile) {
+        'minimal' { @('check', 'apps', 'link') }
+        'dev' { @('check', 'dev', 'apps', 'link', 'verify') }
+        'full' { @('check', 'dev', 'apps', 'drivers', 'tune', 'link', 'verify') }
+    }
+    if ($Profile -eq 'minimal') { $SkipTweaks = $true }
+    $phases = @($profilePhases)
+    Write-Host "  profile     : $Profile (overrides -Phase)" -ForegroundColor Gray
+}
+# scoop is only needed by the dev phase. Measured: -Profile minimal (check/apps/link) exited 1 on
+# an elevated shell because the check phase tried to bootstrap scoop, and scoop's installer
+# refuses to run as administrator - even though minimal never needs scoop at all.
+$needsScoop = ($phases -contains 'dev')
+
 if (-not $Manifest) { $Manifest = Join-Path (Split-Path $here -Parent) 'apps.json' }
 if (-not $SnapshotDir) { $SnapshotDir = Join-Path $Destination '_backup' }
 
@@ -254,6 +362,9 @@ Write-Host "  apps root   : $Destination"
 Write-Host "  manifest    : $Manifest"
 Write-Host "  shell       : PowerShell $($PSVersionTable.PSVersion) ($($PSVersionTable.PSEdition)) -> child host: $pwshExe"
 Write-Host "  elevated    : $isAdmin"
+Write-Host "  identity    : $identityName"
+Write-Host "  windows     : build $osBuildNumber"
+Write-Host "  log         : $(if ($script:logFile) { $script:logFile } else { '(transcript off)' })"
 if ($WhatIfPreference) { Warn 'WhatIf: nothing will be changed' }
 Write-Host ''
 
@@ -271,7 +382,21 @@ if ($phases -contains 'check') {
     }
 
     if (-not (Get-Command 'scoop' -ErrorAction SilentlyContinue)) {
-        if ($PSCmdlet.ShouldProcess('Scoop', 'install from the official script (user-level)')) {
+        if (-not $needsScoop) {
+            # Measured: `-Profile minimal` failed here on an elevated shell because scoop was
+            # missing - yet minimal only needs winget and portable zips, never scoop.
+            Warn 'scoop missing - not needed for the selected phases (apps/link use winget and portable zips)'
+        }
+        elseif ($isAdmin) {
+            # Measured: scoop's installer prints "Running the installer as administrator is
+            # disabled by default ... Abort." and exits non-zero, which made -Phase check FAIL
+            # on every elevated session. Report the real remedy instead of retrying it.
+            Warn 'scoop missing and this session is ELEVATED - scoop refuses to install as administrator'
+            Warn '  open a NORMAL user terminal and run:  irm get.scoop.sh | iex'
+            Warn '  then re-run:  setup.ps1 -Profile dev'
+            $okAll = $false
+        }
+        elseif ($PSCmdlet.ShouldProcess('Scoop', 'install from the official script (user-level)')) {
             Step 'scoop missing - installing it (user-level, no elevation)'
             try {
                 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force -ErrorAction SilentlyContinue
@@ -284,15 +409,19 @@ if ($phases -contains 'check') {
     }
     else { Ok 'scoop present' }
 
-    # git comes first: scoop buckets need it.
-    if (-not (Scoop-Install @('git'))) { $okAll = $false }
+    # git comes first for the dev phase: scoop buckets need it.
+    if ($needsScoop) {
+        if (-not (Scoop-Install @('git'))) { $okAll = $false }
+    }
 
     # 7-Zip is attempted through scoop because the apps phase needs an extractor, but it is
     # NOT allowed to depend on scoop alone. Measured on a real machine: scoop never bootstrapped,
     # so 7-Zip was never installed while this phase still counted the bundle as handled, and the
     # user ended up installing it from 7-zip.org by hand. The winget entry in apps.json is the
     # independent second path; the verdict is a readback of the binary, never the exit code.
-    if (-not (Scoop-Install @('7zip'))) { Warn '7-Zip not installed by scoop - falling back to winget' }
+    if (Get-Command 'scoop' -ErrorAction SilentlyContinue) {
+        if (-not (Scoop-Install @('7zip'))) { Warn '7-Zip not installed by scoop - falling back to winget' }
+    }
     if (-not (Test-ArchiveTool)) {
         if (-not (Invoke-Step 'install-portable.ps1' @('-Only', '7-Zip') '7-Zip fallback (winget entry)')) {
             Warn 'winget fallback reported a failure'
@@ -602,9 +731,27 @@ if ($phases -contains 'tune') {
         # the tail as "not present after the write" and the real cause (one locked key)
         # would look like N unrelated failures. That is why the Start-menu search values
         # now go to their policy keys instead of `...\CurrentVersion\Search`.
+        # Build gating. A rule that is right on one Windows build can be a no-op or harmful on
+        # another - measured: the periodic registry backup is dead on 26xxx, and the telemetry
+        # scheduled-task list differs per build. Rules may declare MinBuild / MaxBuild, and the
+        # skipped ones are named so that silence in the log always has an explanation.
         $approved = New-Object System.Collections.Generic.List[object]
+        $skippedByBuild = New-Object System.Collections.Generic.List[string]
         foreach ($c in $changes) {
+            if (-not (Test-BuildGate -Build $osBuildNumber -MinBuild $c.MinBuild -MaxBuild $c.MaxBuild)) {
+                $why = if ($c.MinBuild) { "needs build $($c.MinBuild)+" } else { "build $($c.MaxBuild) or older only" }
+                $skippedByBuild.Add("$($c.Name) ($why)")
+                continue
+            }
             if ($PSCmdlet.ShouldProcess("$($c.Path)\$($c.Name)", "set $($c.Value) - $($c.Why)")) { $approved.Add($c) }
+        }
+        if ($skippedByBuild.Count) { Warn "skipped by build gate: $($skippedByBuild -join '; ')" }
+
+        # Previous state, captured BEFORE any write, so the undo script can restore what this
+        # machine actually had rather than a guessed Microsoft default.
+        $previousState = @{}
+        foreach ($prevKey in @($approved | ForEach-Object { $_.Path } | Sort-Object -Unique)) {
+            $previousState[$prevKey] = Get-ItemProperty -Path $prevKey -ErrorAction SilentlyContinue
         }
 
         # Group by key: a .reg file is written as [key] sections followed by their values.
@@ -614,8 +761,8 @@ if ($phases -contains 'tune') {
             $byKey[$c.Path].Add($c)
         }
 
-        # Both -1 and 0xffffffff must render as the 8-digit hex ff ff ff ff.
-        function ConvertTo-RegDword { param($v) $n = [int64]$v; if ($n -lt 0) { $n += 4294967296 }; return ('{0:x8}' -f $n) }
+        # ConvertTo-RegDword now lives in lib/tune-core.ps1 (covered by test-tune-core.ps1).
+
 
         $regLines = New-Object System.Collections.Generic.List[string]
         $regLines.Add('Windows Registry Editor Version 5.00')
@@ -722,6 +869,26 @@ if ($phases -contains 'tune') {
         if ($recovered.Count -gt 0) {
             Warn "reg import silently skipped $($recovered.Count) value(s); written directly instead: $($recovered -join ', ')"
         }
+
+        # Per-item undo: one entry per value that ended up applied, restoring the captured
+        # previous value (or removing the value again when it did not exist before).
+        if (-not $WhatIfPreference) {
+            foreach ($c in $approved) {
+                $prev = $previousState[$c.Path]
+                $hadPrev = ($null -ne $prev) -and ($null -ne $prev.($c.Name))
+                $pathLit = "'" + ($c.Path -replace "'", "''") + "'"
+                $nameLit = "'" + ($c.Name -replace "'", "''") + "'"
+                if ($hadPrev) {
+                    $oldVal = $prev.($c.Name)
+                    $oldType = if ($oldVal -is [int] -or $oldVal -is [long]) { 'DWord' } else { 'String' }
+                    $revert = "Set-ItemProperty -Path $pathLit -Name $nameLit -Value $(Format-UndoValue $oldVal $oldType) -Type $oldType"
+                }
+                else {
+                    $revert = "Remove-ItemProperty -Path $pathLit -Name $nameLit -ErrorAction SilentlyContinue"
+                }
+                Add-Undo -What "registry: $($c.Path)\$($c.Name) - $($c.Why)" -Revert $revert
+            }
+        }
         if ($WhatIfPreference) {
             # The preview must say how many values WOULD change. Under -WhatIf nobody is
             # approved, so the old summary read "applied 0 registry change(s)" - which looks
@@ -758,10 +925,22 @@ if ($phases -contains 'tune') {
         # named values, and a default value cannot be read that way.
         $ctxKey = 'HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32'
         if ($PSCmdlet.ShouldProcess($ctxKey, 'set default "" - restore the classic context menu')) {
+            $ctxExisted = Test-Path -LiteralPath $ctxKey
+            $ctxPrev = if ($ctxExisted) { (Get-ItemProperty -Path $ctxKey -ErrorAction SilentlyContinue).'(default)' } else { $null }
             New-Item -Path $ctxKey -Force | Out-Null
             Set-ItemProperty -Path $ctxKey -Name '(default)' -Value '' -Type String
             if ((Get-ItemProperty -Path $ctxKey -ErrorAction SilentlyContinue).'(default)' -eq '') {
                 Ok 'classic context menu enabled (takes effect after Explorer restarts)'
+                # The override key did not exist on a stock Win11 install, so reverting means
+                # deleting the whole key - not writing an empty string back into it.
+                if ($ctxExisted) {
+                    Add-Undo -What 'classic context menu: restore the previous InprocServer32 default' `
+                        -Revert ("Set-ItemProperty -Path '$ctxKey' -Name '(default)' -Value '" + ("$ctxPrev" -replace "'", "''") + "' -Type String")
+                }
+                else {
+                    Add-Undo -What 'classic context menu: remove the CLSID override key' `
+                        -Revert ("Remove-Item -Path 'HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}' -Recurse -Force -ErrorAction SilentlyContinue")
+                }
             }
             else { Bad 'classic context menu: default value is not empty after the write' }
         }
@@ -790,9 +969,16 @@ if ($phases -contains 'tune') {
                     Ok "registry hive backup: hives present ($([math]::Round($regBackBytes/1MB,1)) MB)"
                 }
                 else {
-                    Warn 'registry hive backup is a NO-OP on this build: RegIdleBackup has no triggers/actions'
-                    Warn '  and the SIT service is gone, so RegBack stays empty - do not count it as a safety net.'
-                    Warn '  the restore point created earlier in this phase is the real undo path.'
+                    # CORRECTED after a longer measurement window: this is NOT a permanent no-op.
+                    # Right after enabling (and right after a manual Start-ScheduledTask) RegBack
+                    # held 0-byte files, which looked conclusive. Two days and two reboots later
+                    # the same folder held 110 MB of real hives - Windows fills RegBack at a later
+                    # boot/idle point, not on demand. So: warn that it is not filled YET, and keep
+                    # the restore point as the guaranteed undo path in the meantime.
+                    Warn "registry hive backup not populated yet ($regBackBytes byte(s)) - Windows fills"
+                    Warn '  RegBack at a later boot/idle point, not on demand. Measured: 0 bytes right'
+                    Warn '  after enabling, 110 MB two days later. Until it fills, the restore point'
+                    Warn '  created earlier in this phase is the guaranteed undo path.'
                 }
             }
         }
@@ -819,8 +1005,15 @@ if ($phases -contains 'tune') {
             if (-not $task) { $telMissing++; continue }
             $telSeen++
             if ($t.Name -and $PSCmdlet.ShouldProcess($t.Name, 'disable telemetry task')) {
-                if ($task.State -ne 'Disabled') { Disable-ScheduledTask -TaskPath $t.Path -TaskName $t.Name -ErrorAction SilentlyContinue | Out-Null }
-                if ((Get-ScheduledTask -TaskPath $t.Path -TaskName $t.Name).State -eq 'Disabled') { $telOff++ }
+                $wasEnabled = ($task.State -ne 'Disabled')
+                if ($wasEnabled) { Disable-ScheduledTask -TaskPath $t.Path -TaskName $t.Name -ErrorAction SilentlyContinue | Out-Null }
+                if ((Get-ScheduledTask -TaskPath $t.Path -TaskName $t.Name).State -eq 'Disabled') {
+                    $telOff++
+                    if ($wasEnabled) {
+                        Add-Undo -What "telemetry task: $($t.Name)" `
+                            -Revert ("Enable-ScheduledTask -TaskPath '$($t.Path)' -TaskName '$($t.Name)' -ErrorAction SilentlyContinue | Out-Null")
+                    }
+                }
             }
         }
         if ($WhatIfPreference) { Warn "WhatIf: $telSeen telemetry task(s) present, would disable them ($telMissing not in this build)" }
@@ -835,6 +1028,8 @@ if ($phases -contains 'tune') {
                 $diagRules | Set-NetFirewallRule -Enabled True -Action Block -ErrorAction SilentlyContinue
                 $blocked = @(Get-NetFirewallRule -Group 'DiagTrack' -ErrorAction SilentlyContinue | Where-Object { $_.Action -eq 'Block' -and $_.Enabled -eq 'True' })
                 Ok "DiagTrack firewall: $($blocked.Count)/$($diagRules.Count) rule(s) blocked (revert with -Action Allow)"
+                Add-Undo -What 'diagtrack firewall group' `
+                    -Revert ("Get-NetFirewallRule -Group 'DiagTrack' -ErrorAction SilentlyContinue | Set-NetFirewallRule -Enabled True -Action Allow -ErrorAction SilentlyContinue")
             }
             else { Warn 'no DiagTrack firewall group on this build' }
         }
@@ -860,9 +1055,7 @@ if ($phases -contains 'tune') {
         # Disabling the sleep timer (not the display timer) removes that failure class entirely.
         if ($DisableSleepOnAC) {
             if ($PSCmdlet.ShouldProcess('power timeouts', 'disable sleep/hibernate on AC power (display timeout kept)')) {
-                & powercfg /change standby-timeout-ac 0 | Out-Null
-                & powercfg /change hibernate-timeout-ac 0 | Out-Null
-                # Read the AC index back WITHOUT matching the label: powercfg prints localized
+                # Read the AC index WITHOUT matching the label: powercfg prints localized
                 # text (the AC index line is translated on non-English Windows), and this script
                 # must stay ASCII-only. The AC and DC index lines are the LAST two hex lines,
                 # AC first, so take that pair positionally - locale-independent.
@@ -876,15 +1069,32 @@ if ($phases -contains 'tune') {
                     }
                     return -1
                 }
+                $prevSleepSec = & $acIndex 'SUB_SLEEP' 'STANDBYIDLE'
+                & powercfg /change standby-timeout-ac 0 | Out-Null
+                & powercfg /change hibernate-timeout-ac 0 | Out-Null
                 $slpSec = & $acIndex 'SUB_SLEEP' 'STANDBYIDLE'
                 $dispSec = & $acIndex 'SUB_VIDEO' 'VIDEOIDLE'
-                if ($slpSec -eq 0) { Ok "sleep disabled on AC (display still turns off after $dispSec s)" }
+                if ($slpSec -eq 0) {
+                    Ok "sleep disabled on AC (display still turns off after $dispSec s)"
+                    if ($prevSleepSec -gt 0) {
+                        Add-Undo -What "power: restore AC sleep timeout to $prevSleepSec s" `
+                            -Revert ("powercfg /change standby-timeout-ac $([int]($prevSleepSec / 60))")
+                    }
+                }
                 else { Warn "sleep timeout is still $slpSec s - -DisableSleepOnAC did not take effect" }
             }
         }
         else { Warn 'sleep left as-is (pass -DisableSleepOnAC on a desktop/mini PC that fails to wake)' }
 
         if (-not $DisableMouseAcceleration) { Warn 'mouse acceleration left as-is (pass -DisableMouseAcceleration to zero it)' }
+
+        # Per-item undo script, written next to the snapshot so it travels with the rollback
+        # material. The restore point stays as the coarse net; this is the scalpel.
+        if (-not $WhatIfPreference) {
+            $undoPath = Write-UndoScript -Dir $SnapshotDir
+            if ($undoPath) { Ok "per-item undo script: $undoPath ($($script:undoEntries.Count) item(s))" }
+            else { Warn 'no undo script written (nothing applied, or the snapshot folder is not writable)' }
+        }
 
         Warn 'deliberately NOT done: no service disabled, no UAC change, no DPI change, no update policy change'
         Record 'tune' ($ok -and $failed -eq 0) "tweaks applied: $applied"
@@ -960,4 +1170,9 @@ Write-Host '  1. REBOOT, then open a NEW terminal (PATH, long paths and the inpu
 Write-Host '  2. set default programs: one manual click per file type you care about'
 Write-Host '  3. GPU stack if you need it: driver -> then the matching CUDA/torch build for AI work'
 Write-Host '  4. a device showing an error: reset-failed-devices.ps1 -Reset, else a FULL power-off'
+if ($script:logFile) {
+    Write-Host ''
+    Write-Host "log: $($script:logFile)" -ForegroundColor DarkGray
+    try { Stop-Transcript | Out-Null } catch { }
+}
 exit $fail

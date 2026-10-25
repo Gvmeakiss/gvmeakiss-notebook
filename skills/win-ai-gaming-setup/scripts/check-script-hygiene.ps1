@@ -35,7 +35,11 @@
   One or more files or directories to check. Default: the directory of this script.
 
 .PARAMETER Recurse
-  Recurse into subdirectories of any directory passed in -Path.
+  Recurse into subdirectories of any directory passed in -Path. ON BY DEFAULT since lib/ was
+  added: the helpers in lib/ are dot-sourced into the same hosts, so a non-ASCII byte there
+  breaks exactly like the top-level scripts - and a non-recursive scan reported "16 files,
+  0 FAIL" while silently skipping the 17th.
+  Turn it off with -Recurse:$false when you really only want the top level.
 
 .OUTPUTS
   Plain text report. Exit code 0 when nothing FAILED, 1 otherwise, so the skill's verify
@@ -52,7 +56,7 @@
 [CmdletBinding()]
 param(
     [string[]]$Path,
-    [switch]$Recurse
+    [bool]$Recurse = $true
 )
 
 $ErrorActionPreference = 'Continue'

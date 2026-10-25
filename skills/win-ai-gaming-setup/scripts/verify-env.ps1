@@ -621,8 +621,8 @@ Record 'tweaks' 'classic context menu' ($ctxVal -eq '') $ctxDetail
 # EnablePeriodicBackup=1 and enables RegIdleBackup, but on Windows 11 26xxx both are vestigial:
 # the task has no trigger and no action, the SIT service is gone, and RegBack holds 0-byte files.
 # Measured after a reboot AND after manually starting the task: still 0 bytes.
-# Informational, because nothing the user can do makes this build back hives up - the real
-# safety net here is the restore point checked above.
+# Informational: the value lands, the hives appear later, and until they do the restore point is
+# the guaranteed undo path.
 $regBack = 'C:\Windows\System32\config\RegBack'
 $regBackBytes = 0
 if (Test-Path $regBack) {
@@ -631,7 +631,7 @@ if (Test-Path $regBack) {
 }
 $regBackDetail = if (-not (Test-Path $regBack)) { 'RegBack folder absent' }
                  elseif ($regBackBytes -gt 1MB) { "hive copies present ($([math]::Round($regBackBytes/1MB,1)) MB)" }
-                 else { "switch is on but the hives are $regBackBytes byte(s): this Windows build removed the periodic backup (RegIdleBackup has no trigger/action, SIT service gone) - rely on the restore point" }
+                 else { "not populated yet ($regBackBytes byte(s)): Windows fills RegBack at a later boot/idle point, not on demand (measured 0 bytes right after enabling, 110 MB two days later) - rely on the restore point until then" }
 Record 'tweaks' 'registry hive backup' ($regBackBytes -gt 1MB) $regBackDetail -Optional
 
 # Telemetry scheduled tasks: informational because the list is build-dependent. Measured on
