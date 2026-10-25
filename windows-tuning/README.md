@@ -40,6 +40,10 @@ flowchart LR
 
 </details>
 
+> [!TIP]
+> **只想把机器配好、不想读五份文档？** 一条命令：`pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1 -Profile full`。
+> 想先看清楚它到底会改什么，用 `-WhatIf` 预演，或直接读 [03-system-tweaks.md](./03-system-tweaks.md) 的 43 个值。
+> 本目录的作用是"事后可查、可判"：为什么是这个值、怎么验、坏了怎么退。
 **贯穿全程的参考材料**（不属于任何一步，随时可查）：
 
 | 文件 | 用途 |
