@@ -18,9 +18,9 @@
 | **只读测量基线**：`ClockRes`、`MeasureSleep`、`xperf` DPC/ISR、PresentMon、HWiNFO | 没有测量就无法区分「注册表写对了」与「行为真的变了」；xperf 的 DPC/ISR 报告是判断中断落在哪个核的唯一依据 | 后面每条改动可 A/B，避免把 no-op 当收益 | 花时间；trace 期间帧率不能用于评价 | ✅ 常备（PresentMon + HWiNFO） |
 | **还原点 + 绕过 dedupe**，`EnablePeriodicBackup=1` | 系统保护快照是唯一**保证可用**的粗粒度回滚；绕开 dedupe 限制，小盘也存得下。`EnablePeriodicBackup=1` 写的是「允许周期性创建」，填充发生在后续某个启动/空闲点（实测启用后立即查为 0 字节，两天两次重启后为 110 MB），因此它**不能**当作即时可用的安全网 | 改坏了能整体退回 | 占空间；BSOD 级改动不一定还能进得去系统还原 | ✅ 已建还原点（含 dedupe 绕过）+ `EnablePeriodicBackup=1`；但**本机实测该开关在 Win11 26xxx 上是 vestigial**：值读回 1，RegBack 仍 0 字节，所以安全网是还原点，不是注册表备份 |
 | **遥测收敛**：策略 + 计划任务 + DiagTrack 出站防火墙 | 关的是上报通道与触发任务，不是关服务本身，因此不触碰调度层 | 少掉后台网络与磁盘写入 | 裁得过头会牵连 Store/更新——PC-Tuning 记录过「禁 Windows Update 会坏掉 Store」，所以这里只封 DiagTrack 出站 | ✅ 已应用 |
-| **AC 下禁用睡眠、关闭休眠** | 唤醒后外设与网络栈重连是已知的故障源（本仓库 NAS 专项就定位在这）；休眠文件占用的磁盘等于整份内存 | 不再有唤醒后掉线；省下 `hiberfil.sys` | 断电即丢会话；带电池的机器不适用——本类是 mini-PC | ✅ 已应用 |
-| **关 GameDVR / 后台录制** | 策略 `HKLM\SOFTWARE\Policies\Microsoft\Windows\GameDVR` → `AllowGameDVR=0`，加用户层 `HKCU\System\GameConfigStore\GameDVR_Enabled=0`、`AppCaptureEnabled=0`，去掉捕获管线 | 少一条常驻的后台捕获开销（无公开帧时间数字） | 失去 Win+Alt+R 录屏 | ✅ 已应用 |
-| **`DODownloadMode=1`**（`HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\DeliveryOptimization\Config`） | 传递优化只走 HTTP，关掉 P2P 上传与局域网对传 | 不占上行，不在后台替别人做种 | 多机同网时失去局域网加速 | ✅ 已应用 |
+| **AC 下禁用睡眠**（tune 只把 AC 的 standby/hibernate 超时置 0；本机另外手工执行了 `powercfg /hibernate off`，那是手工项不是 tune 行为） | 唤醒后外设与网络栈重连是已知的故障源（本仓库 NAS 专项就定位在这）；休眠文件占用的磁盘等于整份内存 | 不再有唤醒后掉线；手工关休眠后再省下 `hiberfil.sys` | 断电即丢会话；带电池的机器不适用——本类是 mini-PC | ✅ 已应用 |
+| **关 GameDVR / 后台录制** | 策略 `HKLM\SOFTWARE\Policies\Microsoft\Windows\GameDVR` → `AllowGameDVR=0`，加用户层 `HKCU\System\GameConfigStore\GameDVR_Enabled=0`，去掉捕获管线（`AppCaptureEnabled=0` 属同类设置，但 **tune 不写它**，仅作为可选手工项） | 少一条常驻的后台捕获开销（无公开帧时间数字） | 失去 Win+Alt+R 录屏 | ✅ 已应用 |
+| **`DODownloadMode=1`**（`HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\DeliveryOptimization\Config`） | 传递优化只走**局域网**，不再向互联网上传、也不替他人做种（`1` = LAN-only；`0` 才是 HTTP-only，两者不要混淆） | 不占上行，不在后台替别人做种 | 多机同网时失去局域网加速 | ✅ 已应用 |
 | **`PreventDeviceEncryption=1`**（`HKLM\SYSTEM\CurrentControlSet\Control\BitLocker`） | 阻止满足条件的机器自动开 BitLocker 设备加密；自动加密把恢复密钥绑到账户，重装或换主板后锁盘 | 避免「半夜自动加密」 | 真要加密得手动开 | ✅ 已应用 |
 | **StorageSense 管回收站**（`StoragePolicy` → `08`=1、`32`=30） | 定时清空回收站并限定保留天数 | 小盘空间 | 误删文件过了期限找不回 | ✅ 已应用（30 天） |
 | **经典右键菜单**（`CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32` 默认值置空） | 跳过 Win11 折叠菜单，直接展开完整项 | 操作步数减少 | 累积更新后可能被覆盖，需复查 | ✅ 已应用（**不是延迟改动**） |
