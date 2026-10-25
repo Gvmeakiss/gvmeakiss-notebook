@@ -72,7 +72,7 @@ Get-Content $acf | Select-String 'StateFlags|SizeOnDisk|buildid'
 `StateFlags = 4` 表示**完整安装**（若显示 `1026` 之类，说明还在下载/需要更新）。
 `SizeOnDisk` 是实际占用（约 70 GB 量级）。
 
-**另一个容易误判的点**：如果游戏目录里**没有** `game\csgo\cfg\cs2_video.txt`，说明
+**另一个判据**：如果游戏目录里**没有** `game\csgo\cfg\cs2_video.txt`，说明
 **游戏还从未启动过** —— 此时首次启动会用桌面分辨率（比如 4K），对核显是灾难，
 **必须一进游戏就先改分辨率**。
 
