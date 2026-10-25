@@ -15,7 +15,7 @@ pwsh -File skills/win-ai-gaming-setup/scripts/verify-env.ps1          # 验收�
 ```
 
 - **怎么读**：每行三列。第一列 = 项 + 正确值（注册表路径照抄代码）+ 落地方式；`可脚本化 · -Phase tune` 表示由 tune 写入，`需手工` 的项全部集中在「手工项」。
-- **本表规模**：48 行 = 42 个值行 + 6 个状态项（MMCSS 驱动、7 个遥测任务、DiagTrack 防火墙组、还原点、服务快照、撤销脚本），共覆盖 43 个注册表值（两个活动策略值合写在一行）。43 个值里 42 个有逐值检查、1 个（`EnablePeriodicBackup`）改查结果——**没有「写了但没人查」的值**，tweaks 组共 46 条检查。
+- **本表规模**：48 行 = 42 个值行 + 6 个状态项（MMCSS 驱动、7 个遥测任务、DiagTrack 防火墙组、还原点、服务快照、撤销脚本），共覆盖 43 个注册表值（两个活动策略值合写在一行）。43 个值里 42 个有逐值检查、1 个（`EnablePeriodicBackup`）改查结果——**没有「写了但没人查」的值**，tweaks 组共 49 条检查。
 - **写入机制**：所有非 opt-in 项合并成一个 `.reg`，一次 `reg import` 导入（合并进已有键，不重建键），随后逐值回读；没落盘的值退化为 `Set-ItemProperty` 直写再回读。命令返回成功不算证据，**回读到的值才算**。
 - **判定口径**：值**缺失算 FAIL**（累积更新是删值，不是改值）；比的是**值**不是存在性；`0xffffffff`、`-1`、`4294967295` 是同一个 DWORD；字符串型逐字比对（`High` 不是 `high`）；标 Optional 的检查只报 INFO 不报 FAIL。
 - **边界**：默认状态不含 opt-in 开关（鼠标加速、高性能电源方案、关睡眠），也不含禁用服务、改 UAC、改 DPI、改更新策略——这是刻意的负空间，理由见 [02-decisions.md](./02-decisions.md)。
@@ -130,11 +130,26 @@ pwsh -File skills/win-ai-gaming-setup/scripts/verify-env.ps1          # 验收�
 | **HasAccepted = 0**<br>`HKCU:\Software\Microsoft\Speech_OneCore\Settings\OnlineSpeechPrivacy`<br>可脚本化 · `-Phase tune` | 在线语音识别同意项。关掉后语音输入退回本地引擎，仍可用。 | `$tweaks` → **cloud speech off**，期望 `0`。 |
 | **StartupBoostEnabled = 0**<br>`HKLM:\SOFTWARE\Policies\Microsoft\Edge`<br>可脚本化 · `-Phase tune` | Edge 的启动预加载：常驻一批预读进程换取首次启动速度。关掉后首次启动变慢，但不占常驻内存。 | `$tweaks` → **edge startup boost off**，期望 `0`。 |
 
+## 游戏模式与界面
+
+三条写入 + 一条手工项。
+
+| 正确值 | 判据（为什么是这个值） | 怎么验 |
+|---|---|---|
+| **AutoGameModeEnabled = 1**<br>`HKCU\Software\Microsoft\GameBar`<br>可脚本化 · `-Phase tune` | 游戏模式让 Windows 压掉后台工作并优先调度游戏线程。出厂通常已是 1，写它是**钉住**，防止被其它"优化"改回 0。 | `$tweaks` → **game mode on**，期望 `1`。 |
+| **ShowCloudFilesInQuickAccess = 0**<br>`HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer`<br>可脚本化 · `-Phase tune` | 快速访问会去查 Office.com 云端文件：既是视觉噪声，也是每次打开资源管理器的一次云调用。 | `$tweaks` → **cloud files in quick access off**，期望 `0`。 |
+| **LegacyDefaultPrinterMode = 1**<br>`HKCU\Software\Microsoft\Windows NT\CurrentVersion\Windows`<br>可脚本化 · `-Phase tune` | Win10 起默认打印机会「自动切到最近用过的打印机」，在多打印机环境里等于替你改设置。此值锁回手动管理。 | `$tweaks` → **default printer pinned**，期望 `1`。 |
+
+**Widgets 订阅源（Dsh）—— 需手工。** `HKCU\Software\Policies\Microsoft\Dsh` 与 `HKLM\SOFTWARE\Policies\Microsoft\Dsh`
+的 `AllowNewsAndInterests` 在本机是 **ACL 锁定**的：Owner 是 `BUILTIN\Administrators`，但交互用户只有 `ReadKey`，
+`reg add`（含提权）返回 `Access is denied`。这类写不进去的键**不放进 tune**，否则会变成一条永远失败的假 tweak。
+需要关订阅源时走「设置 → 个性化 → 任务栏」关闭小组件，或用组策略编辑器。
 ## 手工项
 
 以下 9 项不进 tune 的默认写入：要么没有可靠的自动化路径，要么正确值取决于机器形态与个人取舍。
 
 - **杀毒软件信任区 / 排除项**（需手工，无脚本）：第三方杀软接管时 Defender 停用是正常让位，不是故障；排除项只能进厂商界面或厂商 CLI，各产品不同，脚本代劳会写错位置、还会静默失败。本项目不卸载、也不配置任何第三方安全软件。
+  本机实测待排除目录：`C:\Program Files (x86)\Steam\steamapps`（74.3 GB）、`C:\WeGameApps`（52.7 GB）。火绒的信任区配置存放在 `C:\ProgramData\Huorong\Sysdiag`（二进制、受保护），**没有公开 CLI**，只能进界面添加：火绒 → 安全设置 → 信任区 → 添加目录。只排除只读的游戏/代码内容，不要排除 `Downloads`、`AppData` 或整盘。
 - **预装 App 清理**（需手工，无脚本）：tune 只关推荐与静默安装（`DisableWindowsConsumerFeatures` + `ContentDeliveryManager` 各值），**从不卸载任何 App**；删哪些是使用习惯，删掉不可逆。
 - **默认程序关联**（需手工，link 阶段只做注册与报告）：Windows 保护 `UserChoice`，每个文件类型要一次手工点击：右键 > 打开方式 > 选择其他应用 > 勾「始终」。
 - **显卡驱动 + CUDA/torch 栈**（需手工，drivers 阶段只做分诊）：装哪个驱动、哪个 torch build 取决于显卡与驱动版本，vendor 特定；drivers 阶段只列失败设备与 Windows Update 提供的驱动。
@@ -149,6 +164,6 @@ pwsh -File skills/win-ai-gaming-setup/scripts/verify-env.ps1          # 验收�
 - **改一处就要改两处**：`setup.ps1` 的 `$changes` 与 `verify-env.ps1` 的 `$tweaks` 是同一份契约的两半。加一个写入就加一条 `Want`，改一个值就同时改两边的字面量；只改一边的结果是「写了没人验」或「验的从没写过」。
 - **`Want` 不许写死**：`AllowTelemetry` 由 `EditionID` 决定（`Enterprise` / `Education` / `Server` 之一 → 0，其余 → 1），两边必须用同一个判定表达式，否则专业版上会出现永久 FAIL。
 - **结果型检查不许退化成开关检查**：`EnablePeriodicBackup=1` 不等于有备份（26xxx 上任务空壳、SIT 已消失、RegBack 长期 0 字节），所以查 RegBack 字节数；MMCSS 同理查 `sc query` 的 RUNNING，而不是注册表值。
-- **覆盖差额要显式**：tweaks 组共 46 条检查（41 条在 `$tweaks` 表内、1 条经典右键菜单、4 条结果检查）；43 个值里 42 个有逐值检查，`EnablePeriodicBackup` 改查结果——**没有「写了但没人查」的值**。
+- **覆盖差额要显式**：tweaks 组共 49 条检查（41 条在 `$tweaks` 表内、1 条经典右键菜单、4 条结果检查）；43 个值里 42 个有逐值检查，`EnablePeriodicBackup` 改查结果——**没有「写了但没人查」的值**。
 - **批量 `.reg` 的两个已知行为**：可写性未知的键不要放在批次中间（`reg import` 会部分写入、exit 1、跳过余下段）；`ContentDeliveryManager` 上实测被静默跳过，已有逐值直写兜底。
 - **改完跑体检**：`scripts/check-script-hygiene.ps1`（该目录 ASCII-only，5.1 也会加载）与 `scripts/test-tune-core.ps1`（DWORD 渲染、build 门控等纯函数）。

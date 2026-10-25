@@ -33,7 +33,9 @@
 | **后台应用禁用**（`GlobalUserDisabled=1`） | 商店应用不在后台执行；与「关推广」是两件事（那是内容推送） | 少掉一批后台进程与磁盘唤醒 | 依赖后台刷新的应用（如邮件）需前台打开才同步 | ✅ 已应用 |
 | **备份保留两代**（`BackupCount=2`） | 只与 `EnablePeriodicBackup` 配合有意义：默认只留一代，覆盖后无法比对上一份 | hive 损坏时多一个可回退版本 | 占用少量磁盘 | ✅ 已应用 |
 | **锁屏不显示通知内容**（`LockScreenToastEnabled=0` + `NOC_GLOBAL_SETTING_ALLOW_TOASTS_ABOVE_LOCK=0`） | 锁屏是「物理在场即可见」的状态，通知正文不该无条件展示 | 信息不外泄 | 锁屏只剩时间日期 | ✅ 已应用 |
-
+| **广告 ID 与画像数据**（`AdvertisingInfo\Enabled=0`、`TailoredExperiencesWithDiagnosticDataEnabled=0`） | 广告 ID 是跨应用关联键；「用诊断数据做个性化」决定的是拿数据做什么。两者与遥测**等级**是三件不同的事 | 不再被画像 | 无 | ✅ 已应用 |
+| **活动与输入遥测**（`PublishUserActivities=0`、`EnableActivityFeed=0`、`AllowInputPersonalization=0`、`Speech_OneCore\…\HasAccepted=0`） | 时间线上传、跨设备剪贴板、云端语音、输入法词库上传是四条独立通道，各自有策略键 | 少四类出站数据 | 云端听写与时间线不可用；本地语音与输入不受影响 | ✅ 已应用 |
+| **Edge 启动预加载**（`Edge\StartupBoostEnabled=0`） | Edge 会常驻一批预读进程换首次启动速度 | 不占常驻内存 | 首次启动变慢 | ✅ 已应用 |
 **关于计时器的一条附注。** PC-Tuning 在 Win11 22H2 上用 `NtQueryTimerResolution` + QPC 量 `Sleep(1)`，加键后从 **~15.5 ms 降到 ~1.5 ms**，并用 IDA/WinDbg 确认内核符号 `KiGlobalTimerResolutionRequests` 在 Win10 2004–22H2 **根本不存在**（在那里写了也是 no-op）。
 同一批测量还有个反直觉结果：请求 1.000 ms 实测 delta ≈0.999 ms，请求 0.500 ms 实测 ≈0.496 ms，而请求 **0.507 ms** 反而只有 ≈0.012 ms——请求周期是与硬件时钟量化后的结果，「最高」分辨率不等于最准；30+ 人复现，少数机器要用 0.6 ms，Win7 表现不同。
 所以别把「设成最大值」当优化。而且这套测量量的是 **sleep 精度**，不是输入到出画的延迟，只在基于 sleep 的限帧器/音频上有关。
@@ -139,3 +141,18 @@
 
 厂商文档：[MMCSS](https://learn.microsoft.com/en-us/windows/win32/procthread/multimedia-class-scheduler-service)、[中断亲和力](https://learn.microsoft.com/en-us/windows-hardware/drivers/kernel/interrupt-affinity-and-priority)、[QPC/TSC/HPET 延迟](https://learn.microsoft.com/en-us/windows/win32/sysinfo/acquiring-high-resolution-time-stamps)、[PERFBOOSTMODE](https://learn.microsoft.com/en-us/windows-hardware/customize/power-settings/options-for-perf-state-engine-perfboostmode)、[电源调优（`PROCTHROTTLE*`/`CPMINCORES`/`DISTRIBUTEUTIL`/`RESP*`）](https://learn.microsoft.com/en-us/windows-server/administration/performance-tuning/hardware/power/power-performance-tuning)、[软实时设备指南](https://learn.microsoft.com/en-us/windows/iot/iot-enterprise/soft-real-time/soft-real-time-device)、[VBS 游戏性能声明（存档）](https://web.archive.org/web/20250818091118/https://support.microsoft.com/en-us/windows/options-to-optimize-gaming-performance-in-windows-11-a255f612-2949-4373-a566-ff6f3f474613)、[HAGS 机制](https://devblogs.microsoft.com/directx/hardware-accelerated-gpu-scheduling/)。
 数据与规格：[`Win32PrioritySeparation` 实测表](https://github.com/djdallmann/GamingPCSetup/blob/master/CONTENT/RESEARCH/FINDINGS/win32prisep0to271.csv)、[Ryzen 7 255 规格](https://www.notebookcheck.net/AMD-Ryzen-7-255-Processor-Benchmarks-and-Specs.1169506.0.html)。
+
+## 4. 从 Winhance / Bloatynosy 源码里读到、明确不要照抄的
+
+这两份定义文件（`GamingAndPerformanceOptimizations.cs` 218 KB、`WinRules.ini` 全量）里有些条目看似"游戏优化"，机制上却是负收益或自相矛盾：
+
+| 条目 | 问题 |
+|---|---|
+| **关闭 VBS / HVCI**（`EnableVirtualizationBasedSecurity=0`、`HVCI\Enabled=0`、`Locked=0`） | 去掉内核池完整性与 CFG 保护；Winhance 自己的描述就写着 "reduces system security"。本机刻意保持开启（LoL 走 Vanguard） |
+| **关闭 Storage Sense**（`AllowStorageSenseGlobal=0`，HKCU+HKLM 策略） | 与本项目的 `08=1`/`32=30` 直接冲突；`WinRules.ini` 自述"写成策略后设置界面会变灰" |
+| **`WaitToKillServiceTimeout=1000`**（默认 5000） | 只给服务 1 秒刷盘，真实的数据丢失风险，不是"加快关机" |
+| **`VisualFXSetting=3`** | 3 = "自定义"（2 才是"最佳性能"）；`WinRules.ini` 承认设置界面会显示"自定义"——单写 3 什么都不改变 |
+| **`Win32PrioritySeparation=38`** | 被当作"提升前台优先级"，但按已测量的取值表，38 ≈ 默认值，36 反而**取消**了默认的 3:1 前台加成 |
+| **StickyKeys `Flags`** | Winhance 写 `2`、Bloatynosy 写 `506`（默认 510）；写 2 会覆盖整个位域，两者互相矛盾 |
+| **`Winlogon\DisableLockWorkstation=1`** | 直接去掉 Win+L 锁屏，是安全负收益 |
+| **`SvcHostSplitThresholdInKB=3670016`** | 注释自己标注为 "Windows default"，纯 no-op |

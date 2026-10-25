@@ -732,7 +732,19 @@ if ($phases -contains 'tune') {
             @{ Path = 'HKCU:\Software\Microsoft\Speech_OneCore\Settings\OnlineSpeechPrivacy'; Name = 'HasAccepted'; Value = 0; Type = 'DWord';
                Why = 'cloud speech recognition consent withdrawn (local speech still works)' }
             @{ Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Edge'; Name = 'StartupBoostEnabled'; Value = 0; Type = 'DWord';
-               Why = 'Edge stops keeping preloaded processes resident after boot; first launch is slower' }
+               Why = 'Edge stops keeping preloaded processes resident after boot; first launch is slower' }            # --- shell & device behaviour (Winhance GamingAndPerformance / Taskbar / Explorer, read in source) ---
+            @{ Path = 'HKCU:\Software\Microsoft\GameBar'; Name = 'AutoGameModeEnabled'; Value = 1; Type = 'DWord';
+               Why = 'Game Mode on: Windows suppresses background work and keeps game threads scheduled; default is already 1, this pins it' }
+            # MEASURED: the Dsh (Widgets) policy keys are ACL-locked on this machine - owner is
+            # BUILTIN\Administrators but the interactive user holds ReadKey only, and both
+            # `reg add HKCU\...\Dsh` and `reg add HKLM\...\Dsh` return "Access is denied" even
+            # from an elevated prompt (a security product likely guards the path). A write that
+            # cannot land must not be attempted and then reported as a tweak - it is documented
+            # under the manual-items section of windows-tuning/03-system-tweaks.md instead.
+            @{ Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer'; Name = 'ShowCloudFilesInQuickAccess'; Value = 0; Type = 'DWord';
+               Why = 'Quick Access stops querying Office.com cloud files (clutter + a cloud call on every Explorer open)' }
+            @{ Path = 'HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Windows'; Name = 'LegacyDefaultPrinterMode'; Value = 1; Type = 'DWord';
+               Why = 'Windows stops silently switching the default printer to the "last used" one' }
         )
         if ($DisableMouseAcceleration) {
             $changes += @{ Path = 'HKCU:\Control Panel\Mouse'; Name = 'MouseSpeed'; Value = 0; Type = 'String'; Why = 'mouse acceleration off (gaming preference)' }

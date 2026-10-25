@@ -626,6 +626,13 @@ $tweaks = @(
        AltWhy = 'no OEM app promotion' },
     @{ Check = 'cortana consent off';   Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search';                 Name = 'AllowCortana'; Want = '0'
        AltWhy = 'no cloud search consent' },
+    @{ Check = 'game mode on';          Path = 'HKCU:\Software\Microsoft\GameBar';                                         Name = 'AutoGameModeEnabled'; Want = '1'
+       AltWhy = 'Game Mode pinned on' },
+
+    @{ Check = 'cloud files in quick access off'; Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer';        Name = 'ShowCloudFilesInQuickAccess'; Want = '0'
+       AltWhy = 'no Office.com cloud query on Explorer open' },
+    @{ Check = 'default printer pinned'; Path = 'HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Windows';               Name = 'LegacyDefaultPrinterMode'; Want = '1'
+       AltWhy = 'Windows stops switching the default printer by itself' },
     @{ Check = 'telemetry policy';      Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection';                 Name = 'AllowTelemetry'
        Want = $(if ((Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name 'EditionID' -ErrorAction SilentlyContinue).EditionID -match 'Enterprise|Education|Server') { '0' } else { '1' })
        AltWhy = 'strictest level the edition honours (0 is Enterprise/Education-only)' }

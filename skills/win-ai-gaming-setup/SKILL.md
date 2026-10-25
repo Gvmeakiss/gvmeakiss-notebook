@@ -38,7 +38,7 @@ agent_created: true
 | 2 | 预演 | `setup.ps1 -Phase <目标> -WhatIf` | 只打印"将会做什么"，**无任何真实写入** |
 | 3 | 干跑 | `setup.ps1 -Phase <目标>` | 退出码 0，且每个软件报 `verified: <真实路径>` |
 | 4 | 重启 | 交给用户 | 重启后**新开终端** |
-| 5 | 验收 | `verify-env.ps1` | 94 项 / 0 失败 |
+| 5 | 验收 | `verify-env.ps1` | 97 项 / 0 失败 |
 | 6 | 归因 | 读输出 | 每个 FAIL 归到「文档错 / 代码错 / 环境差」之一 |
 
 **五条硬规则**
@@ -56,7 +56,7 @@ pwsh -File scripts/check-script-hygiene.ps1        # 1 体检
 pwsh -File scripts/setup.ps1 -Phase all -WhatIf     # 2 预演
 pwsh -File scripts/setup.ps1 -Phase all             # 3 干跑
 # 4 重启，新开终端
-pwsh -File scripts/verify-env.ps1                   # 5 验收（94 项）
+pwsh -File scripts/verify-env.ps1                   # 5 验收（97 项）
 ```
 
 **阶段 → 脚本映射**（只跑某一段时查这里）
@@ -69,7 +69,7 @@ pwsh -File scripts/verify-env.ps1                   # 5 验收（94 项）
 | 故障设备清单 / 装驱动 | `setup.ps1 -Phase drivers`（加 `-InstallDrivers` 才装） |
 | 系统优化（先快照） | `setup.ps1 -Phase tune` |
 | 文件关联（只写 HKCU） | `setup.ps1 -Phase link -RegisterAssociations` |
-| 94 项验收 | `setup.ps1 -Phase verify` 或 `verify-env.ps1` |
+| 97 项验收 | `setup.ps1 -Phase verify` 或 `verify-env.ps1` |
 | 回滚 | `compare-services.ps1 -Snapshot <csv> -Restore` |
 | 输入法坏了 | `diagnose-ime.ps1 -Repair`（管理员，之后重启） |
 | 设备故障码 | `reset-failed-devices.ps1 -Reset`（管理员） |
