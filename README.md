@@ -72,7 +72,7 @@
 |---|---|---|---|
 | **shadowrocket** | 分流配置 | Mac / iPhone 通用分流规则：国内外分流、去广告、长连接优化 | [目录](./shadowrocket) · [说明](./shadowrocket/README.md) · [使用指南](./shadowrocket/使用指南.md) |
 | **merlin** | 配置与工具 | 梅林 fancyss 分流名单、节点入口绕过生成工具 | [目录](./merlin) · [说明](./merlin/README.md) · [使用指南](./merlin/使用指南.md) |
-| **Windows 调优** | 合集 | 五份材料合成一个项目：两次真机实践（Win10 从零 / Win11 复核）、10+ 项目的源码级证据审查、逐条核查清单，以及按游戏的可回退优化（当前 CS2） | [总目录](./windows-tuning/README.md) · [游戏优化](./windows-tuning/games/README.md) |
+| **Windows 调优** | 合集 | 五份材料合成一个项目：两次真机实践（Win10 从零 / Win11 复核）、10+ 项目的源码级证据审查、逐条核查清单，以及按游戏的可回退优化（当前 CS2） | [总目录](./windows-tuning/README.md) · [游戏优化](./windows-tuning/05-games/README.md) |
 | **内网 NAS 稳定性记录** | 实践记录 | 把「NAS 不稳」定位到「睡眠唤醒后没有重连」的完整链条：事件时间对齐法、事件触发计划任务、映射的会话/提权隔离、先算链路天花板 | [阅读](./docs/windows-nas-smb-stability.md) |
 | **Skill 自审方法论** | 方法 | 如何把「文档承诺」变成「可验证事实」：5 类真实缺陷、性能优化的等价性证明、环境缺陷与代码缺陷的区分 | [阅读](./docs/skill-self-audit.md) |
 
@@ -138,7 +138,7 @@
 
 | 文档 | 内容 |
 |---|---|
-| [Windows 调优总目录](./windows-tuning/README.md) | 五份材料合成一个项目：Win10 非管理员从零配置（14 项问题）、Win11 已优化机复核（**含审计者 3 处误判**）、10+ 项目源码级证据审查、逐条核查清单，以及 CS2 可回退游戏优化 |
+| [Windows 调优总目录](./windows-tuning/README.md) | 五份材料合成一个项目：Win10 非管理员从零配置（14 项问题）、Win11 已优化机复核、10+ 项目源码级证据审查、逐条核查清单，以及 CS2 可回退游戏优化 |
 | [内网 NAS 稳定性记录](./docs/windows-nas-smb-stability.md) | 「NAS 不稳」的真因是唤醒后没有重连：事件时间对齐法、事件触发计划任务、映射的会话/提权隔离、吞吐天花板换算、以及 3 项实测无收益已回滚的尝试 |
 | [Skill 自审方法论](./docs/skill-self-audit.md) | 把文档承诺变成可验证事实：5 类缺陷（描述不符 / 预演不可信 / 退出码失真 / 判定矛盾 / 静默吞错）、性能等价性证明、环境 vs 代码缺陷 |
 | [win-ai-gaming-setup 参数速查](./skills/win-ai-gaming-setup/README.md) | 七阶段参数、依赖与常见坑；含**运行上下文矩阵**（宿主 / 提权 / 会话）与 13 个工具脚本速查 |
@@ -222,7 +222,7 @@ This repository collects reusable technical configurations, practical notes and 
 |---|---|---|---|
 | **shadowrocket** | Routing config | Mac / iPhone rules: CN / global split, ad-block, long-connection tuning | [Folder](./shadowrocket) · [Readme](./shadowrocket/README.md) · [Guide](./shadowrocket/使用指南.md) |
 | **merlin** | Config and tools | Merlin fancyss routing lists and an endpoint bypass generator | [Folder](./merlin) · [Readme](./merlin/README.md) · [Guide](./merlin/使用指南.md) |
-| **Windows tuning** | Collection | Five pieces merged into one project: two real-machine write-ups (Win10 from scratch, Win11 audit including the auditor's own 3 misjudgements), a source-level evidence review of 10+ optimizer projects, a per-item checklist, and per-game optimisations with revertable scripts (currently CS2) | [Index](./windows-tuning/README.md) · [Games](./windows-tuning/games/README.md) |
+| **Windows tuning** | Collection | Five pieces merged into one project: two real-machine write-ups (Win10 from scratch, Win11 audit),, a source-level evidence review of 10+ optimizer projects, a per-item checklist, and per-game optimisations with revertable scripts (currently CS2) | [Index](./windows-tuning/README.md) · [Games](./windows-tuning/05-games/README.md) |
 | **NAS stability notes** | Notes | Tracing "the NAS feels unstable" to "nothing remounts it after sleep": event-time correlation, an event-triggered remount task, session/elevation isolation of drive mappings, and calculating the link ceiling before optimizing | [Read](./docs/windows-nas-smb-stability.md) |
 | **Skill self-audit method** | Method | Turning documented promises into verifiable facts: five defect classes, proving an optimization is coverage-equivalent, and telling an environment quirk apart from a code bug | [Read](./docs/skill-self-audit.md) |
 
@@ -286,7 +286,7 @@ The public edition excludes local private exceptions; never overwrite your perso
 
 | Document | Content |
 |---|---|
-| [Windows tuning](./windows-tuning/README.md) | Five materials merged: Win10 setup without admin rights, Win11 audit with the auditor's own misjudgements, source-level evidence review of 10+ optimizer projects, per-item tweak checklist, and CS2 game optimisation |
+| [Windows tuning](./windows-tuning/README.md) | Five materials merged: Win10 setup without admin rights, Win11 audit, source-level evidence review of 10+ optimizer projects, per-item tweak checklist, and CS2 game optimisation |
 | [NAS stability notes](./docs/windows-nas-smb-stability.md) | "Unstable NAS" traced to a missing remount trigger after sleep: event-time correlation, an event-triggered scheduled task, mapping isolation by session/elevation, link-ceiling math, and three attempts that measured no benefit and were rolled back |
 | [Skill self-audit method](./docs/skill-self-audit.md) | Verifying a skill's own claims: five defect classes, coverage-equivalence proof for performance work, and separating machine policy from code defects |
 

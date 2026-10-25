@@ -28,12 +28,14 @@ skills/<name>/
 - `mini-app-spec/`：**企业级「AI Agent 驱动轻应用平台」技术规范**（脱敏方法论版，单文件）。含整套框架设计、
   前端约定、数据管理、生命周期控制、接口清单与「依照本规范设计轻应用的标准流程」。
   顶部有「读者路由」表：判断适用性读 §0–§1，要照做读 §7，AI 动手先读 §6 再读 §7。
-- `windows-tuning/`：**Windows 调优合集**（五份材料合为一个项目，入口 `README.md` 有关系图与阅读路径）。
-  01 Win10 非管理员从零配置（14 项问题总表）· 02 Win11「已优化机」逐项复核（含**审计者自己的 3 处误判**）·
-  03 10+ 个流行优化项目的源码级**证据审查**（有测量 / 有机制无测量 / 机制就是错的）·
-  04 逐条核查清单（对应技能的 `tune` 阶段）· `games/` 按游戏的可回退优化（当前 `cs2/`，
-  `check-<game>-readiness.ps1` 只读体检 + `apply-<game>-optimizations.ps1` 支持 `-WhatIf` / `-Revert`）。
-  新增游戏按 `windows-tuning/games/README.md` 模板加子目录并更新索引；该目录脚本**同样必须 ASCII-only**。
+- `windows-tuning/`：**Windows 调优装配线**（入口 `README.md`，编号 = 实际配置顺序，不是重要性排序）：
+  `01-baseline.md` 起点判定与环境事实 · `02-decisions.md` 哪些改动值得做（证据 → 决定表）·
+  `03-system-tweaks.md` 系统调优通用清单（正确值 / 判据 / 怎么验，与技能的 `tune` + `verify-env` 一一对应）·
+  `04-dev-and-apps.md` 开发环境与 13 项软件（装完怎么证明装对了）· `05-games/` 按游戏的可回退优化（当前 `cs2/`，
+  `check-<game>-readiness.ps1` 只读体检 + `apply-<game>-optimizations.ps1` 支持 `-WhatIf` / `-Revert`）·
+  `reference/pitfalls.md` 陷阱速查、`reference/audit-criteria.md` 判定标准。
+  **硬约定：文档里的值必须与代码一致；只写结果不写过程；每条结论要有判据。**
+  新增游戏按 `windows-tuning/05-games/README.md` 模板加子目录并更新索引；该目录脚本**同样必须 ASCII-only**。
 - `docs/`：与 Windows 调优无关的专题记录。`windows-nas-smb-stability.md`：内网 NAS 稳定性专项 ——
   「NAS 不稳」定位到「睡眠唤醒后没有重连」，含事件时间对齐法、事件触发计划任务、**驱动器映射按会话+提权级别隔离**、
   先算链路天花板再优化，以及 3 项实测无收益并已回滚的尝试。

@@ -577,6 +577,34 @@ $tweaks = @(
        AltWhy = 'Storage Sense empties the recycle bin' },
     @{ Check = 'recycle retention';     Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy'; Name = '32';               Want = '30'
        AltWhy = 'recycle bin retention: 30 days' },
+    @{ Check = 'wpbt blocked';          Path = 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager';                    Name = 'DisableWpbtExecution'; Want = '1'
+       AltWhy = 'no OEM firmware-injected executables at boot' },
+    @{ Check = 'device metadata off';   Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Device Metadata';                   Name = 'PreventDeviceMetadataFromNetwork'; Want = '1'
+       AltWhy = 'no companion-app push when a device is plugged in' },
+    @{ Check = 'registry backup depth'; Path = 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Configuration Manager'; Name = 'BackupCount'; Want = '2'
+       AltWhy = 'two hive-backup generations kept' },
+    @{ Check = 'background apps off';   Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications'; Name = 'GlobalUserDisabled'; Want = '1'
+       AltWhy = 'Store apps cannot run in the background' },
+    @{ Check = 'welcome splash off';    Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager';     Name = 'SubscribedContent-310093Enabled'; Want = '0'
+       AltWhy = 'no post-update what-is-new splash' },
+    @{ Check = 'lock screen toasts off'; Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\PushNotifications';         Name = 'LockScreenToastEnabled'; Want = '0'
+       AltWhy = 'no notification content on the lock screen' },
+    @{ Check = 'toasts above lock off'; Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Notifications\Settings';     Name = 'NOC_GLOBAL_SETTING_ALLOW_TOASTS_ABOVE_LOCK'; Want = '0'
+       AltWhy = 'same switch, per-user scope' },
+    @{ Check = 'advertising id off';    Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo';          Name = 'Enabled'; Want = '0'
+       AltWhy = 'no per-user advertising ID' },
+    @{ Check = 'tailored tips off';     Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Privacy';                  Name = 'TailoredExperiencesWithDiagnosticDataEnabled'; Want = '0'
+       AltWhy = 'no diagnostic-data-derived personalisation' },
+    @{ Check = 'activity upload off';   Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\System';                          Name = 'PublishUserActivities'; Want = '0'
+       AltWhy = 'timeline does not upload activity history' },
+    @{ Check = 'activity feed off';     Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\System';                          Name = 'EnableActivityFeed'; Want = '0'
+       AltWhy = 'same policy family' },
+    @{ Check = 'input personalization off'; Path = 'HKLM:\SOFTWARE\Policies\Microsoft\InputPersonalization';                Name = 'AllowInputPersonalization'; Want = '0'
+       AltWhy = 'typing/inking data not sent for personalisation' },
+    @{ Check = 'cloud speech off';      Path = 'HKCU:\Software\Microsoft\Speech_OneCore\Settings\OnlineSpeechPrivacy';      Name = 'HasAccepted'; Want = '0'
+       AltWhy = 'online speech consent withdrawn' },
+    @{ Check = 'edge startup boost off'; Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Edge';                                   Name = 'StartupBoostEnabled'; Want = '0'
+       AltWhy = 'Edge keeps no preloaded background processes' },
     @{ Check = 'telemetry policy';      Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection';                 Name = 'AllowTelemetry'
        Want = $(if ((Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name 'EditionID' -ErrorAction SilentlyContinue).EditionID -match 'Enterprise|Education|Server') { '0' } else { '1' })
        AltWhy = 'strictest level the edition honours (0 is Enterprise/Education-only)' }

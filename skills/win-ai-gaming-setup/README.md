@@ -5,7 +5,7 @@
 <p align="center">
   <b>Windows 10 / 11</b> &nbsp;·&nbsp; <b>PowerShell 7</b> &nbsp;·&nbsp;
   <b>20 个软件</b> &nbsp;·&nbsp; <b>13 类配置</b> &nbsp;·&nbsp;
-  <b>71 项验收</b> &nbsp;·&nbsp; <b>全程可回滚</b>
+  <b>85 项验收</b> &nbsp;·&nbsp; <b>全程可回滚</b>
 </p>
 
 ---
@@ -39,7 +39,7 @@ pwsh -File scripts/setup.ps1 -Phase check
 pwsh -File scripts/setup.ps1 -Phase dev,apps
 ```
 
-`dev` 装工具链、编辑器、国内镜像；`apps` 装 7 个应用（两个压缩工具 + 五个便携软件，每个都校验 SHA256）。
+`dev` 装工具链、编辑器、国内镜像；`apps` 按 `apps.json` 装 13 项（2 个压缩工具 + 5 个便携软件 + 6 个 VC++ 运行库；便携包逐项校验 SHA256）。
 
 **第三步 · 重启，然后验收**
 
@@ -47,7 +47,7 @@ pwsh -File scripts/setup.ps1 -Phase dev,apps
 pwsh -File scripts/setup.ps1 -Phase verify
 ```
 
-71 项检查，每项都是真编译、真运行，不看版本号。**不重启就验收会误判** —— PATH、输入法栈、多媒体调度驱动都在登录时重建。
+85 项检查，每项都是真编译、真运行，不看版本号。**不重启就验收会误判** —— PATH、输入法栈、多媒体调度驱动都在登录时重建。
 
 想动系统优化项（后台录制、广告推荐、遥测等），先看再改：
 
@@ -170,7 +170,7 @@ pwsh -File scripts/setup.ps1 -Phase tune           # 确认后再改
 > 同期该任务的触发器与动作在注册表视图里也是空的，`SIT` 服务早已不存在 —— 于是我一度判定"这个 build 已移除该功能"。
 > **两天两次重启后再查：`RegBack` 里是 110 MB 真实 hive。** 结论修正为：Windows 在下一次启动/空闲点填充它，不响应手动触发。
 > 因此 `verify-env.ps1` 检查的是 **`RegBack` 的实际字节数**而不是开关值，
-> 未填充时只报信息项并提示"以还原点为准"。**这条教训值得记住：把"暂时没有"当"永远没有"，也是一次误判。**
+> 未填充时只报信息项并提示"以还原点为准"。**判据：不能凭"当前是 0 字节"断定功能不存在；要给它一个启动周期再判。**
 
 > [!NOTE]
 > 联网搜索为什么不用 `BingSearchEnabled`：`HKCU\...\CurrentVersion\Search` 在 Windows 11 24H2+ 上
@@ -269,18 +269,18 @@ Microsoft.MicrosoftStickyNotes
 |---|---|:--:|---|
 | `check` | 引导安装 + 检查：pwsh / Scoop / git / 7-Zip / 长路径 / 开发者模式 / GitHub 连通 / 磁盘 / 提权 / build+UBR | 部分 | — |
 | `dev` | 装语言工具链 + VS Code / Windows Terminal + 国内镜像；修 PATH、Store 存根、凭据助手 | 部分 | 是 |
-| `apps` | 按 `apps.json` 装 7 个应用（2 个 winget + 5 个便携） | 否 | 是 |
+| `apps` | 按 `apps.json` 装 13 项（8 个 winget + 5 个便携，便携包校验 SHA256） | 否 | 是 |
 | `drivers` | 故障设备清单（含故障码）+ Windows 更新里的驱动；`-InstallDrivers` 直接装 | 是 | 设备管理器可回滚 |
 | `tune` | **先快照**再改；回读 `sc query MMCSS` 是否 RUNNING | 是 | 是 |
 | `link` | 注册关联 + 报告哪些类型需手动点一次 + 孤儿关联检查 | 否 | 是 |
-| `verify` | **71 项验收** | 否 | — |
+| `verify` | **85 项验收** | 否 | — |
 
 `verify` 验什么：
 
 | 组别 | 项数 | 判据要点 |
 |---|:--:|---|
 | `hygiene` | 1 | 每个 `.ps1` 在 **PS 7 与 PS 5.1 下都能解析** |
-| `tweaks` | 23 | 含 **MMCSS 驱动是否真在跑**（只看注册表会漏掉「值在、服务停」）、**还原点/注册表备份/BitLocker 自动加密拦截**、经典右键菜单、遥测任务与 DiagTrack 防火墙 |
+| `tweaks` | 37 | 含 **MMCSS 驱动是否真在跑**（只看注册表会漏掉「值在、服务停」）、**还原点/注册表备份/BitLocker 自动加密拦截**、经典右键菜单、遥测任务与 DiagTrack 防火墙、**WPBT 阻断/设备元数据/备份深度/后台应用/锁屏通知/广告ID/活动与输入遥测/Edge 预加载** |
 | 各语言链 | 30 | **真编译真运行**，不看 `--version`（python / node / go / rust / java / dotnet / cpp） |
 | 其它 | 5 | git / gh / ssh / **7-Zip 与 WinRAR**（`archives` 组） |
 | `system` | 6 | 页面文件是否系统管理 / 启动项有无安装残留 / 网卡省电 PnPCapabilities=24 / 显卡驱动年龄（信息项） / AMD 遥测是否关闭（信息项） / **是否存在可用还原点**（信息项） |
@@ -470,7 +470,7 @@ ETW 采集不受影响。
 
 <p align="center"><sub>
 <a href="./SKILL.md">方法论 → SKILL.md</a> &nbsp;·&nbsp;
-<a href="../../windows-tuning/02-env-audit-win11.md">实测记录 → docs/</a>
+<a href="../../windows-tuning/01-baseline.md">基线实测记录</a>
 </sub></p>
 
 ---

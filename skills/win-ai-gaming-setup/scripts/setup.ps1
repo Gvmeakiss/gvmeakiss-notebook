@@ -704,7 +704,35 @@ if ($phases -contains 'tune') {
             @{ Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy'; Name = '08'; Value = 1; Type = 'DWord';
                Why = 'Storage Sense empties the recycle bin' }
             @{ Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy'; Name = '32'; Value = 30; Type = 'DWord';
-               Why = 'recycle bin retention: 30 days' }
+               Why = 'recycle bin retention: 30 days' }            # --- attack surface & device hygiene (from winutil / Winhance, verified in their source) ---
+            @{ Path = 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager'; Name = 'DisableWpbtExecution'; Value = 1; Type = 'DWord';
+               Why = 'blocks OEM firmware-injected executables at boot (WPBT); nothing legitimate on this machine uses it' }
+            @{ Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Device Metadata'; Name = 'PreventDeviceMetadataFromNetwork'; Value = 1; Type = 'DWord';
+               Why = 'stops "install this app" payloads when a monitor/printer is plugged in' }
+            @{ Path = 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Configuration Manager'; Name = 'BackupCount'; Value = 2; Type = 'DWord';
+               Why = 'keeps two generations of registry hive backups instead of one (only meaningful together with EnablePeriodicBackup)' }
+            @{ Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications'; Name = 'GlobalUserDisabled'; Value = 1; Type = 'DWord';
+               Why = 'Store apps cannot run in the background; foreground use is unaffected' }
+            @{ Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Name = 'SubscribedContent-310093Enabled'; Value = 0; Type = 'DWord';
+               Why = 'no "what is new after the update" splash; distinct from the 338388/338389/353698 campaign IDs' }
+            @{ Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\PushNotifications'; Name = 'LockScreenToastEnabled'; Value = 0; Type = 'DWord';
+               Why = 'no notification content on the lock screen' }
+            @{ Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Notifications\Settings'; Name = 'NOC_GLOBAL_SETTING_ALLOW_TOASTS_ABOVE_LOCK'; Value = 0; Type = 'DWord';
+               Why = 'same switch, per-user notification setting scope' }            # --- privacy surfaces (from Win11Debloat / Sophia / Bloatynosy, paths read in their .reg files) ---
+            @{ Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo'; Name = 'Enabled'; Value = 0; Type = 'DWord';
+               Why = 'removes the per-user advertising ID used to correlate apps' }
+            @{ Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Privacy'; Name = 'TailoredExperiencesWithDiagnosticDataEnabled'; Value = 0; Type = 'DWord';
+               Why = 'no personalised tips derived from diagnostic data' }
+            @{ Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\System'; Name = 'PublishUserActivities'; Value = 0; Type = 'DWord';
+               Why = 'no timeline activity upload (policy scope)' }
+            @{ Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\System'; Name = 'EnableActivityFeed'; Value = 0; Type = 'DWord';
+               Why = 'timeline feed off; same policy family as PublishUserActivities' }
+            @{ Path = 'HKLM:\SOFTWARE\Policies\Microsoft\InputPersonalization'; Name = 'AllowInputPersonalization'; Value = 0; Type = 'DWord';
+               Why = 'typing/inking data is not sent for personalisation' }
+            @{ Path = 'HKCU:\Software\Microsoft\Speech_OneCore\Settings\OnlineSpeechPrivacy'; Name = 'HasAccepted'; Value = 0; Type = 'DWord';
+               Why = 'cloud speech recognition consent withdrawn (local speech still works)' }
+            @{ Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Edge'; Name = 'StartupBoostEnabled'; Value = 0; Type = 'DWord';
+               Why = 'Edge stops keeping preloaded processes resident after boot; first launch is slower' }
         )
         if ($DisableMouseAcceleration) {
             $changes += @{ Path = 'HKCU:\Control Panel\Mouse'; Name = 'MouseSpeed'; Value = 0; Type = 'String'; Why = 'mouse acceleration off (gaming preference)' }

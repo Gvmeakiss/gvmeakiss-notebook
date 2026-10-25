@@ -38,7 +38,7 @@ agent_created: true
 | 2 | 预演 | `setup.ps1 -Phase <目标> -WhatIf` | 只打印"将会做什么"，**无任何真实写入** |
 | 3 | 干跑 | `setup.ps1 -Phase <目标>` | 退出码 0，且每个软件报 `verified: <真实路径>` |
 | 4 | 重启 | 交给用户 | 重启后**新开终端** |
-| 5 | 验收 | `verify-env.ps1` | 71 项 / 0 失败 |
+| 5 | 验收 | `verify-env.ps1` | 85 项 / 0 失败 |
 | 6 | 归因 | 读输出 | 每个 FAIL 归到「文档错 / 代码错 / 环境差」之一 |
 
 **五条硬规则**
@@ -56,7 +56,7 @@ pwsh -File scripts/check-script-hygiene.ps1        # 1 体检
 pwsh -File scripts/setup.ps1 -Phase all -WhatIf     # 2 预演
 pwsh -File scripts/setup.ps1 -Phase all             # 3 干跑
 # 4 重启，新开终端
-pwsh -File scripts/verify-env.ps1                   # 5 验收（71 项）
+pwsh -File scripts/verify-env.ps1                   # 5 验收（85 项）
 ```
 
 **阶段 → 脚本映射**（只跑某一段时查这里）
@@ -69,7 +69,7 @@ pwsh -File scripts/verify-env.ps1                   # 5 验收（71 项）
 | 故障设备清单 / 装驱动 | `setup.ps1 -Phase drivers`（加 `-InstallDrivers` 才装） |
 | 系统优化（先快照） | `setup.ps1 -Phase tune` |
 | 文件关联（只写 HKCU） | `setup.ps1 -Phase link -RegisterAssociations` |
-| 71 项验收 | `setup.ps1 -Phase verify` 或 `verify-env.ps1` |
+| 85 项验收 | `setup.ps1 -Phase verify` 或 `verify-env.ps1` |
 | 回滚 | `compare-services.ps1 -Snapshot <csv> -Restore` |
 | 输入法坏了 | `diagnose-ime.ps1 -Repair`（管理员，之后重启） |
 | 设备故障码 | `reset-failed-devices.ps1 -Reset`（管理员） |
@@ -312,7 +312,7 @@ pwsh -File scripts/snapshot-services.ps1 -OutDir C:\backup\before-tweak
 | **PowerShell 变量名不区分大小写** | 局部变量 `$test` 会和参数 `[switch]$Test` **冲突**：赋值报 `Cannot convert ... to SwitchParameter`，**错误信息完全不提参数名**。与 `setup.ps1` 里"参数不能叫 `$Args`"是同一族坑 |
 | **大文件下载用 `curl -C -` 续传，SHA256 做裁决** | 网络抖动会中断 `Invoke-WebRequest`（**它不支持续传**），重下 600 MB 代价很高。`curl.exe -L -C -` 断点续传后**必须核对 SHA256**——校验通过才证明续传文件字节级正确（实测 653,644,328 字节精确匹配、哈希一致） |
 | **`Test-Connection` 是 ICMP，会假阴性** | `-Phase check` 报 `github.com not reachable`，而同一条网络上 `Test-NetConnection -Port 443` 通畅、仓库照下不误。**ICMP 被挡是常态**——判断网络用 TCP 443，别用 ping |
-| **便携软件的"省电"设置会让游戏掉线** | 网卡默认**允许系统关闭以省电**，表现为**游戏中随机掉线 / 延迟尖峰**。正解是官方注册表项 `PnPCapabilities = 24 (0x18)`（网卡类键下），**而 `Disable-NetAdapterPowerManagement` 会返回成功却不改值**（见 `windows-tuning/04-tweak-checklist.md`）。生效需**重启网卡或系统**。实测出厂值：有线网卡未设置、无线网卡 `16`，两者都应为 **24** |
+| **便携软件的"省电"设置会让游戏掉线** | 网卡默认**允许系统关闭以省电**，表现为**游戏中随机掉线 / 延迟尖峰**。正解是官方注册表项 `PnPCapabilities = 24 (0x18)`（网卡类键下），**而 `Disable-NetAdapterPowerManagement` 会返回成功却不改值**（见 `windows-tuning/03-system-tweaks.md`）。生效需**重启网卡或系统**。实测出厂值：有线网卡未设置、无线网卡 `16`，两者都应为 **24** |
 | **无 BOM 的中文脚本在 PS 5.1 下会解析失败，而 PS 7 下正常** | 实测：`verify-env.ps1` 含 27 个非 ASCII 字节、**无 BOM**。用 `pwsh`(PS7) 跑完全正常；用 `powershell.exe`(5.1) 跑**直接在 here-string 处解析失败**（报 `The '<' operator is reserved for future use`，因为它把内嵌的 C++ 当 PowerShell 解析）——5.1 按 ANSI 解码 UTF-8 字节，错位后可能吐出引号，把 here-string 提前截断。**这条之所以长期没暴露：`setup.ps1` 调子脚本用的是 `pwsh`。** 纪律：脚本**要么纯 ASCII**（本目录所有脚本都声明 ASCII-only），**要么存成 UTF-8 BOM**。需要中文字面量时用 `\uXXXX` 转义（.NET 正则和 Python 都认），保持文件纯 ASCII。**⚠ 这条写进文档后仍然又发生过一次**（写一个给计划任务调用的 wrapper），详见下方「语法校验通过 ≠ 脚本能跑」与 `check-script-hygiene.ps1` |
 | **语法校验通过 ≠ 脚本能跑** | `[Parser]::ParseFile` 读无 BOM 文件时按 **UTF-8** 解码，而 `powershell.exe -File` 按 **ANSI** 解码——**同一个文件，前者报 ok、后者报解析错误**（上面那条就是这么漏掉的）。**判据改成了工具**：`check-script-hygiene.ps1` 对目录下每个 `.ps1` 做**双宿主解析 + 编码检查**（不执行，秒级），已挂进 `verify-env.ps1`。**为什么必须机械化**：这条纪律靠"记得做"已经被证伪两次 —— 同一个坑先让 `verify-env.ps1` 自己栽过，后来又让一个给计划任务写的 wrapper 栽过（PS7 过、5.1 报 `The string is missing the terminator: '`）。**判据：写完任何 `.ps1` 就跑一次 hygiene 检查，别靠记忆** |
 | **计划任务的「参数」栏不通过 Shell 执行 —— 重定向语法静默失效** | 在任务的参数里写 `cmd /c "... > log 2>&1"`，**重定向不会执行**，日志文件根本不生成，而任务照样报「成功」。**日志必须由脚本自己写**（`Add-Content` / `[IO.File]::WriteAllText`）。同理，任务里的相对路径不可靠——实测任务的工作目录是 `C:\Windows\System32`，一切路径都要写全 |
