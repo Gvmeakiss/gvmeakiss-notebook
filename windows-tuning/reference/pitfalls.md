@@ -5,6 +5,17 @@
 
 ---
 
+<details>
+<summary><b>本页目录</b>（5 节）</summary>
+
+- [1. 工具「缺失」与编码](#1-工具缺失与编码)
+- [2. 认证与凭据](#2-认证与凭据)
+- [3. 默认程序与文件关联](#3-默认程序与文件关联)
+- [4. PowerShell 脚本](#4-powershell-脚本)
+- [5. 注册表、服务与计划任务](#5-注册表服务与计划任务)
+
+</details>
+
 ## 1. 工具「缺失」与编码
 
 | 症状 | 根因 | 判据（怎么确认） | 正确做法 |
@@ -155,3 +166,7 @@ reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" /v BingSearchEna
 reg add "HKCU\Software\Policies\Microsoft\Windows\Explorer" /v DisableSearchBoxSuggestions /t REG_DWORD /d 1 /f
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search" /v ConnectedSearchUseWeb /t REG_DWORD /d 0 /f
 ```
+
+---
+
+<p align="right"><sub><a href="../README.md">← 目录</a> · <a href="../03-system-tweaks.md">系统调优清单</a> · <a href="../../README.md">笔记本</a></sub></p>

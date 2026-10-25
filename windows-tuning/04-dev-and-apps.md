@@ -6,6 +6,18 @@
 
 命令在仓库根执行，下文 `setup.ps1` 指 [`skills/win-ai-gaming-setup/scripts/setup.ps1`](../skills/win-ai-gaming-setup/scripts/setup.ps1)。
 
+<details>
+<summary><b>本页目录</b>（6 节）</summary>
+
+- [阶段与命令](#阶段与命令)
+- [语言工具链](#语言工具链)
+- [便携软件](#便携软件)
+- [安装回读](#安装回读)
+- [环境变量与 PATH](#环境变量与-path)
+- [常见失败与判据](#常见失败与判据)
+
+</details>
+
 ## 阶段与命令
 
 | 阶段 | 命令 | 产物 | 成功判据 |
@@ -147,3 +159,7 @@ python --version; node --version; go version; rustc -vV; dotnet --version; g++ -
 | `winget exit code: 0` 但 `still missing after install` | `verifyPath` 不存在 | 从厂商站手装后重跑 `-Phase apps` |
 | 镜像"配过了"但下载仍走官方源 | `NuGet.Config` / `config.toml` 已存在则不覆盖；cargo 认 `$env:CARGO_HOME` 而非固定 `~\.cargo` | 按实际路径核对文件内容，必要时手工改 |
 | 双击文件仍用旧程序 | `UserChoice` 带 `Deny SetValue` + `Hash`，脚本无法改 | 右键 → 打开方式 → 选择程序 → 勾"始终使用"，每类一次 |
+
+---
+
+<p align="right"><sub><a href="./README.md">← 目录</a> · <a href="./03-system-tweaks.md">← 03 调优</a> · <a href="./05-games/README.md">05 游戏 →</a> · <a href="../README.md">笔记本</a></sub></p>

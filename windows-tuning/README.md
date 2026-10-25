@@ -1,11 +1,29 @@
 # Windows 调优：按配置顺序排列
 
-这个目录不是文集，是**一条装配线**：从拿到一台机器，到它变成能干活、能打游戏、出问题能回滚的状态。
+> 这个目录不是文集，是**一条装配线**：从拿到一台机器，到它变成能干活、能打游戏、出问题能回滚的状态。
+> 文件编号 = **实际配置顺序**，不是重要性排序。可以停在任意一步，但不要跳步 ——
+> 跳步的典型后果是"先改了一堆注册表，才发现这台机器没有管理员权限"。
 
-文件编号 = **实际配置顺序**，不是重要性排序。你可以在任意一步停下，但不要跳步 —— 跳步的典型后果是
-"先改了一堆注册表，才发现这台机器没有管理员权限"。
+**当前状态**　`97 项验收 / 0 失败` · `43 个调优值` · `49 条 tweaks 检查` · `13 项软件` · `38 条陷阱`
 
 ## 装配线
+
+```mermaid
+flowchart LR
+    A["① 01-baseline<br/>权限 · 前提 · 环境事实"] --> B["② 02-decisions<br/>值得做 / 不要做"]
+    B --> C["③ 03-system-tweaks<br/>43 个值 · 判据 · 怎么验"]
+    C --> D["④⑤ 04-dev-and-apps<br/>工具链 + 13 项软件"]
+    D --> E["⑥ 05-games<br/>按游戏可回退"]
+    E --> F{"验收与回滚"}
+    F -->|通过| G["verify-env.ps1<br/>97 项 / 0 失败"]
+    F -->|失败| H["tune-undo 逐项撤销<br/>+ 系统还原点"]
+    R1["reference/pitfalls<br/>38 条陷阱"] -.随时查.-> A
+    R1 -.-> C
+    R2["reference/audit-criteria<br/>判定原则 + 18 项判据"] -.判据.-> F
+```
+
+<details>
+<summary><b>纯文本版装配线</b>（终端 / 编辑器里看）</summary>
 
 ```text
  ①判定起点          ②决定改什么          ③系统层            ④开发环境与软件        ⑤游戏
@@ -19,6 +37,8 @@
                                      │ 验收与回滚  │ verify-env.ps1（97 项）+ 逐项撤销脚本
                                      └────────────┘
 ```
+
+</details>
 
 **贯穿全程的参考材料**（不属于任何一步，随时可查）：
 
@@ -70,4 +90,4 @@
 
 ---
 
-<p align="right"><sub><a href="../README.md">← 返回笔记本目录</a> · <a href="../skills/win-ai-gaming-setup/README.md">技能速查</a> · <a href="./03-system-tweaks.md">系统调优清单</a></sub></p>
+<p align="right"><sub><a href="../README.md">← 笔记本目录</a> · <a href="../skills/win-ai-gaming-setup/README.md">技能速查</a> · <a href="./03-system-tweaks.md">系统调优清单</a> · <a href="./05-games/README.md">游戏优化</a></sub></p>

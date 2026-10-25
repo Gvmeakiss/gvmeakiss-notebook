@@ -8,6 +8,17 @@
 `snapshot-services.ps1` / `compare-services.ps1` · `set-app-associations.ps1` · `reset-failed-devices.ps1` · `diagnose-ime.ps1` · `check-software.ps1` · `check-script-hygiene.ps1` · `clean-orphan-associations.ps1` · `verify-env.ps1`。
 仓库：[Gvmeakiss/gvmeakiss-notebook](https://github.com/Gvmeakiss/gvmeakiss-notebook)
 
+<details>
+<summary><b>本页目录</b>（5 节）</summary>
+
+- [这台机器是什么状态](#这台机器是什么状态)
+- [最终环境](#最终环境)
+- [软件清单](#软件清单)
+- [验收基线](#验收基线)
+- [已知边界](#已知边界)
+
+</details>
+
 ## 这台机器是什么状态
 
 | 起点类型 | 权限 | 前提 | 能做与不能做 |
@@ -154,3 +165,7 @@ pwsh -File skills/win-ai-gaming-setup/scripts/verify-env.ps1            # 等价
 
 > 本文件只定"什么算配好了"与怎么验：每条调优的正确值与依据见 `03-system-tweaks.md`，
 > 工具链与 13 项软件的安装细节见 `04-dev-and-apps.md`，做 / 不做的取舍见 `02-decisions.md`。
+
+---
+
+<p align="right"><sub><a href="./README.md">← 目录</a> · <a href="./README.md">← 目录</a> · <a href="./02-decisions.md">02 决策 →</a> · <a href="../README.md">笔记本</a></sub></p>

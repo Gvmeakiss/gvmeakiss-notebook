@@ -7,6 +7,17 @@
 
 ---
 
+<details>
+<summary><b>本页目录</b>（5 节）</summary>
+
+- [1. 值得做](#1-值得做)
+- [2. 不要做](#2-不要做)
+- [3. 本类机器的默认决策](#3-本类机器的默认决策)
+- [来源说明](#来源说明)
+- [4. 从 Winhance / Bloatynosy 源码里读到、明确不要照抄的](#4-从-winhance--bloatynosy-源码里读到明确不要照抄的)
+
+</details>
+
 ## 1. 值得做
 
 | 项 | 机制 | 预期收益 | 风险 | 本机是否已应用 |
@@ -156,3 +167,7 @@
 | **StickyKeys `Flags`** | Winhance 写 `2`、Bloatynosy 写 `506`（默认 510）；写 2 会覆盖整个位域，两者互相矛盾 |
 | **`Winlogon\DisableLockWorkstation=1`** | 直接去掉 Win+L 锁屏，是安全负收益 |
 | **`SvcHostSplitThresholdInKB=3670016`** | 注释自己标注为 "Windows default"，纯 no-op |
+
+---
+
+<p align="right"><sub><a href="./README.md">← 目录</a> · <a href="./01-baseline.md">← 01 基线</a> · <a href="./03-system-tweaks.md">03 调优 →</a> · <a href="../README.md">笔记本</a></sub></p>

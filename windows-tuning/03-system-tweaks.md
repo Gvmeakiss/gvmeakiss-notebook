@@ -4,6 +4,24 @@
 
 注册表写入由 `setup.ps1 -Phase tune` 完成，验收由 `verify-env.ps1` 完成，两者描述的是同一批值：**不一致就是缺陷**，见文末「维护约束」。
 
+<details>
+<summary><b>本页目录</b>（12 节）</summary>
+
+- [使用方式](#使用方式)
+- [游戏响应](#游戏响应)
+- [广告与推荐](#广告与推荐)
+- [搜索](#搜索)
+- [遥测与出网](#遥测与出网)
+- [安全兜底与可回滚](#安全兜底与可回滚)
+- [磁盘与界面](#磁盘与界面)
+- [后台与锁屏](#后台与锁屏)
+- [隐私面](#隐私面)
+- [游戏模式与界面](#游戏模式与界面)
+- [手工项](#手工项)
+- [维护约束](#维护约束)
+
+</details>
+
 ## 使用方式
 
 `-Phase tune` 需要管理员权限，且必须在**交互用户**会话里运行：SYSTEM 身份下 `HKCU` 指向 SYSTEM 的 hive，用户作用域的写入会落错配置单元，脚本会直接拒绝执行。
@@ -31,7 +49,7 @@ pwsh -File skills/win-ai-gaming-setup/scripts/verify-env.ps1          # 验收�
 | **SystemResponsiveness = 10**<br>`HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile`<br>可脚本化 · `-Phase tune` | MMCSS 的 CPU 保留百分比，默认 20；10 把更多 CPU 让给游戏线程。注意「更小」不等于「更强」：不可被 10 整除的取值会取整，小于 10 的一律 clamp 回 20，所以 0/1 是 no-op，10 才是能被接受的最小档。 | `$tweaks` → **MMCSS responsiveness**，期望 `10`。 |
 | **NetworkThrottlingIndex = 0xffffffff**<br>同一键<br>可脚本化 · `-Phase tune` | 全 1 = 关掉 MMCSS 对网络收发的节流配额，游戏时不再被限流。 | `$tweaks` → **MMCSS net throttling**，期望 `4294967295`（无符号十进制；`0xffffffff`、`-1` 是同一个值）。 |
 | **GPU Priority = 8**<br>`HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games`<br>可脚本化 · `-Phase tune` | Games 任务类的 GPU 优先级档位。验收会查这一项，所以 tune 必须写——漏写会让验收在每台机器上永久 FAIL。 | `$tweaks` → **MMCSS GPU priority**，期望 `8`。 |
-| **Priority = 6**<br>同上键<br>可脚本化 · `-Phase tune` | 同一个任务类的 CPU 优先级。 | `$tweaks` → **MMCSS game priority**，期望 `6`。
+| **Priority = 6**<br>同上键<br>可脚本化 · `-Phase tune` | 同一个任务类的 CPU 优先级。 | `$tweaks` → **MMCSS game priority**，期望 `6`。 |
 | **Scheduling Category = 'High'**（REG_SZ）<br>同上键<br>可脚本化 · `-Phase tune` | 任务进哪个 MMCSS 调度类别；字符串型值，不是 DWORD，必须逐字 `High`。 | `$tweaks` → **MMCSS sched category**，期望 `High`。 |
 | **SFIO Priority = 'High'**（REG_SZ）<br>同上键<br>可脚本化 · `-Phase tune` | 游戏任务类的存储 IO 优先级；同样是字符串。 | `$tweaks` → **MMCSS sfio priority**，期望 `High`。 |
 | **MMCSS 驱动 = RUNNING**<br>`sc.exe query MMCSS`<br>可脚本化 · `-Phase tune`（`sc.exe config MMCSS start= auto` + `sc.exe start MMCSS`） | MMCSS 是内核驱动，`SystemProfile` / `Tasks\Games` 下的 6 个值只在它 RUNNING 时生效，注册表看起来完全正确也可以是死的。实测装显卡驱动后它会停在 STOPPED，且无法按需启动（先是 `StartService failed 2`，后是 1341），只能重启恢复——遇到就重启后重试，不要判定它坏了。 | `$tweaks` → **MMCSS driver running**：`sc.exe query MMCSS` 输出含 `RUNNING`；STOPPED 时上面的值一律视为未生效。 |
@@ -140,10 +158,11 @@ pwsh -File skills/win-ai-gaming-setup/scripts/verify-env.ps1          # 验收�
 | **ShowCloudFilesInQuickAccess = 0**<br>`HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer`<br>可脚本化 · `-Phase tune` | 快速访问会去查 Office.com 云端文件：既是视觉噪声，也是每次打开资源管理器的一次云调用。 | `$tweaks` → **cloud files in quick access off**，期望 `0`。 |
 | **LegacyDefaultPrinterMode = 1**<br>`HKCU\Software\Microsoft\Windows NT\CurrentVersion\Windows`<br>可脚本化 · `-Phase tune` | Win10 起默认打印机会「自动切到最近用过的打印机」，在多打印机环境里等于替你改设置。此值锁回手动管理。 | `$tweaks` → **default printer pinned**，期望 `1`。 |
 
-**Widgets 订阅源（Dsh）—— 需手工。** `HKCU\Software\Policies\Microsoft\Dsh` 与 `HKLM\SOFTWARE\Policies\Microsoft\Dsh`
-的 `AllowNewsAndInterests` 在本机是 **ACL 锁定**的：Owner 是 `BUILTIN\Administrators`，但交互用户只有 `ReadKey`，
-`reg add`（含提权）返回 `Access is denied`。这类写不进去的键**不放进 tune**，否则会变成一条永远失败的假 tweak。
-需要关订阅源时走「设置 → 个性化 → 任务栏」关闭小组件，或用组策略编辑器。
+> [!WARNING]
+> **Widgets 订阅源（Dsh）只能手工关。** `HKCU\Software\Policies\Microsoft\Dsh` 与 `HKLM\SOFTWARE\Policies\Microsoft\Dsh`
+> 的 `AllowNewsAndInterests` 在本机是 **ACL 锁定**的：Owner 是 `BUILTIN\Administrators`，但交互用户只有 `ReadKey`，
+> `reg add`（含提权）返回 `Access is denied`。这类写不进去的键**不放进 tune** —— 否则会变成一条永远失败的假 tweak。
+> 要关订阅源：设置 → 个性化 → 任务栏 → 关闭小组件；或用组策略编辑器。
 ## 手工项
 
 以下 9 项不进 tune 的默认写入：要么没有可靠的自动化路径，要么正确值取决于机器形态与个人取舍。
@@ -167,3 +186,7 @@ pwsh -File skills/win-ai-gaming-setup/scripts/verify-env.ps1          # 验收�
 - **覆盖差额要显式**：tweaks 组共 49 条检查（41 条在 `$tweaks` 表内、1 条经典右键菜单、4 条结果检查）；43 个值里 42 个有逐值检查，`EnablePeriodicBackup` 改查结果——**没有「写了但没人查」的值**。
 - **批量 `.reg` 的两个已知行为**：可写性未知的键不要放在批次中间（`reg import` 会部分写入、exit 1、跳过余下段）；`ContentDeliveryManager` 上实测被静默跳过，已有逐值直写兜底。
 - **改完跑体检**：`scripts/check-script-hygiene.ps1`（该目录 ASCII-only，5.1 也会加载）与 `scripts/test-tune-core.ps1`（DWORD 渲染、build 门控等纯函数）。
+
+---
+
+<p align="right"><sub><a href="./README.md">← 目录</a> · <a href="./02-decisions.md">← 02 决策</a> · <a href="./04-dev-and-apps.md">04 环境与软件 →</a> · <a href="../README.md">笔记本</a></sub></p>

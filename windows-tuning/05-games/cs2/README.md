@@ -294,3 +294,7 @@ pwsh -File scripts/apply-cs2-optimizations.ps1 -Revert
 
 本文件不含：真实主机名、用户名、内网 IP、Steam 账号或 SteamID、设备序列号、凭据。
 硬件型号、游戏 AppID 与目录名属通用技术信息，予以保留。
+
+---
+
+<p align="right"><sub><a href="../../README.md">← 目录</a> · <a href="../README.md">← 各游戏优化</a> · <a href="../../03-system-tweaks.md">系统调优清单</a> · <a href="../../../README.md">笔记本</a></sub></p>

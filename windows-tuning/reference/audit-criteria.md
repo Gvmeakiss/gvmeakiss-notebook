@@ -4,6 +4,15 @@
 
 ---
 
+<details>
+<summary><b>本页目录</b>（3 节）</summary>
+
+- [1. 判定原则](#1-判定原则)
+- [2. 逐项判据表](#2-逐项判据表)
+- [3. 只读审计命令清单](#3-只读审计命令清单)
+
+</details>
+
 ## 1. 判定原则
 
 ### 1.1 命令成功 ≠ 生效
@@ -117,3 +126,7 @@ foreach ($ext in '.md','.png','.mp4') {
 # 集合验收（tune 存活检查）
 pwsh -File skills/win-ai-gaming-setup/scripts/verify-env.ps1
 ```
+
+---
+
+<p align="right"><sub><a href="../README.md">← 目录</a> · <a href="../03-system-tweaks.md">系统调优清单</a> · <a href="../../README.md">笔记本</a></sub></p>
