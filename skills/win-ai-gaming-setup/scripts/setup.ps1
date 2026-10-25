@@ -624,11 +624,24 @@ if ($phases -contains 'tune') {
             $regLines.Add('')
             $regLines.Add("[$regKey]")
             foreach ($c in $byKey[$k]) {
+                # NOTE THE EXTRA PARENTHESES. A method call splits its argument list on
+                # commas BEFORE the -f operator is applied:
+                #     $list.Add('"{0}"=dword:{1}' -f $c.Name, $hex)
+                # parses as Add( ('...{0}...{1}' -f $c.Name), $hex ) - the format string gets
+                # ONE argument while the template references {1}, and the whole script dies
+                # with "Error formatting a string: Index (zero based) must be greater than or
+                # equal to zero and less than the size of the argument list."
+                # That is a terminating error, so the tune phase aborted right after the
+                # snapshot and NOT A SINGLE registry value was written - while the only
+                # visible symptom was that error text. Parenthesising the -f expression keeps
+                # the comma inside it.
                 if ($c.Type -eq 'DWord') {
-                    $regLines.Add('"{0}"=dword:{1}' -f $c.Name, (ConvertTo-RegDword $c.Value))
+                    $line = ('"{0}"=dword:{1}' -f $c.Name, (ConvertTo-RegDword $c.Value))
+                    $regLines.Add($line)
                 }
                 else {
-                    $regLines.Add('"{0}"="{1}"' -f $c.Name, ("$($c.Value)" -replace '"', '\"'))
+                    $line = ('"{0}"="{1}"' -f $c.Name, ("$($c.Value)" -replace '"', '\"'))
+                    $regLines.Add($line)
                 }
             }
         }
@@ -661,24 +674,49 @@ if ($phases -contains 'tune') {
         # Two of the tune values live in that key, so the phase used to report 2 failures that
         # nothing explained. Rather than distrust the batch entirely (it is 8x faster), retry a
         # value that did not land using the registry provider, then re-read it.
+        # PRESENCE IS THE WRONG PREDICATE FOR A TUNE. A tune's whole point is to set a value to
+        # a SPECIFIC number; "the value exists" says nothing about that. Measured on this
+        # machine: StoragePolicy\32 was already 0 and AllowTelemetry was already 0 from an
+        # earlier run, so a presence-only read-back counted both as applied, the direct-write
+        # fallback below never fired, and verify-env then reported
+        #   recycle retention: actual=0 want=30
+        #   telemetry policy : actual=0 want=1
+        # with no failure logged by tune at all. Compare the VALUE, and normalize first:
+        # 0xffffffff / -1 / 4294967295 are the same DWORD, and a DWORD read back by
+        # Get-ItemProperty can come back as either Int32 or UInt32.
+        function Test-TuneValue {
+            param($Actual, $Wanted)
+            if ($null -eq $Actual) { return $false }
+            if ("$Actual" -eq "$Wanted") { return $true }
+            $a = $null; $w = $null
+            try { $a = [int64]$Actual } catch { }
+            try { $w = [int64]$Wanted } catch { }
+            if (($null -ne $a) -and ($null -ne $w)) {
+                if ($a -lt 0) { $a += 4294967296 }
+                if ($w -lt 0) { $w += 4294967296 }
+                return ($a -eq $w)
+            }
+            return $false
+        }
+
         $applied = 0; $failed = 0; $recovered = New-Object System.Collections.Generic.List[string]
         foreach ($k in $byKey.Keys) {
             $props = Get-ItemProperty -Path $k -ErrorAction SilentlyContinue
             foreach ($c in $byKey[$k]) {
-                $present = ($null -ne $props) -and ($null -ne $props.($c.Name))
-                if (-not $present -and -not $WhatIfPreference) {
+                $ok = ($null -ne $props) -and (Test-TuneValue $props.($c.Name) $c.Value)
+                if (-not $ok -and -not $WhatIfPreference) {
                     try {
                         Set-ItemProperty -Path $k -Name $c.Name -Value $c.Value -Type $c.Type -ErrorAction Stop
                         $recheck = Get-ItemProperty -Path $k -Name $c.Name -ErrorAction SilentlyContinue
-                        if (($null -ne $recheck) -and ($null -ne $recheck.($c.Name))) {
-                            $present = $true
+                        if (($null -ne $recheck) -and (Test-TuneValue $recheck.($c.Name) $c.Value)) {
+                            $ok = $true
                             $recovered.Add("$k\$($c.Name)")
                         }
                     }
                     catch { }
                 }
-                if ($present) { $applied++ }
-                else { $failed++; Bad "$k\$($c.Name): not present after reg import AND a direct write" }
+                if ($ok) { $applied++ }
+                else { $failed++; Bad "$k\$($c.Name): still not the wanted value after reg import AND a direct write (want $($c.Value))" }
             }
         }
         if ($recovered.Count -gt 0) {
