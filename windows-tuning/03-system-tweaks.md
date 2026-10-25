@@ -15,7 +15,7 @@ pwsh -File skills/win-ai-gaming-setup/scripts/verify-env.ps1          # 验收�
 ```
 
 - **怎么读**：每行三列。第一列 = 项 + 正确值（注册表路径照抄代码）+ 落地方式；`可脚本化 · -Phase tune` 表示由 tune 写入，`需手工` 的项全部集中在「手工项」。
-- **本表规模**：48 行 = 42 个值行 + 6 个状态项（MMCSS 驱动、7 个遥测任务、DiagTrack 防火墙组、还原点、服务快照、撤销脚本），共覆盖 43 个注册表值（两个活动策略值合写在一行）。43 个值里 33 个有逐值检查、1 个（`EnablePeriodicBackup`）改查结果、**9 个没有任何检查**，后者在表中标「验收未覆盖」。
+- **本表规模**：48 行 = 42 个值行 + 6 个状态项（MMCSS 驱动、7 个遥测任务、DiagTrack 防火墙组、还原点、服务快照、撤销脚本），共覆盖 43 个注册表值（两个活动策略值合写在一行）。43 个值里 42 个有逐值检查、1 个（`EnablePeriodicBackup`）改查结果——**没有「写了但没人查」的值**，tweaks 组共 46 条检查。
 - **写入机制**：所有非 opt-in 项合并成一个 `.reg`，一次 `reg import` 导入（合并进已有键，不重建键），随后逐值回读；没落盘的值退化为 `Set-ItemProperty` 直写再回读。命令返回成功不算证据，**回读到的值才算**。
 - **判定口径**：值**缺失算 FAIL**（累积更新是删值，不是改值）；比的是**值**不是存在性；`0xffffffff`、`-1`、`4294967295` 是同一个 DWORD；字符串型逐字比对（`High` 不是 `high`）；标 Optional 的检查只报 INFO 不报 FAIL。
 - **边界**：默认状态不含 opt-in 开关（鼠标加速、高性能电源方案、关睡眠），也不含禁用服务、改 UAC、改 DPI、改更新策略——这是刻意的负空间，理由见 [02-decisions.md](./02-decisions.md)。
@@ -31,9 +31,9 @@ pwsh -File skills/win-ai-gaming-setup/scripts/verify-env.ps1          # 验收�
 | **SystemResponsiveness = 10**<br>`HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile`<br>可脚本化 · `-Phase tune` | MMCSS 的 CPU 保留百分比，默认 20；10 把更多 CPU 让给游戏线程。注意「更小」不等于「更强」：不可被 10 整除的取值会取整，小于 10 的一律 clamp 回 20，所以 0/1 是 no-op，10 才是能被接受的最小档。 | `$tweaks` → **MMCSS responsiveness**，期望 `10`。 |
 | **NetworkThrottlingIndex = 0xffffffff**<br>同一键<br>可脚本化 · `-Phase tune` | 全 1 = 关掉 MMCSS 对网络收发的节流配额，游戏时不再被限流。 | `$tweaks` → **MMCSS net throttling**，期望 `4294967295`（无符号十进制；`0xffffffff`、`-1` 是同一个值）。 |
 | **GPU Priority = 8**<br>`HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games`<br>可脚本化 · `-Phase tune` | Games 任务类的 GPU 优先级档位。验收会查这一项，所以 tune 必须写——漏写会让验收在每台机器上永久 FAIL。 | `$tweaks` → **MMCSS GPU priority**，期望 `8`。 |
-| **Priority = 6**<br>同上键<br>可脚本化 · `-Phase tune` | 同一个任务类的 CPU 优先级。 | 验收未覆盖：`Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games'` 的 `Priority = 6`。 |
+| **Priority = 6**<br>同上键<br>可脚本化 · `-Phase tune` | 同一个任务类的 CPU 优先级。 | `$tweaks` → **MMCSS game priority**，期望 `6`。
 | **Scheduling Category = 'High'**（REG_SZ）<br>同上键<br>可脚本化 · `-Phase tune` | 任务进哪个 MMCSS 调度类别；字符串型值，不是 DWORD，必须逐字 `High`。 | `$tweaks` → **MMCSS sched category**，期望 `High`。 |
-| **SFIO Priority = 'High'**（REG_SZ）<br>同上键<br>可脚本化 · `-Phase tune` | 游戏任务类的存储 IO 优先级；同样是字符串。 | 验收未覆盖：同键回读，`SFIO Priority = High`。 |
+| **SFIO Priority = 'High'**（REG_SZ）<br>同上键<br>可脚本化 · `-Phase tune` | 游戏任务类的存储 IO 优先级；同样是字符串。 | `$tweaks` → **MMCSS sfio priority**，期望 `High`。 |
 | **MMCSS 驱动 = RUNNING**<br>`sc.exe query MMCSS`<br>可脚本化 · `-Phase tune`（`sc.exe config MMCSS start= auto` + `sc.exe start MMCSS`） | MMCSS 是内核驱动，`SystemProfile` / `Tasks\Games` 下的 6 个值只在它 RUNNING 时生效，注册表看起来完全正确也可以是死的。实测装显卡驱动后它会停在 STOPPED，且无法按需启动（先是 `StartService failed 2`，后是 1341），只能重启恢复——遇到就重启后重试，不要判定它坏了。 | `$tweaks` → **MMCSS driver running**：`sc.exe query MMCSS` 输出含 `RUNNING`；STOPPED 时上面的值一律视为未生效。 |
 
 最后一行是状态而不是值：MMCSS 那 6 行是否真的在起作用由它决定，GameDVR 两行不受影响。
@@ -47,17 +47,17 @@ pwsh -File skills/win-ai-gaming-setup/scripts/verify-env.ps1          # 验收�
 | **DisableWindowsConsumerFeatures = 1**<br>`HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent`<br>可脚本化 · `-Phase tune` | 策略层总闸：阻止静默安装应用与推广应用（消费级功能）。 | `$tweaks` → **consumer features off**，期望 `1`。 |
 | **SilentInstalledAppsEnabled = 0**<br>`HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager`<br>可脚本化 · `-Phase tune` | 不再静默安装 Store 应用。 | `$tweaks` → **silent app installs**，期望 `0`。 |
 | **SystemPaneSuggestionsEnabled = 0**<br>同上键<br>可脚本化 · `-Phase tune` | 开始菜单不显示应用建议。 | `$tweaks` → **start suggestions**，期望 `0`。 |
-| **SubscribedContent-338388Enabled = 0**<br>同上键<br>可脚本化 · `-Phase tune` | 开始菜单的推荐内容位。 | 验收未覆盖：整键回读为 `0`。 |
-| **SubscribedContent-338389Enabled = 0**<br>同上键<br>可脚本化 · `-Phase tune` | Windows 欢迎体验里的建议位。 | 验收未覆盖：整键回读为 `0`。 |
-| **SubscribedContent-353698Enabled = 0**<br>同上键<br>可脚本化 · `-Phase tune` | 时间线的建议位。 | 验收未覆盖：整键回读为 `0`。 |
+| **SubscribedContent-338388Enabled = 0**<br>同上键<br>可脚本化 · `-Phase tune` | 开始菜单的推荐内容位。 | `$tweaks` → **start recommendations off**，期望 `0`。 |
+| **SubscribedContent-338389Enabled = 0**<br>同上键<br>可脚本化 · `-Phase tune` | Windows 欢迎体验里的建议位。 | `$tweaks` → **welcome suggestions off**，期望 `0`。 |
+| **SubscribedContent-353698Enabled = 0**<br>同上键<br>可脚本化 · `-Phase tune` | 时间线的建议位。 | `$tweaks` → **timeline suggestions off**，期望 `0`。 |
 | **SubscribedContent-310093Enabled = 0**<br>同上键<br>可脚本化 · `-Phase tune` | 「更新后有什么新功能」的欢迎屏；与 338388 / 338389 / 353698 是**不同的活动 ID**，少写一个就还会弹。 | `$tweaks` → **welcome splash off**，期望 `0`。 |
 | **SoftLandingEnabled = 0**<br>同上键<br>可脚本化 · `-Phase tune` | Windows 提示（tips）弹窗。 | `$tweaks` → **soft landing tips**，期望 `0`。 |
-| **RotatingLockScreenOverlayEnabled = 0**<br>同上键<br>可脚本化 · `-Phase tune` | 锁屏上的推广浮层。 | 验收未覆盖：整键回读为 `0`。 |
-| **PreInstalledAppsEnabled = 0**<br>同上键<br>可脚本化 · `-Phase tune` | 预装应用的推广位。 | 验收未覆盖：整键回读为 `0`。 |
-| **OemPreInstalledAppsEnabled = 0**<br>同上键<br>可脚本化 · `-Phase tune` | OEM 预装应用的推广位。 | 验收未覆盖：整键回读为 `0`。 |
+| **RotatingLockScreenOverlayEnabled = 0**<br>同上键<br>可脚本化 · `-Phase tune` | 锁屏上的推广浮层。 | `$tweaks` → **lock screen overlay off**，期望 `0`。 |
+| **PreInstalledAppsEnabled = 0**<br>同上键<br>可脚本化 · `-Phase tune` | 预装应用的推广位。 | `$tweaks` → **preinstalled promo off**，期望 `0`。 |
+| **OemPreInstalledAppsEnabled = 0**<br>同上键<br>可脚本化 · `-Phase tune` | OEM 预装应用的推广位。 | `$tweaks` → **oem promo off**，期望 `0`。 |
 | **ShowSyncProviderNotifications = 0**<br>`HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced`<br>可脚本化 · `-Phase tune` | 资源管理器里的「同步你的设置」广告。 | `$tweaks` → **explorer sync ads**，期望 `0`。 |
 
-12 项里 6 项有逐值检查，6 项标「验收未覆盖」；同一键一次回读可全部核对：`Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'`。这个键在 Win11 26xxx 上实测会被 `reg import` 静默跳过（连全新值名也不落盘），tune 因此保留逐值直写的兜底——回读到值才算数。
+12 项全部有逐值检查；同一键一次回读可全部核对：`Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'`。这个键在 Win11 26xxx 上实测会被 `reg import` 静默跳过（连全新值名也不落盘），tune 因此保留逐值直写的兜底——回读到值才算数。
 
 ## 搜索
 
@@ -67,7 +67,7 @@ pwsh -File skills/win-ai-gaming-setup/scripts/verify-env.ps1          # 验收�
 |---|---|---|
 | **DisableSearchBoxSuggestions = 1**<br>`HKCU:\Software\Policies\Microsoft\Windows\Explorer`<br>可脚本化 · `-Phase tune` | 开始菜单搜索不再给网络建议。用策略键而不是 `HKCU:\Software\Microsoft\Windows\CurrentVersion\Search` 的 `BingSearchEnabled` / `CortanaConsent`：后者在 Win11 24H2+ 上被内核级拒写（报「Not all data was successfully written to the registry」，而该键 ACL 仍显示用户 FullControl），策略键是官方路径，且优先级高于用户作用域。 | `$tweaks` → **bing web search**，接受两条路线：本策略值 = `1`，或 `BingSearchEnabled = 0`。 |
 | **ConnectedSearchUseWeb = 0**<br>`HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search`<br>可脚本化 · `-Phase tune` | 机器级：开始搜索不返回网络结果。 | `$tweaks` → **web search policy**，期望 `0`。 |
-| **AllowCortana = 0**<br>同上键<br>可脚本化 · `-Phase tune` | 关掉云端搜索的同意项。 | 验收未覆盖：同键回读，`AllowCortana = 0`。 |
+| **AllowCortana = 0**<br>同上键<br>可脚本化 · `-Phase tune` | 关掉云端搜索的同意项。 | `$tweaks` → **cortana consent off**，期望 `0`。 |
 
 一次 `Get-ItemProperty 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search'` 可同时核对 `ConnectedSearchUseWeb` 与 `AllowCortana`。
 
@@ -149,6 +149,6 @@ pwsh -File skills/win-ai-gaming-setup/scripts/verify-env.ps1          # 验收�
 - **改一处就要改两处**：`setup.ps1` 的 `$changes` 与 `verify-env.ps1` 的 `$tweaks` 是同一份契约的两半。加一个写入就加一条 `Want`，改一个值就同时改两边的字面量；只改一边的结果是「写了没人验」或「验的从没写过」。
 - **`Want` 不许写死**：`AllowTelemetry` 由 `EditionID` 决定（`Enterprise` / `Education` / `Server` 之一 → 0，其余 → 1），两边必须用同一个判定表达式，否则专业版上会出现永久 FAIL。
 - **结果型检查不许退化成开关检查**：`EnablePeriodicBackup=1` 不等于有备份（26xxx 上任务空壳、SIT 已消失、RegBack 长期 0 字节），所以查 RegBack 字节数；MMCSS 同理查 `sc query` 的 RUNNING，而不是注册表值。
-- **覆盖差额要显式**：tweaks 组共 37 条检查（32 条在 `$tweaks` 表内、1 条经典右键菜单、4 条结果检查）；43 个值里 33 个有逐值检查，`EnablePeriodicBackup` 改查结果，剩下 9 个值没有检查——本表标了「验收未覆盖」，不要把它读成「已验证」。
+- **覆盖差额要显式**：tweaks 组共 46 条检查（41 条在 `$tweaks` 表内、1 条经典右键菜单、4 条结果检查）；43 个值里 42 个有逐值检查，`EnablePeriodicBackup` 改查结果——**没有「写了但没人查」的值**。
 - **批量 `.reg` 的两个已知行为**：可写性未知的键不要放在批次中间（`reg import` 会部分写入、exit 1、跳过余下段）；`ContentDeliveryManager` 上实测被静默跳过，已有逐值直写兜底。
 - **改完跑体检**：`scripts/check-script-hygiene.ps1`（该目录 ASCII-only，5.1 也会加载）与 `scripts/test-tune-core.ps1`（DWORD 渲染、build 门控等纯函数）。

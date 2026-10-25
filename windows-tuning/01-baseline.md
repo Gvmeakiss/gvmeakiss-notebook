@@ -119,7 +119,7 @@ pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1 -Phase verify   # 七阶
 pwsh -File skills/win-ai-gaming-setup/scripts/verify-env.ps1            # 等价单件脚本
 ```
 
-**判据：85 项 / 0 失败，退出码 0。** 输出形态为每组一行 `[OK] <组> <通过>/<总数> checks passed`，
+**判据：94 项 / 0 失败，退出码 0。** 输出形态为每组一行 `[OK] <组> <通过>/<总数> checks passed`，
 末尾 `total: <N> checks, 0 failed, <K> informational`；`informational` 不计入失败。
 组共 15 个，与汇总输出一一对应：`hygiene` · `tweaks`（含 MMCSS 驱动是否 `RUNNING`、tune 值存活） ·
 `python` / `node` / `go` / `rust` / `java` / `dotnet` / `cpp` · `archives` · `git` / `gh` / `ssh` · `system` · `runtimes`。

@@ -605,6 +605,27 @@ $tweaks = @(
        AltWhy = 'online speech consent withdrawn' },
     @{ Check = 'edge startup boost off'; Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Edge';                                   Name = 'StartupBoostEnabled'; Want = '0'
        AltWhy = 'Edge keeps no preloaded background processes' },
+    # The nine values below were written by tune but had no acceptance check, so a silent
+    # regression (a value deleted by an update, or never written because a key was refused)
+    # would have gone unnoticed. A write with no check is an unchecked claim.
+    @{ Check = 'MMCSS game priority';   Path = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games'; Name = 'Priority'; Want = '6'
+       AltWhy = 'game task CPU priority' },
+    @{ Check = 'MMCSS sfio priority';   Path = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games'; Name = 'SFIO Priority'; Want = 'High'
+       AltWhy = 'game task storage IO priority' },
+    @{ Check = 'start recommendations off'; Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Name = 'SubscribedContent-338388Enabled'; Want = '0'
+       AltWhy = 'no Start-menu recommendations' },
+    @{ Check = 'welcome suggestions off'; Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Name = 'SubscribedContent-338389Enabled'; Want = '0'
+       AltWhy = 'no post-setup welcome suggestions' },
+    @{ Check = 'timeline suggestions off'; Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Name = 'SubscribedContent-353698Enabled'; Want = '0'
+       AltWhy = 'no timeline suggestion prompts' },
+    @{ Check = 'lock screen overlay off'; Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Name = 'RotatingLockScreenOverlayEnabled'; Want = '0'
+       AltWhy = 'no promotional overlay on the lock screen' },
+    @{ Check = 'preinstalled promo off'; Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Name = 'PreInstalledAppsEnabled'; Want = '0'
+       AltWhy = 'no preinstalled-app promotion' },
+    @{ Check = 'oem promo off';         Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Name = 'OemPreInstalledAppsEnabled'; Want = '0'
+       AltWhy = 'no OEM app promotion' },
+    @{ Check = 'cortana consent off';   Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search';                 Name = 'AllowCortana'; Want = '0'
+       AltWhy = 'no cloud search consent' },
     @{ Check = 'telemetry policy';      Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection';                 Name = 'AllowTelemetry'
        Want = $(if ((Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name 'EditionID' -ErrorAction SilentlyContinue).EditionID -match 'Enterprise|Education|Server') { '0' } else { '1' })
        AltWhy = 'strictest level the edition honours (0 is Enterprise/Education-only)' }
