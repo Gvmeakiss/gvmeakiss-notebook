@@ -470,7 +470,7 @@ ETW 采集不受影响。
 
 <p align="center"><sub>
 <a href="./SKILL.md">方法论 → SKILL.md</a> &nbsp;·&nbsp;
-<a href="../../docs/windows-environment-setup-win11.md">实测记录 → docs/</a>
+<a href="../../windows-tuning/02-env-audit-win11.md">实测记录 → docs/</a>
 </sub></p>
 
 ---

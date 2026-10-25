@@ -25,28 +25,20 @@ skills/<name>/
   它是 `audit-kanban` 的工程版实现，**共用同一入口说明**，在根 `README.md` 中并入「稽核与业务应用」而非单列项目。
 - `shadowrocket/`：Mac / iPhone 通用分流配置、使用指南与离线配置检查。
 - `merlin/`：梅林 fancyss 分流名单、使用指南、美国节点入口绕过生成工具；账号与节点备份仅在本地使用。
-- `game-optimizations/`：**各游戏优化**，按游戏分子目录（当前 `cs2/`）。每个游戏收录
-  `README.md`（硬件评估 · 瓶颈判定 · 系统优化 · 游戏内设置 · 排错 · 回滚）与
-  `scripts/`（`check-<game>-readiness.ps1` 只读体检 + `apply-<game>-optimizations.ps1`
-  可回退应用，支持 `-WhatIf` / `-Revert`）。新增游戏时按该目录 `README.md` 的模板加子目录并更新索引表。
-  该目录脚本**同样必须 ASCII-only**（理由见下文「环境」）。
 - `mini-app-spec/`：**企业级「AI Agent 驱动轻应用平台」技术规范**（脱敏方法论版，单文件）。含整套框架设计、
   前端约定、数据管理、生命周期控制、接口清单与「依照本规范设计轻应用的标准流程」。
   顶部有「读者路由」表：判断适用性读 §0–§1，要照做读 §7，AI 动手先读 §6 再读 §7。
-- `docs/`：过程与踩坑记录。`windows-environment-setup.md` 是在一台 Windows 10 非管理员机器上
-  把开发环境与常用软件从零配置到可用的实测记录（14 项问题总表 + Windows 专属陷阱）；
-  `windows-environment-setup-win11.md` 是**互补的另一半** —— 一台"已经优化过"的 Windows 11 管理员机的
-  逐项复核（真损害 / 被累积更新删掉的调优值 / **审计者自己的 3 处误判**，含「判定标准对错对照」表）。
-  `windows-nas-smb-stability.md` 是内网 NAS 稳定性专项：「NAS 不稳」定位到「睡眠唤醒后没有重连」，
-  含事件时间对齐法、事件触发计划任务、**驱动器映射按会话+提权级别隔离**、先算链路天花板再优化，
-  以及 3 项实测无收益并已回滚的尝试。
-  `skill-self-audit.md` 是**方法论**：如何把 skill 的「文档承诺」变成「可验证事实」——
-  5 类缺陷（描述不符 / 预演不可信 / 退出码失真 / 判定矛盾 / 静默吞错）、
-  性能优化的**等价性证明**、环境缺陷与代码缺陷的区分。与 `win-ai-gaming-setup` 配套：
-  **Skill 是可执行的方法，docs 是为什么这么做、以及踩过的坑**。
-  `windows-tweak-evidence-review.md` 是**证据审查**：只读审阅 10+ 个流行优化项目（winutil / Win11Debloat /
-  Sophia / Bloatynosy / Hyyote / PC-Tuning …）的真实源码，把每条 tweak 判定为「有测量 / 有机制无测量 /
-  机制就是错的」，并给出「先测量再优化」的工具与协议。它回答的是**为什么大多数流行做法不该做**。
+- `windows-tuning/`：**Windows 调优合集**（五份材料合为一个项目，入口 `README.md` 有关系图与阅读路径）。
+  01 Win10 非管理员从零配置（14 项问题总表）· 02 Win11「已优化机」逐项复核（含**审计者自己的 3 处误判**）·
+  03 10+ 个流行优化项目的源码级**证据审查**（有测量 / 有机制无测量 / 机制就是错的）·
+  04 逐条核查清单（对应技能的 `tune` 阶段）· `games/` 按游戏的可回退优化（当前 `cs2/`，
+  `check-<game>-readiness.ps1` 只读体检 + `apply-<game>-optimizations.ps1` 支持 `-WhatIf` / `-Revert`）。
+  新增游戏按 `windows-tuning/games/README.md` 模板加子目录并更新索引；该目录脚本**同样必须 ASCII-only**。
+- `docs/`：与 Windows 调优无关的专题记录。`windows-nas-smb-stability.md`：内网 NAS 稳定性专项 ——
+  「NAS 不稳」定位到「睡眠唤醒后没有重连」，含事件时间对齐法、事件触发计划任务、**驱动器映射按会话+提权级别隔离**、
+  先算链路天花板再优化，以及 3 项实测无收益并已回滚的尝试。
+  `skill-self-audit.md`：**方法论** —— 如何把 skill 的「文档承诺」变成「可验证事实」
+  （5 类缺陷、性能优化的等价性证明、环境缺陷与代码缺陷的区分），与 `win-ai-gaming-setup` 配套。
 - `internal-audit-reform/`：AI复用制作内部审计汇报、H5、海报和电脑邮件长图的完整项目包，包含可编辑PPT、逐页口播、结果导向的内容/视觉规范、海报源文件及配图库。使用前阅读其 `README.md` 和项目级 `AGENTS.md`；当前页面中的业务条件和时限只适用于对应示例项目。
 - `assets/`：根 `README.md` 的横幅素材。`banner.svg` 与 `banner-dark.svg` 是同一版式的浅色 / 深色两套，
   由 README 中的 `<picture>` 按 `prefers-color-scheme` 自动切换；**改动需同步两份**。

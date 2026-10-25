@@ -1,4 +1,4 @@
-# AGENTS.md · game-optimizations
+# AGENTS.md · windows-tuning/games
 
 给 AI 的执行说明。给人看的说明在 [`README.md`](./README.md) 与各游戏子目录的 `README.md`。
 
@@ -36,7 +36,7 @@
 
 ## 新增一款游戏的流程
 
-1. 建 `game-optimizations/<game>/`（目录名小写 kebab-case）
+1. 建 `windows-tuning/games/<game>/`（目录名小写 kebab-case）
 2. 写 `README.md`：硬件评估 · 瓶颈判定 · 系统优化 · 游戏内设置 · 排错 · 回滚
 3. 写 `scripts/check-<game>-readiness.ps1`（只读）与 `apply-<game>-optimizations.ps1`（`-WhatIf`/`-Revert`）
 4. 两个脚本都要：ASCII-only、PS 7 与 5.1 双宿主可解析、支持 `-Json`

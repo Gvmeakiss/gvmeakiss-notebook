@@ -2,7 +2,7 @@
 
 一台 Windows 11 机器**被认为已经优化过**，逐项复核后拿到的事实，以及过程中我判错的地方。
 
-这不是一份教程，而是一份**审计记录** —— 每个结论都来自在这台机器上真实跑出来的回读结果，判错的也一并留下。与 [`windows-environment-setup.md`](./windows-environment-setup.md) 的关系是**互补**：那篇讲一台 Win10 非管理员机怎么从零配起来，这篇讲一台 Win11 管理员机上"优化"到底做没做成、以及怎么判断做没做成。
+这不是一份教程，而是一份**审计记录** —— 每个结论都来自在这台机器上真实跑出来的回读结果，判错的也一并留下。与 [`windows-environment-setup.md`](./01-env-setup-win10.md) 的关系是**互补**：那篇讲一台 Win10 非管理员机怎么从零配起来，这篇讲一台 Win11 管理员机上"优化"到底做没做成、以及怎么判断做没做成。
 
 - **环境**：Windows 11 Pro (build 26300) · **管理员账户** · PowerShell 7.6.7 · 单块 NVMe、无电池小型台式机
 - **审计方式**：**全程只读**（`reg query` / `sc query` / `Get-CimInstance` 回读），改动前先导出了 12 个注册表键的 `.reg` 快照、全部计划任务状态与电源方案
@@ -87,7 +87,7 @@
 
 ## 4. Windows 11 管理员机专属结论
 
-与 [`windows-environment-setup.md`](./windows-environment-setup.md)（Win10 **非管理员**）逐条互证。**结论：拿到管理员权限并没有解锁"脚本化改默认程序"这类能力，真正的差别在别处。**
+与 [`windows-environment-setup.md`](./01-env-setup-win10.md)（Win10 **非管理员**）逐条互证。**结论：拿到管理员权限并没有解锁"脚本化改默认程序"这类能力，真正的差别在别处。**
 
 ### 4.1 管理员权限**没有**改变的
 
@@ -219,7 +219,7 @@ Scoop 在技能里的角色是**手段**（保证工具装得上），不是目�
 - 需要**实时预览**时用已装的 VS Code（`Ctrl+Shift+V`），**不必为预览再装一个编辑器**
 - 卸载这类应用**必须连注册表残留一起清**（ProgID / `MuiCache` / AUMID），
   否则会留下"打开方式"里的幽灵项 —— 做法见
-  [Windows 10 那份记录 §5.13](./windows-environment-setup.md#513-卸载便携程序后关联会断)
+  [Windows 10 那份记录 §5.13](./01-env-setup-win10.md#513-卸载便携程序后关联会断)
 - 因此 `apps.json` 把该条目标为 `"optional": true`，**默认跳过**，要装才加 `-IncludeOptional`
 
 ---
@@ -339,7 +339,7 @@ pwsh -File skills/win-ai-gaming-setup/scripts/verify-env.ps1
 | 6 | git `core.longpaths` / 3 条死 PATH | ✅ 已修 |
 | 7 | 传递优化缓存 + 更新下载残留 | ✅ 已清（缓存目录实测为空） |
 | 8 | 计划任务 | ✅ 恢复 7 个；3 个确认本就不该动；其余 32 个为遥测类，保持禁用合理 |
-| 9 | **Markdown 编辑器选型** | ✅ **已定案：Notepad++**（原生、自带 Markdown 高亮、零插件）。试用过的 MarkText / VNote / Yank Note / Zettlr **全部卸载并清干净** —— 见 [§5.8](#58-markdown-编辑器实测选型试了-4-个最后选原生)；卸载时必须连残留一起清，做法见 [Windows 10 记录 §5.13](./windows-environment-setup.md#513-卸载便携程序后关联会断) |
+| 9 | **Markdown 编辑器选型** | ✅ **已定案：Notepad++**（原生、自带 Markdown 高亮、零插件）。试用过的 MarkText / VNote / Yank Note / Zettlr **全部卸载并清干净** —— 见 [§5.8](#58-markdown-编辑器实测选型试了-4-个最后选原生)；卸载时必须连残留一起清，做法见 [Windows 10 记录 §5.13](./01-env-setup-win10.md#513-卸载便携程序后关联会断) |
 | 10 | 鼠标加速 / USB 选择性暂停 / PCIe 链路电源 | 保留 —— 属操作手感偏好，无实测症状不动 |
 | 11 | 最小处理器状态 | 保留 80% —— 实测 10% 手感变肉，已回退 |
 | 12 | scoop | 不安装 —— 工具链已由 WinGet + 官方安装器建成，再加会造成同一工具两套安装互相抢 PATH |
