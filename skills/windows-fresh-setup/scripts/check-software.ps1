@@ -33,7 +33,11 @@ param(
     # Manifest for the "declared apps" readback section. Defaults to the one in the skill root.
     # If it is absent that section just says so; nothing else changes.
     [string]$Manifest = (Join-Path $PSScriptRoot '..\apps.json'),
-    [switch]$Json
+    [switch]$Json,
+    # -Strict turns the inventory into a gate: a missing manifest or a declared app that is
+    # not present exits non-zero. Without it the script stays a report (exit 0), which is
+    # what an interactive "what do I have installed?" run wants.
+    [switch]$Strict
 )
 
 $ErrorActionPreference = 'Continue'
@@ -283,3 +287,19 @@ else {
     Write-Output "`n===== inventory complete ====="
     Write-Output "portable: $($portable.Count)   scoop: $($scoopApps.Count)   registered: $($registered.Count)"
 }
+
+# ------------------------------------------------------------------- exit code
+# Report mode stays 0. -Strict fails on anything the manifest promised but did not find.
+# Before this the script always returned 0, so "declared apps 3/13 present" and a fully
+# healthy machine were indistinguishable to any caller.
+if ($Strict) {
+    $manifestOk = Test-Path -LiteralPath $Manifest
+    $strictProblems = @()
+    if (-not $manifestOk) { $strictProblems += "manifest not found: $Manifest" }
+    if (@($declaredMissing).Count -gt 0) { $strictProblems += "missing declared apps: " + ((@($declaredMissing) | ForEach-Object { $_.Name }) -join ', ') }
+    if ($strictProblems.Count -gt 0) {
+        if (-not $Json) { Write-Output ''; foreach ($sp in $strictProblems) { Write-Output "  FAIL  $sp" } }
+        exit 1
+    }
+}
+exit 0

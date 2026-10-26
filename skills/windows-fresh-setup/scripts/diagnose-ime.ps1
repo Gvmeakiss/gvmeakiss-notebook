@@ -63,11 +63,22 @@ try {
 Info "elevated: $isAdmin"
 
 # ------------------------------------------------------- 1. the service itself
-Head '1. TabletInputService (the usual culprit)'
+Head '1. Input service (TextInputManagementService / TabletInputService)'
+# Build 26xxx REPLACED TabletInputService with TextInputManagementService. Probing only the old
+# name reported "service missing entirely" on a healthy machine - a false alarm that would now
+# (correctly) fail the exit code. Probe newest first and report which name this build uses.
+$svcCandidates = @('TextInputManagementService', 'TabletInputService')
+$svc = $null
+$svcName = $svcCandidates[0]
+foreach ($cand in $svcCandidates) {
+    $svc = Get-CimInstance Win32_Service -Filter "Name='$cand'" -ErrorAction SilentlyContinue
+    if ($svc) { $svcName = $cand; break }
+}
+if ($svc -and $svcName -ne 'TabletInputService') { Info "this build uses $svcName (TabletInputService no longer exists here)" }
 # Read via CIM rather than parsing `sc qc` text: the state comes back as typed properties,
 # and it is the same source the snapshot uses, so comparisons stay consistent.
-$svc = Get-CimInstance Win32_Service -Filter "Name='TabletInputService'" -ErrorAction SilentlyContinue
 $startLabel = 'unknown'; $stateLabel = 'unknown'; $badService = $false; $serviceMissing = $false
+$script:ctfmonMissing = $false; $script:ifeoHijack = $false; $script:repairFailed = $false
 if ($svc) {
     $startLabel = "$($svc.StartMode)"
     $stateLabel = "$($svc.State)"
@@ -84,11 +95,11 @@ if ($svc) {
     # (Measured on a machine where the service had been removed: diagnosis contradicted
     # itself and the repair path was a no-op.)
     $serviceMissing = $true
-    Bad 'TabletInputService not found - the service is missing entirely, not merely stopped'
+    Bad 'no input service found (neither TextInputManagementService nor TabletInputService) - missing entirely, not merely stopped'
 }
 
 if ($badService) {
-    Bad 'TabletInputService is DISABLED - this alone explains a vanished IME'
+    Bad 'the input service is DISABLED - this alone explains a vanished IME'
     Write-Output '         On Windows 10 this service also hosts the input-method language bar'
     Write-Output '         and the input indicator, not just the touch keyboard.'
 } elseif ($startLabel -eq 'Manual' -or $startLabel -eq 'Auto') {
@@ -102,7 +113,7 @@ Head '2. input-method processes'
 $ctfmon = Get-Process ctfmon -ErrorAction SilentlyContinue
 $tih    = Get-Process TextInputHost -ErrorAction SilentlyContinue
 if ($ctfmon) { Ok "ctfmon running (pid $($ctfmon.Id), started $($ctfmon.StartTime))" }
-else { Bad 'ctfmon is NOT running' }
+else { Bad 'ctfmon is NOT running'; $script:ctfmonMissing = $true }
 if ($tih) { Ok "TextInputHost running (pid $($tih.Id))" }
 else { Warn 'TextInputHost is not running (may be normal before first input)' }
 
@@ -198,7 +209,7 @@ else { Ok 'DisableThreadInputManager not set' }
 # ------------------------------------------------------- 5. known confounders
 Head '5. known confounders (checked so you can rule them out)'
 $ifeo = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\ctfmon.exe'
-if (Test-Path $ifeo) { Bad "IFEO hijack key exists for ctfmon.exe - inspect: $ifeo" }
+if (Test-Path $ifeo) { Bad "IFEO hijack key exists for ctfmon.exe - inspect: $ifeo"; $script:ifeoHijack = $true }
 else { Ok 'no IFEO hijack for ctfmon.exe' }
 
 $priv = Get-ItemProperty 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy' -ErrorAction SilentlyContinue
@@ -282,5 +293,8 @@ if (-not $Repair) { Write-Output 'Report only. Use -Repair (elevated) if the ver
 # text. Both failure modes count - a service that is missing is at least as broken as one
 # that is disabled. Before this, the script always returned 0, so "diagnose says FAIL" and
 # "diagnose says healthy" were indistinguishable to any caller.
-if ($serviceMissing -or $badService) { exit 1 }
+if ($serviceMissing -or $badService -or $script:ctfmonMissing -or $script:ifeoHijack -or $script:repairFailed) {
+    Write-Output 'exit 1: at least one input-stack fault was diagnosed (service / ctfmon / IFEO / repair)'
+    exit 1
+}
 exit 0

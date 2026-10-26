@@ -43,10 +43,16 @@ $env:PATH = (@(
 $root = Join-Path $env:TEMP ("dsh-verify-" + [Guid]::NewGuid().ToString('N').Substring(0, 8))
 New-Item -ItemType Directory -Force -Path $root | Out-Null
 
-function Record { param([string]$Lang, [string]$Check, [bool]$Pass, [string]$Detail, [switch]$Optional)
-    $tag = if ($Pass) { 'PASS' } elseif ($Optional) { 'INFO' } else { 'FAIL' }
+# Pass is deliberately untyped: 'SKIP' means "this check could not be exercised here".
+# SKIP is NOT a pass: it is printed as SKIP and counted separately, because a check that never
+# ran must never be reported as proof that the toolchain works.
+function Record {
+    param([string]$Lang, [string]$Check, $Pass, [string]$Detail, [switch]$Optional)
+    $isSkip = ($Pass -is [string]) -and ($Pass -eq 'SKIP')
+    $passBool = (-not $isSkip) -and [bool]$Pass
+    $tag = if ($isSkip) { 'SKIP' } elseif ($passBool) { 'PASS' } elseif ($Optional) { 'INFO' } else { 'FAIL' }
     [void]$results.Add([pscustomobject]@{
-        Language = $Lang; Check = $Check; Pass = $Pass
+        Language = $Lang; Check = $Check; Pass = $passBool; Skipped = $isSkip
         Optional = [bool]$Optional; Detail = $Detail
     })
     Write-Output ("  [{0}] {1,-9} {2,-26} {3}" -f $tag, $Lang, $Check, $Detail)
@@ -212,8 +218,12 @@ public class Hello {
             $run = & java -cp . Hello 2>&1 | Select-Object -Last 1
             Record 'java' 'run' ($LASTEXITCODE -eq 0) "$run"
             & jar --create --file hello.jar --main-class Hello Hello.class 2>&1 | Out-Null
-            $jr = if (Test-Path 'hello.jar') { & java -jar hello.jar 2>&1 | Select-Object -Last 1 } else { 'jar not created' }
-            Record 'java' 'jar' (Test-Path 'hello.jar') "$jr"
+            if (Test-Path 'hello.jar') {
+                $jr = & java -jar hello.jar 2>&1 | Select-Object -Last 1
+                # Running the jar is the check; the file merely existing proves packaging only.
+                Record 'java' 'jar' ($LASTEXITCODE -eq 0) "$jr"
+            }
+            else { Record 'java' 'jar' $false 'jar not created by jar --create' }
         }
         Pop-Location
     }
@@ -272,7 +282,7 @@ int main() {
         Push-Location $proj
         if ($hasGpp) {
             $v = & g++ --version 2>&1 | Select-Object -First 1
-            Record 'cpp' 'g++ version' $true "$v"
+            Record 'cpp' 'g++ version' (($LASTEXITCODE -eq 0) -and -not [string]::IsNullOrWhiteSpace($v)) "$v"
             & g++ -std=c++20 -O1 main.cpp -o main.exe 2>&1 | Out-Null
             $compiled = ($LASTEXITCODE -eq 0)
             Record 'cpp' 'compile' $compiled ''
@@ -281,11 +291,14 @@ int main() {
                 Record 'cpp' 'run' ($LASTEXITCODE -eq 0) "$run"
             }
         } else {
-            Record 'cpp' 'compiler' $true 'cl (MSVC) only - compile step not exercised'
+            # A missing g++ does not mean the C++ toolchain works: it means this check could not
+            # run. Recorded as SKIP so it can never be read as proof (it used to be a hard $true).
+            Record 'cpp' 'compiler' 'SKIP' 'no g++ found (MSVC-only machine): compile/run not exercised'
         }
         # CMake is only meaningful if a generator + compiler pair works
         if (Have 'cmake') {
-            Record 'cpp' 'cmake version' $true (& cmake --version 2>&1 | Select-Object -First 1)
+            $cv = & cmake --version 2>&1 | Select-Object -First 1
+            Record 'cpp' 'cmake version' (($LASTEXITCODE -eq 0) -and -not [string]::IsNullOrWhiteSpace($cv)) "$cv"
             if ($hasGpp) {
                 @'
 cmake_minimum_required(VERSION 3.20)
@@ -302,8 +315,9 @@ add_executable(verify main.cpp)
                     Record 'cpp' 'cmake build' $built ''
                     if ($built) {
                         $run = & (Join-Path $proj 'build\verify.exe') 2>&1 | Select-Object -Last 1
-                        Record 'cpp' 'cmake run' $true "$run"
+                        Record 'cpp' 'cmake run' ($LASTEXITCODE -eq 0) "$run"
                     }
+                    else { Record 'cpp' 'cmake run' 'SKIP' 'build produced no verify.exe' }
                 }
             }
         }
@@ -812,14 +826,21 @@ Record 'tweaks' 'MMCSS driver running' $mmcssUp $(
 # ------------------------------------------------------------------ summary
 Write-Output "`n===== summary ====="
 $grouped = $results | Group-Object Language
-$failed = @($results | Where-Object { -not $_.Pass -and -not $_.Optional })
-$informational = @($results | Where-Object { -not $_.Pass -and $_.Optional })
+$failed = @($results | Where-Object { -not $_.Pass -and -not $_.Optional -and -not $_.Skipped })
+$informational = @($results | Where-Object { -not $_.Pass -and $_.Optional -and -not $_.Skipped })
+$skippedChecks = @($results | Where-Object { $_.Skipped })
 foreach ($g in $grouped) {
-    $bad = @($g.Group | Where-Object { -not $_.Pass -and -not $_.Optional }).Count
+    $bad = @($g.Group | Where-Object { -not $_.Pass -and -not $_.Optional -and -not $_.Skipped }).Count
+    $sk = @($g.Group | Where-Object { $_.Skipped }).Count
     $tag = if ($bad -eq 0) { 'OK  ' } else { 'FAIL' }
-    Write-Output ("  [{0}] {1,-8} {2}/{3} checks passed" -f $tag, $g.Name, ($g.Count - $bad), $g.Count)
+    $extra = if ($sk -gt 0) { " ($sk skipped)" } else { '' }
+    Write-Output ("  [{0}] {1,-8} {2}/{3} checks passed{4}" -f $tag, $g.Name, ($g.Count - $bad - $sk), ($g.Count - $sk), $extra)
 }
-Write-Output ("`ntotal: {0} checks, {1} failed, {2} informational" -f $results.Count, $failed.Count, $informational.Count)
+Write-Output ("`ntotal: {0} checks, {1} failed, {2} informational, {3} skipped" -f $results.Count, $failed.Count, $informational.Count, $skippedChecks.Count)
+if ($skippedChecks.Count -gt 0) {
+    Write-Output 'skipped (not exercised on this machine - NOT a pass):'
+    $skippedChecks | ForEach-Object { "  - $($_.Language)/$($_.Check): $($_.Detail)" }
+}
 if ($informational.Count -gt 0) {
     Write-Output 'informational (not a toolchain defect):'
     $informational | ForEach-Object { "  - $($_.Language)/$($_.Check): $($_.Detail)" }
