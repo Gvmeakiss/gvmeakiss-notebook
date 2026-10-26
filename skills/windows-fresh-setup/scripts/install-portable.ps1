@@ -80,22 +80,8 @@ function Bad  { param([string]$M) Write-Output "    FAIL    $M" }
 #   verifyPath - absolute path (winget entries); '%VAR%' is expanded
 #   exe        - path relative to the install root (portable entries)
 # Returns the resolved path, or $null when nothing was found.
-# ------------------------------------------------------------------- path safety
-# Manifest fields become filesystem paths, and a manifest is just JSON: `"name": "..\\..\\Windows"`
-# would install OUTSIDE the destination root. Every join goes through this check, which rejects
-# absolute paths, drive-qualified names and `..` by comparing full paths against the root.
-function Get-SafeChildPath {
-    param([string]$Root, [string]$Relative, [string]$What)
-    $rootFull = [IO.Path]::GetFullPath($Root)
-    try { $candidate = [IO.Path]::GetFullPath((Join-Path $rootFull $Relative)) }
-    catch { throw "$What is not a valid relative path: '$Relative'" }
-    $rootWithSep = $rootFull.TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
-    if (-not $candidate.StartsWith($rootWithSep, [StringComparison]::OrdinalIgnoreCase)) {
-        throw "$What escapes the root: '$Relative' resolves to '$candidate' (root: '$rootFull')"
-    }
-    return $candidate
-}
-
+# Path containment (Get-SafeChildPath) lives in lib/paths.ps1.
+. (Join-Path $PSScriptRoot 'lib\paths.ps1')
 function Resolve-InstalledPath {
     param($Entry, [string]$Root)
     if ($Entry.verifyPath) {

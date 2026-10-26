@@ -14,8 +14,14 @@ skills/windows-fresh-setup/
 ├── apps.json               ← 软件清单（13 项：来源 / 校验 / 关联）
 ├── presets/                ← 预设（TrafficMonitor 配置）
 ├── scripts/                ← 可执行层：setup.ps1 + 17 个可单跑的工具
-│   └── lib/                ← 模块：tune-core（纯函数+自测）、tune-writes（写入清单单一数据源）、
-│                              undo（逐项撤销）、phases/（七个阶段的实现，按序 dot-source）
+│   └── lib/                ← 模块（setup.ps1 / verify-env.ps1 只留入口）
+│       ├── tune-core.ps1       纯函数（DWORD 渲染、build 门控），有自测
+│       ├── tune-writes.ps1     45 条写入清单：单一数据源
+│       ├── undo.ps1            逐项撤销的数据结构与序列化
+│       ├── process.ps1         子进程调用 + -WhatIf 转发 + 只读白名单
+│       ├── paths.ps1           路径包含检查（拒绝绝对路径与 ..）
+│       ├── phases/             1-check … 7-verify，按序 dot-source
+│       └── verify/             验收套件的 13 个分组（python … tune 生存性）
 ├── docs/                   ← 原理层：按配置顺序编号的四份正文
 │   ├── 01-baseline.md          起点判定与环境事实
 │   ├── 02-decisions.md         哪些改动值得做（证据 → 决定表）

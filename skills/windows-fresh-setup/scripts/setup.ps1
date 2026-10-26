@@ -197,47 +197,8 @@ function Record { param([string]$Name, [bool]$Ok, [string]$Detail = '')
 # silently drops every argument passed to the child script.
 # A child script that declares SupportsShouldProcess accepts -WhatIf; one that does not
 # rejects it with a parameter-binding error, so the flag cannot be forwarded blindly.
-$script:whatIfSupport = @{}
-function Test-ChildSupportsWhatIf {
-    param([string]$Path)
-    if ($script:whatIfSupport.ContainsKey($Path)) { return $script:whatIfSupport[$Path] }
-    $ok = $false
-    try { $ok = ((Get-Content -LiteralPath $Path -Raw -ErrorAction Stop) -match 'SupportsShouldProcess') } catch { }
-    $script:whatIfSupport[$Path] = $ok
-    return $ok
-}
-
-function Invoke-Step { param([string]$File, [string[]]$Arguments, [string]$What)
-    $p = Join-Path $here $File
-    if (-not (Test-Path $p)) { Bad "$File not found"; return $false }
-    Step $What
-    # Forward -WhatIf to the child, otherwise a dry run of setup.ps1 is only dry for the
-    # writes that happen in THIS script. Measured before this fix: all 11 Invoke-Step call
-    # sites passed no -WhatIf, so `setup.ps1 -Phase dev -WhatIf` really installed toolchains,
-    # `-Phase apps -WhatIf` really downloaded and installed software, and `-Phase link -WhatIf`
-    # really wrote association registrations - while the banner said "nothing will be changed".
-    $callArgs = @($Arguments)
-    if ($WhatIfPreference -and (Test-ChildSupportsWhatIf $p)) { $callArgs += '-WhatIf' }
-    elseif ($WhatIfPreference) {
-        # The child does not accept -WhatIf. Two very different cases hide here:
-        #   * a read-only probe (audit-env / check-software / diagnose-ime / verify-env /
-        #     compare-services) - running it is safe and makes the dry run informative;
-        #   * a writer (install-portable / setup-langs / fix-env / snapshot-services /
-        #     set-app-associations / clean-orphan-associations) - running it would perform
-        #     the very work the dry run is supposed to preview. Measured: -Phase tune -WhatIf
-        #     really wrote services-snapshot.csv and tasks-snapshot.csv into the snapshot
-        #     folder, because snapshot-services.ps1 has no -WhatIf parameter.
-        # Read-only children are allow-listed by name; everything else is skipped, not run.
-        $readOnlyChildren = @('audit-env.ps1', 'check-software.ps1', 'diagnose-ime.ps1', 'verify-env.ps1', 'compare-services.ps1')
-        if ($readOnlyChildren -notcontains $File) {
-            Write-Host ("     would run {0} {1} (skipped: this child has no -WhatIf support)" -f $File, ($Arguments -join ' ')) -ForegroundColor Cyan
-            return $true
-        }
-    }
-    $out = & $pwshExe -NoProfile -File $p @callArgs 2>&1
-    $out | ForEach-Object { Write-Host "       $_" -ForegroundColor DarkGray }
-    return ($LASTEXITCODE -eq 0)
-}
+# Sub-process helpers (Test-ChildSupportsWhatIf / Invoke-Step) live in lib/process.ps1.
+. (Join-Path $here 'lib\process.ps1')
 # scoop list writes its table through the host stream, so it cannot be captured reliably.
 # Ask the filesystem instead: an installed app has scoop\apps\<name>\current.
 function Test-ScoopApp { param([string]$Name) Test-Path (Join-Path $env:USERPROFILE "scoop\apps\$Name\current") }

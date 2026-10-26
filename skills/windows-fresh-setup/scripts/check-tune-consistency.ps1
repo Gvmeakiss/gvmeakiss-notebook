@@ -119,7 +119,19 @@ foreach ($h in (Get-AssignedHashtables (Join-Path $PSScriptRoot 'lib/tune-writes
 }
 
 $checks = @()
-foreach ($h in (Get-AssignedHashtables (Join-Path $PSScriptRoot 'verify-env.ps1') '$tweaks' @('Check', 'Path', 'Name'))) {
+# verify-env.ps1 is only the entry point now: each section lives in lib/verify/*.ps1. The $tweaks
+# table is in 13-tune-tweaks-survival.ps1, so the definition is searched across the whole suite -
+# otherwise this checker silently reports every write as unchecked.
+$verifySources = @(Join-Path $PSScriptRoot 'verify-env.ps1') +
+    @(Get-ChildItem (Join-Path $PSScriptRoot 'lib/verify') -Filter '*.ps1' -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName)
+$verifyFile = $null
+foreach ($candidate in $verifySources) {
+    if (-not (Test-Path -LiteralPath $candidate)) { continue }
+    $rawText = Get-Content -LiteralPath $candidate -Raw -ErrorAction SilentlyContinue
+    if ($rawText -match '(?m)^\s*\$tweaks\s*=') { $verifyFile = $candidate; break }
+}
+if (-not $verifyFile) { throw 'could not find the $tweaks table in verify-env.ps1 or lib/verify/*.ps1' }
+foreach ($h in (Get-AssignedHashtables $verifyFile '$tweaks' @('Check', 'Path', 'Name'))) {
     $map = @{}
     foreach ($kv in $h.KeyValuePairs) { $map[$kv.Item1.Extent.Text] = $kv.Item2 }
     $checks += [pscustomobject]@{
