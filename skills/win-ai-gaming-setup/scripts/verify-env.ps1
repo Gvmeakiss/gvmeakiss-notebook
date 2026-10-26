@@ -366,6 +366,15 @@ else {
 }
 Record 'system' 'pagefile' ($pfManaged -or ($pfSetting.Count -gt 0)) $pfDetail
 
+# Desktop integrity label. A Low mandatory-integrity label (typically left behind by a
+# sandbox or agent tooling that confined the workspace) makes the shell refuse to resolve
+# shortcut target icons, so every .lnk under the Desktop shows the generic document icon.
+# Nothing about the icon file is wrong in that state, which is why icon-cache rebuilds and
+# IconLocation edits appear to do nothing. See windows-tuning/reference/pitfalls.md section 6.
+$deskIl = ''
+try { $deskIl = (& icacls.exe "$env:USERPROFILE\Desktop" 2>&1 | Out-String) } catch { }
+$deskLow = $deskIl -match 'Low Mandatory Level'
+Record 'system' 'desktop integrity level' (-not $deskLow) $(if ($deskLow) { 'Low - shell will show generic icons for .lnk files; fix: icacls "%USERPROFILE%\Desktop" /setintegritylevel (OI)(CI)M /t' } else { 'Medium' })
 $startupLeftovers = New-Object System.Collections.Generic.List[string]
 foreach ($hive in @('Registry::HKEY_USERS\S-1-5-19\SOFTWARE\Microsoft\Windows\CurrentVersion\Run',
                     'Registry::HKEY_USERS\S-1-5-20\SOFTWARE\Microsoft\Windows\CurrentVersion\Run')) {

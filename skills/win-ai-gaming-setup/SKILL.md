@@ -38,7 +38,7 @@ agent_created: true
 | 2 | 预演 | `setup.ps1 -Phase <目标> -WhatIf` | 只打印"将会做什么"，**无任何真实写入** |
 | 3 | 干跑 | `setup.ps1 -Phase <目标>` | 退出码 0，且每个软件报 `verified: <真实路径>` |
 | 4 | 重启 | 交给用户 | 重启后**新开终端** |
-| 5 | 验收 | `verify-env.ps1` | 97 项 / 0 失败 |
+| 5 | 验收 | `verify-env.ps1` | 98 项 / 0 失败 |
 | 6 | 归因 | 读输出 | 每个 FAIL 归到「文档错 / 代码错 / 环境差」之一 |
 
 **五条硬规则**
@@ -56,7 +56,7 @@ pwsh -File scripts/check-script-hygiene.ps1        # 1 体检
 pwsh -File scripts/setup.ps1 -Phase all -WhatIf     # 2 预演
 pwsh -File scripts/setup.ps1 -Phase all             # 3 干跑
 # 4 重启，新开终端
-pwsh -File scripts/verify-env.ps1                   # 5 验收（97 项）
+pwsh -File scripts/verify-env.ps1                   # 5 验收（98 项）
 ```
 
 **阶段 → 脚本映射**（只跑某一段时查这里）
@@ -69,7 +69,7 @@ pwsh -File scripts/verify-env.ps1                   # 5 验收（97 项）
 | 故障设备清单 / 装驱动 | `setup.ps1 -Phase drivers`（加 `-InstallDrivers` 才装） |
 | 系统优化（先快照） | `setup.ps1 -Phase tune` |
 | 文件关联（只写 HKCU） | `setup.ps1 -Phase link -RegisterAssociations` |
-| 97 项验收 | `setup.ps1 -Phase verify` 或 `verify-env.ps1` |
+| 98 项验收 | `setup.ps1 -Phase verify` 或 `verify-env.ps1` |
 | 回滚 | `compare-services.ps1 -Snapshot <csv> -Restore` |
 | 输入法坏了 | `diagnose-ime.ps1 -Repair`（管理员，之后重启） |
 | 设备故障码 | `reset-failed-devices.ps1 -Reset`（管理员） |
@@ -340,6 +340,7 @@ pwsh -File scripts/snapshot-services.ps1 -OutDir C:\backup\before-tweak
 | **注册表批量读：按「键」读，不要按「值」读** | 30 个值的实测：`Get-ItemProperty -Name X ×30` = 154 ms，而**每个键读一次再在内存里查值** = 4 ms（约 35×）。反面：`reg query` 每次一个进程，×30 要 371 ms |
 | **目录体积统计：`Get-ChildItem -Recurse` 慢，但手写 .NET 遍历会算错** | `~\scoop`（8 GB）实测：`Get-ChildItem -Recurse -File \| Measure-Object` = 10.3 s；换成 `DirectoryInfo.EnumerateFiles` 手工栈 = 3.1 s（3.3×）。**但必须先跳过 reparse point**——`scoop\apps\<app>\current` 是 junction，跟随它会把每个 app 重复计一遍（实测 17901 MB vs 真实 8088 MB，**"更快"只是因为算错了**）。`Get-ChildItem` 默认跳过，所以朴素版对比才显得慢 |
 
+| **桌面快捷方式图标是"空白文档 + 箭头"，换图标/重建缓存全无效** | 目录带 **Low 完整性标签**（沙箱或 agent 工具常给工作区祖先目录加），子项继承。低完整性 `.lnk` 被 Shell 当成不可信内容，**直接拒绝解析目标图标**。判据：`icacls <目录>` 里出现 `Mandatory Label\Low Mandatory Level`；单独 `icacls <x>.lnk /setintegritylevel M` 后图标立刻恢复。根治：`icacls <目录> /setintegritylevel (OI)(CI)M` + `/t` 递归。**别先去删 iconcache**——缓存不是原因 |
 ## 验收
 
 ```powershell
