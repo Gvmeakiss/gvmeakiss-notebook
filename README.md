@@ -72,7 +72,7 @@
 |---|---|---|---|
 | **shadowrocket** | 分流配置 | Mac / iPhone 通用分流规则：国内外分流、去广告、长连接优化 | [目录](./shadowrocket) · [说明](./shadowrocket/README.md) · [使用指南](./shadowrocket/使用指南.md) |
 | **merlin** | 配置与工具 | 梅林 fancyss 分流名单、节点入口绕过生成工具 | [目录](./merlin) · [说明](./merlin/README.md) · [使用指南](./merlin/使用指南.md) |
-| **Windows 新装优化** | 项目 + 工具 | **一个项目两层**：能跑的脚本（七阶段 14 个工具）+ 为什么这么改的判据（起点 / 决策 / 43 个调优值 / 13 项软件 / 参数 / 陷阱与判定标准），按游戏可回退优化（当前 CS2），对齐 **98 项验收** | [项目入口](./skills/windows-fresh-setup/README.md) · [游戏优化](./skills/windows-fresh-setup/games/README.md) |
+| **Windows 新装优化** | 项目 + 工具 | **一个项目两层**：能跑的脚本（七阶段 16 个工具）+ 为什么这么改的判据（起点 / 决策 / 43 个调优值 / 13 项软件 / 参数 / 陷阱与判定标准），按游戏可回退优化（当前 CS2），对齐 **98 项验收** | [项目入口](./skills/windows-fresh-setup/README.md) · [游戏优化](./skills/windows-fresh-setup/games/README.md) |
 | **内网 NAS 稳定性记录** | 实践记录 | 把「NAS 不稳」定位到「睡眠唤醒后没有重连」的完整链条：事件时间对齐法、事件触发计划任务、映射的会话/提权隔离、先算链路天花板 | [阅读](./docs/windows-nas-smb-stability.md) |
 | **Skill 自审方法论** | 方法 | 如何把「文档承诺」变成「可验证事实」：5 类真实缺陷、性能优化的等价性证明、环境缺陷与代码缺陷的区分 | [阅读](./docs/skill-self-audit.md) |
 

@@ -87,3 +87,69 @@ jobs:
 
       - name: 构建（静态导出）
         run: npm run build
+
+  # windows-fresh-setup is Windows-only, so its checks cannot run in the ubuntu jobs above.
+  # This job runs the parts that must hold on a clean Windows runner:
+  #   * both PowerShell hosts parse every script (5.1 is what scheduled tasks use),
+  #   * every script stays ASCII-only (5.1 decodes BOM-less files as ANSI),
+  #   * the numbers quoted in the docs still match the files,
+  #   * the bootstrap dry run exits 0 without invoking setup.ps1 (the P0 regression).
+  windows-fresh-setup:
+    name: windows-fresh-setup static checks
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show environment
+        shell: pwsh
+        run: |
+          $PSVersionTable.PSVersion.ToString()
+          git --version
+
+      - name: Script hygiene (dual-host parse + ASCII-only)
+        shell: pwsh
+        run: ./skills/windows-fresh-setup/scripts/check-script-hygiene.ps1
+
+      - name: Pure-function self test
+        shell: pwsh
+        run: ./skills/windows-fresh-setup/scripts/test-tune-core.ps1
+
+      - name: Documented numbers match the files
+        shell: pwsh
+        run: ./skills/windows-fresh-setup/scripts/check-counts.ps1
+
+      - name: Repository links and anchors
+        shell: pwsh
+        run: ./scripts/check-links.ps1
+
+      - name: Bootstrap dry run must not hand over to setup.ps1
+        shell: pwsh
+        run: |
+          $out = & ./skills/windows-fresh-setup/scripts/bootstrap.ps1 -DryRun 2>&1 | Out-String
+          if ($LASTEXITCODE -ne 0) { throw "bootstrap -DryRun exited $LASTEXITCODE" }
+          if ($out -notmatch 'dry run: nothing was downloaded') { throw "dry-run marker missing from output" }
+          if ($out -match '--- check|--- dev|--- tune') { throw "dry run started a setup phase" }
+          Write-Host 'bootstrap -DryRun: exit 0, no setup phase ran'
+
+      - name: PowerShell 5.1 parse of the entry points
+        shell: powershell
+        run: |
+          $files = @(
+            'skills/windows-fresh-setup/scripts/setup.ps1',
+            'skills/windows-fresh-setup/scripts/verify-env.ps1',
+            'skills/windows-fresh-setup/scripts/bootstrap.ps1',
+            'skills/windows-fresh-setup/scripts/check-counts.ps1',
+            'skills/windows-fresh-setup/scripts/install-portable.ps1',
+            'skills/windows-fresh-setup/scripts/clean-orphan-associations.ps1',
+            'skills/windows-fresh-setup/scripts/diagnose-ime.ps1',
+            'skills/windows-fresh-setup/scripts/setup-langs.ps1'
+          )
+          $bad = 0
+          foreach ($f in $files) {
+            $tokens = $null; $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $f), [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count -gt 0) { Write-Host "FAIL $f : $($errors[0].Message)"; $bad++ }
+          }
+          if ($bad -gt 0) { exit 1 }
+          Write-Host "5.1 parse ok: $($files.Count) file(s)"

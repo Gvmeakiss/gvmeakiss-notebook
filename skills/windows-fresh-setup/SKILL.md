@@ -65,7 +65,7 @@ pwsh -File scripts/verify-env.ps1                   # 5 验收（98 项）
 |---|---|
 | 只看缺什么 | `setup.ps1 -Phase check` |
 | 工具链 + 编辑器 + 镜像 | `setup.ps1 -Phase dev` |
-| 7 个应用（含 SHA256 校验） | `setup.ps1 -Phase apps` |
+| 13 项软件（含 SHA256 校验） | `setup.ps1 -Phase apps` |
 | 故障设备清单 / 装驱动 | `setup.ps1 -Phase drivers`（加 `-InstallDrivers` 才装） |
 | 系统优化（先快照） | `setup.ps1 -Phase tune` |
 | 文件关联（只写 HKCU） | `setup.ps1 -Phase link -RegisterAssociations` |
@@ -203,7 +203,7 @@ pwsh -File scripts/setup.ps1 -Phase tune -WhatIf
 每个阶段做什么、对应哪个脚本，见上文「执行协议」的映射表；
 需要管理员的是 `drivers` 与 `tune`（`check` / `dev` 部分需要）。
 
-其余 13 个脚本都能单独调用，参数见 `README.md` 的「工具箱」与「参数」两节。
+其余 16 个工具脚本都能单独调用（`scripts/` 下除入口 `setup.ps1` 之外的全部），参数见 `README.md` 的「工具箱」与「参数」两节。
 改任何 `.ps1` 之前先跑 `check-script-hygiene.ps1`。
 
 ## 三条纪律（违反就会被坑）
@@ -325,7 +325,7 @@ pwsh -File scripts/snapshot-services.ps1 -OutDir C:\backup\before-tweak
 | **`-WhatIf` 遇到前置依赖缺失就硬退出 —— 于是新机器上根本没法预览** | `setup-langs.ps1` 的 `Step '0. Preconditions'` 在 scoop 缺失时 `exit 1`，而 **`setup.ps1 -Phase check` 才是装 scoop 的那一步**。结果：一台干净机器上 `setup-langs.ps1 -WhatIf` 在打印任何计划动作**之前**就退出了 —— dry-run 恰恰是为新机器准备的。**判据：预览模式必须能走完全程并列出"将会做什么"，即使依赖尚未就位**（真跑时该失败仍然失败）。同理，读注册表/服务状态之外的**计划动作**要用 `would ...` 明确写出来，不能因为前置缺失就整段跳过 |
 | **`ForEach-Object -Parallel` 的两个硬限制** | ① **`$using:` 只能引用变量本身** —— 不接受索引、不接受表达式：`$using:map[$k]` 和 `$using:f($k)` 都报 `Using 表达式中不允许使用表达式`。正确写法是把**整张表**带进去（`$m = $using:map`）再在块内索引。② **打印顺序会随线程完成顺序漂移**，所以 `Write-Output` 不能在并行块里直接调 —— 要先把结果收成对象数组，循环**结束后**再按固定顺序输出，否则报告无法 diff。另外 `-Parallel` 是 PS7 独有，5.1 必须保留顺序分支（实测两条路径输出一致：20 项探测 2.11s → 0.61s，逐条差异 0） |
 | **`| Out-Null` 加上"不参与 Record"，等于把失败静默吞掉** | `setup.ps1` 的 verify 阶段曾这样写：`Invoke-Step 'compare-services.ps1' @(...) 'service baseline drift' \| Out-Null`，而 `Record 'verify' ($a -and $b -and $c)` **没有包含它**。叠加后果：`compare-services.ps1` 对**缺失的快照**会 `exit 1`（实测 `FAIL snapshot not found`），但那个失败既不出现在阶段结果表、也不影响退出码 —— 于是**单独跑 `verify` 的机器（还没跑过 `tune`，因而没有快照）会静默丢失整项检查，而用户看到的是 `verify PASS`**。**判据：凡是"结果会决定成败"的调用，返回值必须同时进入 ① 可见输出 ② 退出码；`Out-Null` 只能用于真正无关紧要的调用。** 另外，缺前置数据时要**显式跳过并说明**，不要走进一个必然失败的调用 |
-| **机器代码完整性策略会让「5.1 回退路径」整体失效** | 实测一台机器：`Windows PowerShell 5.1` **拒绝执行该目录全部 14 个脚本**（`cannot be loaded ... not digitally signed`），`pwsh` (PS7) 则 14/14 正常。受控实验定位到原因是**路径 + WDAC**：Desktop 下任意子目录都被拒，用户 TEMP / 用户主目录正常；该机有 8 个 WDAC 策略文件且 `CodeIntegrityPolicyEnforcementStatus = 2`（强制）。**这不是脚本缺陷**（脚本无 Zone 标记、无签名要求），但**推论很重要**：`setup.ps1` 在没有 `pwsh` 时会静默降级到 5.1，在强策略机器上那一刻**全部子脚本都会失败**，而 `check` 阶段可能已经报过成功。**所以"装 PowerShell 7"不是体验优化，而是硬前提** |
+| **机器代码完整性策略会让「5.1 回退路径」整体失效** | 实测一台机器：`Windows PowerShell 5.1` **拒绝执行该目录全部脚本**（`cannot be loaded ... not digitally signed`），`pwsh` (PS7) 则 14/14 正常。受控实验定位到原因是**路径 + WDAC**：Desktop 下任意子目录都被拒，用户 TEMP / 用户主目录正常；该机有 8 个 WDAC 策略文件且 `CodeIntegrityPolicyEnforcementStatus = 2`（强制）。**这不是脚本缺陷**（脚本无 Zone 标记、无签名要求），但**推论很重要**：`setup.ps1` 在没有 `pwsh` 时会静默降级到 5.1，在强策略机器上那一刻**全部子脚本都会失败**，而 `check` 阶段可能已经报过成功。**所以"装 PowerShell 7"不是体验优化，而是硬前提** |
 | **脚本只打印 `failures (N)` 却不设退出码 —— 调用方读到的永远是成功** | `setup-langs.ps1` 原本**没有任何 `exit` 语句**，所以 `$LASTEXITCODE` 不反映结果。而 `setup.ps1` 的 `Invoke-Step` **正是用 `$LASTEXITCODE -eq 0` 判定这一步成败** ⇒ 一个装挂了的工具链会被判为通过。**判据：凡是被 `Invoke-Step` 调用的脚本，结尾必须显式 `exit 0/exit 1`** |
 | **`reg query /s` 的行解析会把非默认值当成默认值** | 解析 `...\shell\open\command` 时用 `'REG_SZ\s+(.*)$'` **不检查值名**，于是 UWP 的 `DelegateExecute REG_SZ {GUID}` 被读成了命令行（本机 268 条里 85 条是这种形状）。**改用 .NET `RegistryKey.GetValue('')` 读真正的默认值**：顺带把 4.1 秒降到 0.4 秒。**两个伴生陷阱**：① 该 hive 里 **`Shell` 与 `shell` 大小写混用**，大小写敏感的比较会静默丢条目（`-match` 默认不敏感才没暴露）；② 只看一层（`Classes\<ProgID>\shell\open\command`）会漏掉全部 `Classes\Applications\<exe>\...`（本机 90 条）—— 那看起来是 138× 提速，实际只是**算少了** |
 | **写代码的 Agent 自己会违反 ASCII-only 纪律 —— 而且是在刚读完这条纪律之后** | **实测已被触发 4 次**：① `verify-env.ps1` 自己（27 个非 ASCII 字节）② 一个给计划任务写的 wrapper ③ 给 `setup-langs.ps1` / `install-portable.ps1` 补注释时写中文章节名 ④ 给 `install-portable.ps1` 补注释时写了 `条件安装` 四个字（4×3=**12 字节**，与检查器报出的数字完全吻合）。**四次的共同点：都是在"写注释"时发生**，而且都是在**刚讨论过这条纪律之后**。**结论不是"要更小心"，而是：把检查放进流程** —— 改完该目录任何 `.ps1`，先跑 `check-script-hygiene.ps1` 再提交，它会把这类错误在提交前挡下来（本次四次里有三次就是被它挡下的）。**混写风险最高的场景**：文档是中文、脚本是 ASCII-only，**脚本注释里引用文档时只写章节编号，不要抄中文标题**；要表达中文概念就改用英文描述 |

@@ -29,7 +29,7 @@ skills/<name>/
   前端约定、数据管理、生命周期控制、接口清单与「依照本规范设计轻应用的标准流程」。
   顶部有「读者路由」表：判断适用性读 §0–§1，要照做读 §7，AI 动手先读 §6 再读 §7。
 - `skills/windows-fresh-setup/`：**Windows 新装优化**（唯一项目，入口 `README.md`）—— 可执行层与原理层合在一处，编号 = 实际配置顺序：
-  `scripts/setup.ps1` 七阶段（check/dev/apps/drivers/tune/link/verify）+ 15 个可单跑工具 ·
+  `scripts/setup.ps1` 七阶段（check/dev/apps/drivers/tune/link/verify）+ 16 个可单跑工具 ·
   `docs/01-baseline.md` 起点判定 · `docs/02-decisions.md` 做/不做决策 ·
   `docs/03-system-tweaks.md` 43 个调优值（正确值 / 判据 / 怎么验）· `docs/04-dev-and-apps.md` 开发环境与 13 项软件 ·
   `docs/05-params.md` 参数速查 · `docs/reference/{pitfalls,audit-criteria}.md` 陷阱与判定标准 ·
@@ -59,7 +59,7 @@ skills/<name>/
 | Skill | 触发场景 | 入口 |
 |---|---|---|
 | `screenshot-text-edit` | 把图片/截图里的文字或数字改成别的内容（金额、日期、编号、字段名）。核心是字形克隆法，保真度远高于字体重绘 | [skills/screenshot-text-edit/SKILL.md](./skills/screenshot-text-edit/SKILL.md) |
-| `windows-fresh-setup` | 把一台新装好的 Windows 机器一条命令配成「AI 开发 + 游戏」机并完成系统优化（**与原理层文档同一个项目**）：引导检查 → 装开发工具链 → 装便携软件 → 驱动分诊 → 安全调优（先快照）→ 注册关联 → 验收，出故障能按基线回滚。入口 `scripts/setup.ps1`（七阶段，含 `-Profile minimal|dev|full` 预设）+ **`scripts/bootstrap.ps1` 无 git 自举**，另有 **15 个可单独用的工具脚本**（含 `check-script-hygiene.ps1` 双宿主脚本体检、`test-tune-core.ps1` 纯函数自测）。为什么这么改见 `docs/`（起点判定 / 决策表 / 43 个调优值的判据 / 参数速查 / 陷阱与判定标准），按游戏见 `games/`。含**运行上下文矩阵**与「显卡稳定性」小节。核心纪律三条：不碰按需启动的服务、动系统前先拍快照、改完必须重启再验证 | [skills/windows-fresh-setup/SKILL.md](./skills/windows-fresh-setup/SKILL.md) |
+| `windows-fresh-setup` | 把一台新装好的 Windows 机器一条命令配成「AI 开发 + 游戏」机并完成系统优化（**与原理层文档同一个项目**）：引导检查 → 装开发工具链 → 装便携软件 → 驱动分诊 → 安全调优（先快照）→ 注册关联 → 验收，出故障能按基线回滚。入口 `scripts/setup.ps1`（七阶段，含 `-Profile minimal|dev|full` 预设）+ **`scripts/bootstrap.ps1` 无 git 自举**，另有 **16 个可单独用的工具脚本**（含 `check-script-hygiene.ps1` 双宿主脚本体检、`test-tune-core.ps1` 纯函数自测）。为什么这么改见 `docs/`（起点判定 / 决策表 / 43 个调优值的判据 / 参数速查 / 陷阱与判定标准），按游戏见 `games/`。含**运行上下文矩阵**与「显卡稳定性」小节。核心纪律三条：不碰按需启动的服务、动系统前先拍快照、改完必须重启再验证 | [skills/windows-fresh-setup/SKILL.md](./skills/windows-fresh-setup/SKILL.md) |
 
 ## 环境
 

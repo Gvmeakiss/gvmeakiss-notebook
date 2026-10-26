@@ -13,7 +13,7 @@ skills/windows-fresh-setup/
 ├── README.md               ← 你在这里：装配线、命令、验收
 ├── apps.json               ← 软件清单（13 项：来源 / 校验 / 关联）
 ├── presets/                ← 预设（TrafficMonitor 配置）
-├── scripts/                ← 可执行层：setup.ps1 + 15 个可单跑的工具
+├── scripts/                ← 可执行层：setup.ps1 + 16 个可单跑的工具
 │   └── lib/tune-core.ps1   ← 纯函数（DWORD 渲染、build 门控），有自测
 ├── docs/                   ← 原理层：按配置顺序编号的四份正文
 │   ├── 01-baseline.md          起点判定与环境事实
