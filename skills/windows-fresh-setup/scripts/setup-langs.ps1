@@ -177,24 +177,64 @@ if (($Packages -contains 'rust') -and -not $SkipRust) {
         Ok 'rustup already present'
     } else {
         # China mirror for the distribution server; override for other regions.
-        $env:RUSTUP_DIST_SERVER = if ($env:RUSTUP_DIST_SERVER) { $env:RUSTUP_DIST_SERVER } else { 'https://rsproxy.cn' }
-        $env:RUSTUP_UPDATE_ROOT = if ($env:RUSTUP_UPDATE_ROOT) { $env:RUSTUP_UPDATE_ROOT } else { 'https://rsproxy.cn/rustup' }
-        [Environment]::SetEnvironmentVariable('RUSTUP_DIST_SERVER', $env:RUSTUP_DIST_SERVER, 'User')
-        [Environment]::SetEnvironmentVariable('RUSTUP_UPDATE_ROOT', $env:RUSTUP_UPDATE_ROOT, 'User')
-        Ok "RUSTUP_DIST_SERVER=$env:RUSTUP_DIST_SERVER"
+        # SetEnvironmentVariable writes the USER environment, so it is a real change and needs a
+        # ShouldProcess guard - a dry run must not leave RUSTUP_* behind in the user profile.
+        $distServer = if ($env:RUSTUP_DIST_SERVER) { $env:RUSTUP_DIST_SERVER } else { 'https://rsproxy.cn' }
+        $updateRoot = if ($env:RUSTUP_UPDATE_ROOT) { $env:RUSTUP_UPDATE_ROOT } else { 'https://rsproxy.cn/rustup' }
+        if ($Cmdlet.ShouldProcess('user environment', "set RUSTUP_DIST_SERVER=$distServer and RUSTUP_UPDATE_ROOT=$updateRoot")) {
+            $env:RUSTUP_DIST_SERVER = $distServer
+            $env:RUSTUP_UPDATE_ROOT = $updateRoot
+            [Environment]::SetEnvironmentVariable('RUSTUP_DIST_SERVER', $distServer, 'User')
+            [Environment]::SetEnvironmentVariable('RUSTUP_UPDATE_ROOT', $updateRoot, 'User')
+            Ok "RUSTUP_DIST_SERVER=$distServer"
+        }
+        else {
+            Write-Output "    would   set RUSTUP_DIST_SERVER=$distServer / RUSTUP_UPDATE_ROOT=$updateRoot (user scope)"
+        }
 
-        $dl = Join-Path $env:TEMP 'rustup-init.exe'
-        $url = "$env:RUSTUP_DIST_SERVER/rustup/dist/x86_64-pc-windows-gnu/rustup-init.exe"
+        # Per-run download directory. A fixed %TEMP%\rustup-init.exe may be a leftover from an
+        # earlier partial or failed download, and the old code executed whatever file happened to
+        # be at that path. A unique directory means the binary we run is the one we just fetched;
+        # nothing is executed when the download fails.
+        $dlDir = Join-Path $env:TEMP ('wfs-rustup-' + [Guid]::NewGuid().ToString('N').Substring(0, 8))
+        $dl = Join-Path $dlDir 'rustup-init.exe'
+        $url = "$distServer/rustup/dist/x86_64-pc-windows-gnu/rustup-init.exe"
+        $downloaded = $false
         if ($Cmdlet.ShouldProcess($url, 'download rustup-init')) {
             try {
+                New-Item -ItemType Directory -Force -Path $dlDir -ErrorAction Stop | Out-Null
                 Invoke-WebRequest -Uri $url -OutFile $dl -TimeoutSec 300 -UseBasicParsing -ErrorAction Stop
-                Ok "downloaded rustup-init ($([math]::Round((Get-Item $dl).Length/1MB,1)) MB)"
+                $dlSize = (Get-Item -LiteralPath $dl).Length
+                if ($dlSize -lt 1MB) { throw "download is only $dlSize bytes - treating it as truncated" }
+                $downloaded = $true
+                Ok "downloaded rustup-init ($([math]::Round($dlSize/1MB,1)) MB, per-run temp dir)"
             } catch {
                 Fail2 "download failed: $($_.Exception.Message.Split("`n")[0])"
                 Write-Output '            fallback mirrors: https://mirrors.ustc.edu.cn/rust-static/rustup/dist/x86_64-pc-windows-gnu/rustup-init.exe'
             }
         }
-        if (Test-Path $dl) {
+        if ($downloaded) {
+            # Verify before executing: a valid Authenticode signature is the only check available
+            # here (the manifest carries no hash for this download). An unsigned or invalid file
+            # is never run, no matter how it got downloaded.
+            try {
+                $sig = Get-AuthenticodeSignature -LiteralPath $dl -ErrorAction Stop
+                $sigOk = ($sig.Status -eq 'Valid')
+                $sigWho = if ($sig.SignerCertificate) { ($sig.SignerCertificate.Subject -split ',')[0] } else { '(no signer)' }
+            }
+            catch { $sigOk = $false; $sigWho = "(signature check failed: $($_.Exception.Message.Split(""`n"")[0]))" }
+            $dlHash = (Get-FileHash -LiteralPath $dl -Algorithm SHA256).Hash
+            if (-not $sigOk) {
+                Fail2 "rustup-init is not validly signed ($sigWho) - refusing to execute it"
+                Fail2 "  sha256: $dlHash  url: $url"
+                Warn2 'install rustup by hand from https://rustup.rs and re-run this phase'
+                $downloaded = $false
+            }
+            else {
+                Ok "rustup-init signature valid ($sigWho)"
+            }
+        }
+        if ($downloaded) {
             if ($Cmdlet.ShouldProcess('rustup-init', 'install stable GNU toolchain')) {
                 & $dl -y --no-modify-path --default-host x86_64-pc-windows-gnu `
                       --default-toolchain stable --profile default 2>&1 |
@@ -208,6 +248,9 @@ if (($Packages -contains 'rust') -and -not $SkipRust) {
                 if (Test-Path (Join-Path $cargoBin 'rustc.exe')) { Ok 'rustc installed' } else { Fail2 'rustc not found after install' }
             }
         }
+        # The per-run download directory is removed on every exit path: leaving a 20 MB
+        # rustup-init.exe in %TEMP% is exactly what made the old fixed path dangerous.
+        if ($dlDir -and (Test-Path -LiteralPath $dlDir)) { Remove-Item -LiteralPath $dlDir -Recurse -Force -ErrorAction SilentlyContinue }
     }
     # cargo registry mirror
     if (-not $SkipMirrors) {

@@ -80,6 +80,22 @@ function Bad  { param([string]$M) Write-Output "    FAIL    $M" }
 #   verifyPath - absolute path (winget entries); '%VAR%' is expanded
 #   exe        - path relative to the install root (portable entries)
 # Returns the resolved path, or $null when nothing was found.
+# ------------------------------------------------------------------- path safety
+# Manifest fields become filesystem paths, and a manifest is just JSON: `"name": "..\\..\\Windows"`
+# would install OUTSIDE the destination root. Every join goes through this check, which rejects
+# absolute paths, drive-qualified names and `..` by comparing full paths against the root.
+function Get-SafeChildPath {
+    param([string]$Root, [string]$Relative, [string]$What)
+    $rootFull = [IO.Path]::GetFullPath($Root)
+    try { $candidate = [IO.Path]::GetFullPath((Join-Path $rootFull $Relative)) }
+    catch { throw "$What is not a valid relative path: '$Relative'" }
+    $rootWithSep = $rootFull.TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+    if (-not $candidate.StartsWith($rootWithSep, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "$What escapes the root: '$Relative' resolves to '$candidate' (root: '$rootFull')"
+    }
+    return $candidate
+}
+
 function Resolve-InstalledPath {
     param($Entry, [string]$Root)
     if ($Entry.verifyPath) {
@@ -88,7 +104,7 @@ function Resolve-InstalledPath {
         return $null
     }
     if ($Entry.exe -and $Root) {
-        $p = Join-Path $Root ([string]$Entry.exe)
+        try { $p = Get-SafeChildPath $Root ([string]$Entry.exe) "exe" } catch { return $null }
         if (Test-Path -LiteralPath $p) { return $p }
         return $null
     }
@@ -251,7 +267,12 @@ foreach ($app in $apps) {
         continue
     }
 
-    $target = Join-Path $Destination $app.name
+    try { $target = Get-SafeChildPath $Destination $app.name "app.name '$($app.name)'" }
+    catch {
+        Bad ([string]$_.Exception.Message)
+        $failures += $app.name
+        continue
+    }
     if (Test-Path $target) {
         # Re-verify on every run: a folder that exists but no longer holds the declared exe
         # (interrupted extraction, user deleted files) must not read as healthy.
@@ -269,6 +290,11 @@ foreach ($app in $apps) {
     if (-not $app.url) { Bad 'manifest entry has no url'; $failures += $app.name; continue }
 
     $fileName = Split-Path ([uri]$app.url).AbsolutePath -Leaf
+    if ([string]::IsNullOrWhiteSpace($fileName) -or $fileName -match '[\\/:*?"<>|]' -or $fileName -eq '.' -or $fileName -eq '..') {
+        Bad "url does not end in a usable file name: $($app.url)"
+        $failures += $app.name
+        continue
+    }
     $archive = Join-Path $cache $fileName
 
     # download
@@ -401,7 +427,8 @@ foreach ($app in $apps) {
                     Warn "config preset missing, skipped: $srcRel"
                     continue
                 }
-                $dstFile = Join-Path $target $destName
+                try { $dstFile = Get-SafeChildPath $target $destName "configFiles '$destName'" }
+                catch { Bad ([string]$_.Exception.Message); continue }
                 if ($Cmdlet.ShouldProcess($dstFile, "write $destName from preset")) {
                     try {
                         [System.IO.File]::Copy($srcFile, $dstFile, $true)

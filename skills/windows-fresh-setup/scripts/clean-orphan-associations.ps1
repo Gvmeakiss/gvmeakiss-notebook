@@ -72,6 +72,21 @@ function Get-DefaultValue {
     return $null
 }
 
+# UserChoice is NOT a default-value key: it stores the chosen ProgID in a NAMED value "ProgId".
+# Reading /ve there returns nothing, so every extension looked unassociated and the whole
+# broken-default check silently did nothing.
+function Get-NamedValue {
+    param([string]$KeyPath, [string]$Name)
+    try {
+        $v = (Get-ItemProperty -Path $KeyPath -Name $Name -ErrorAction Stop).$Name
+        if ($v) { return [string]$v }
+    } catch { }
+    $out = & reg query $KeyPath /v $Name 2>$null
+    $line = @($out | Where-Object { $_ -match 'REG_SZ' }) | Select-Object -First 1
+    if ($line -match 'REG_SZ\s+(.+)$') { return $Matches[1].Trim() }
+    return $null
+}
+
 function Get-ExeFromCommand {
     param([string]$Command)
     if (-not $Command) { return $null }
@@ -96,7 +111,7 @@ $brokenDefaults = @()
 $exts = @('.md','.txt','.png','.jpg','.jpeg','.gif','.webp','.bmp','.mp4','.mkv','.avi',
           '.mov','.mp3','.flac','.wav','.m4a','.zip','.7z','.pdf')
 foreach ($ext in $exts) {
-    $progId = Get-DefaultValue "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\$ext\UserChoice"
+    $progId = Get-NamedValue "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\$ext\UserChoice" 'ProgId'
     if (-not $progId) {
         $progId = Get-DefaultValue "HKCU\Software\Classes\$ext"
     }
@@ -235,14 +250,31 @@ if ($deadRegApps.Count -eq 0) {
 }
 
 # ------------------------------------------------------------------- clean up
+$script:cleanFailures = 0
 if ($Clean -and $deadProgIds.Count -gt 0) {
     Write-Output "`n--- removing dead Program IDs"
     foreach ($d in $deadProgIds) {
-        if ($Cmdlet.ShouldProcess($d.Key, 'delete dead Program ID')) {
-            & reg delete $d.Key /f 2>&1 | Out-Null
-            if ($LASTEXITCODE -eq 0) { Ok "deleted $($d.Key -replace '^HKEY_CURRENT_USER\\Software\\Classes\\','')" }
-            else { Warn "could not delete $($d.Key)" }
+        # $d.Key is RELATIVE to HKCU\Software\Classes (e.g. "foo.md\shell\open\command").
+        # Handing that to `reg delete` deletes nothing (or the wrong thing); the full path has
+        # to be built explicitly, and the ProgID root is what gets removed, not the command key.
+        $relative = ($d.Key -replace '^HKEY_CURRENT_USER\\Software\\Classes\\', '') -replace '(?i)\\shell\\open\\command$', ''
+        if ([string]::IsNullOrWhiteSpace($relative) -or $relative -match '(?i)\\shell(\\|$)' -or $relative -eq 'Applications') {
+            Warn "refusing to delete an unexpected key shape: '$($d.Key)'"
+            $script:cleanFailures++
+            continue
         }
+        $fullKey = "HKCU\Software\Classes\$relative"
+        $psKey = "Registry::$fullKey"
+        if (-not (Test-Path -LiteralPath $psKey)) { Ok "already gone: $relative"; continue }
+        if (-not $Cmdlet.ShouldProcess($fullKey, 'delete dead Program ID')) { continue }
+        & reg delete $fullKey /f 2>&1 | Out-Null
+        $regExit = $LASTEXITCODE
+        # Read back: the exit code is a hint, the key still being there is the fact.
+        if (Test-Path -LiteralPath $psKey) {
+            Warn "could not delete $relative (reg exit $regExit, key still present)"
+            $script:cleanFailures++
+        }
+        else { Ok "deleted $relative" }
     }
 }
 
@@ -250,3 +282,8 @@ Write-Output "`n===== summary ====="
 Write-Output ("broken defaults: {0}   dead ProgIDs: {1}   dead registered apps: {2}" -f `
     $brokenDefaults.Count, $deadProgIds.Count, $deadRegApps.Count)
 if (-not $Clean) { Write-Output 'Report only. Re-run with -Clean to remove dead Program IDs.' }
+if ($script:cleanFailures -gt 0) {
+    Write-Output ("`n{0} cleanup step(s) failed - see the warnings above" -f $script:cleanFailures)
+    exit 1
+}
+exit 0
