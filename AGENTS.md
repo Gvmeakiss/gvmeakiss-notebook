@@ -29,7 +29,7 @@ skills/<name>/
   前端约定、数据管理、生命周期控制、接口清单与「依照本规范设计轻应用的标准流程」。
   顶部有「读者路由」表：判断适用性读 §0–§1，要照做读 §7，AI 动手先读 §6 再读 §7。
 - `skills/windows-fresh-setup/`：**Windows 新装优化**（唯一项目，入口 `README.md`）—— 可执行层与原理层合在一处，编号 = 实际配置顺序：
-  `scripts/setup.ps1` 七阶段（check/dev/apps/drivers/tune/link/verify）+ 17 个可单跑工具 ·
+  `scripts/setup.ps1` 七阶段（check/dev/apps/drivers/tune/link/verify；每阶段实现在 `scripts/lib/phases/`，按序 dot-source）+ 17 个可单跑工具 ·
   `docs/01-baseline.md` 起点判定 · `docs/02-decisions.md` 做/不做决策 ·
   `docs/03-system-tweaks.md` 45 个调优值（正确值 / 判据 / 怎么验）· `docs/04-dev-and-apps.md` 开发环境与 13 项软件 ·
   `docs/05-params.md` 参数速查 · `docs/reference/{pitfalls,audit-criteria}.md` 陷阱与判定标准 ·
