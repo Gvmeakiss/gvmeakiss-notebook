@@ -28,19 +28,19 @@ skills/<name>/
 - `mini-app-spec/`：**企业级「AI Agent 驱动轻应用平台」技术规范**（脱敏方法论版，单文件）。含整套框架设计、
   前端约定、数据管理、生命周期控制、接口清单与「依照本规范设计轻应用的标准流程」。
   顶部有「读者路由」表：判断适用性读 §0–§1，要照做读 §7，AI 动手先读 §6 再读 §7。
-- `windows-tuning/`：**Windows 调优装配线**（入口 `README.md`，编号 = 实际配置顺序，不是重要性排序）：
-  `01-baseline.md` 起点判定与环境事实 · `02-decisions.md` 哪些改动值得做（证据 → 决定表）·
-  `03-system-tweaks.md` 系统调优通用清单（正确值 / 判据 / 怎么验，与技能的 `tune` + `verify-env` 一一对应）·
-  `04-dev-and-apps.md` 开发环境与 13 项软件（装完怎么证明装对了）· `05-games/` 按游戏的可回退优化（当前 `cs2/`，
-  `check-<game>-readiness.ps1` 只读体检 + `apply-<game>-optimizations.ps1` 支持 `-WhatIf` / `-Revert`）·
-  `reference/pitfalls.md` 陷阱速查、`reference/audit-criteria.md` 判定标准。
+- `skills/windows-fresh-setup/`：**Windows 新装优化**（唯一项目，入口 `README.md`）—— 可执行层与原理层合在一处，编号 = 实际配置顺序：
+  `scripts/setup.ps1` 七阶段（check/dev/apps/drivers/tune/link/verify）+ 15 个可单跑工具 ·
+  `docs/01-baseline.md` 起点判定 · `docs/02-decisions.md` 做/不做决策 ·
+  `docs/03-system-tweaks.md` 43 个调优值（正确值 / 判据 / 怎么验）· `docs/04-dev-and-apps.md` 开发环境与 13 项软件 ·
+  `docs/05-params.md` 参数速查 · `docs/reference/{pitfalls,audit-criteria}.md` 陷阱与判定标准 ·
+  `games/` 按游戏可回退优化（当前 `cs2/`，`check-<game>-readiness.ps1` + `apply-<game>-optimizations.ps1` 支持 `-WhatIf` / `-Revert`）。
   **硬约定：文档里的值必须与代码一致；只写结果不写过程；每条结论要有判据。**
-  新增游戏按 `windows-tuning/05-games/README.md` 模板加子目录并更新索引；该目录脚本**同样必须 ASCII-only**。
+  新增游戏按 `games/README.md` 模板加子目录；该目录脚本**必须 ASCII-only**（同上）。
 - `docs/`：与 Windows 调优无关的专题记录。`windows-nas-smb-stability.md`：内网 NAS 稳定性专项 ——
   「NAS 不稳」定位到「睡眠唤醒后没有重连」，含事件时间对齐法、事件触发计划任务、**驱动器映射按会话+提权级别隔离**、
   先算链路天花板再优化，以及 3 项实测无收益并已回滚的尝试。
   `skill-self-audit.md`：**方法论** —— 如何把 skill 的「文档承诺」变成「可验证事实」
-  （5 类缺陷、性能优化的等价性证明、环境缺陷与代码缺陷的区分），与 `win-ai-gaming-setup` 配套。
+  （5 类缺陷、性能优化的等价性证明、环境缺陷与代码缺陷的区分），与 `windows-fresh-setup` 配套。
 - `internal-audit-reform/`：AI复用制作内部审计汇报、H5、海报和电脑邮件长图的完整项目包，包含可编辑PPT、逐页口播、结果导向的内容/视觉规范、海报源文件及配图库。使用前阅读其 `README.md` 和项目级 `AGENTS.md`；当前页面中的业务条件和时限只适用于对应示例项目。
 - `assets/`：根 `README.md` 的横幅素材。`banner.svg` 与 `banner-dark.svg` 是同一版式的浅色 / 深色两套，
   由 README 中的 `<picture>` 按 `prefers-color-scheme` 自动切换；**改动需同步两份**。
@@ -59,13 +59,13 @@ skills/<name>/
 | Skill | 触发场景 | 入口 |
 |---|---|---|
 | `screenshot-text-edit` | 把图片/截图里的文字或数字改成别的内容（金额、日期、编号、字段名）。核心是字形克隆法，保真度远高于字体重绘 | [skills/screenshot-text-edit/SKILL.md](./skills/screenshot-text-edit/SKILL.md) |
-| `win-ai-gaming-setup` | 把一台新装好的 Windows 机器一条命令配成「AI 开发 + 游戏」机并完成系统优化：引导检查 → 装开发工具链 → 装便携软件 → 驱动分诊 → 安全调优（先快照）→ 注册关联 → 验收，出故障能按基线回滚。入口 `scripts/setup.ps1`（七阶段，含 `-Profile minimal|dev|full` 预设）+ **`scripts/bootstrap.ps1` 无 git 自举**，另有 **13 个可单独用的工具脚本**（含 `check-script-hygiene.ps1` 双宿主脚本体检、`test-tune-core.ps1` 纯函数自测）。含**运行上下文矩阵**（同一段代码在 PS7/5.1、提权/非提权下的结果差异）与「显卡稳定性」小节（崩溃/黑屏/TDR 的取证与处置）。核心纪律三条：不碰按需启动的服务、动系统前先拍快照、改完必须重启再验证 | [skills/win-ai-gaming-setup/SKILL.md](./skills/win-ai-gaming-setup/SKILL.md) |
+| `windows-fresh-setup` | 把一台新装好的 Windows 机器一条命令配成「AI 开发 + 游戏」机并完成系统优化（**与原理层文档同一个项目**）：引导检查 → 装开发工具链 → 装便携软件 → 驱动分诊 → 安全调优（先快照）→ 注册关联 → 验收，出故障能按基线回滚。入口 `scripts/setup.ps1`（七阶段，含 `-Profile minimal|dev|full` 预设）+ **`scripts/bootstrap.ps1` 无 git 自举**，另有 **15 个可单独用的工具脚本**（含 `check-script-hygiene.ps1` 双宿主脚本体检、`test-tune-core.ps1` 纯函数自测）。为什么这么改见 `docs/`（起点判定 / 决策表 / 43 个调优值的判据 / 参数速查 / 陷阱与判定标准），按游戏见 `games/`。含**运行上下文矩阵**与「显卡稳定性」小节。核心纪律三条：不碰按需启动的服务、动系统前先拍快照、改完必须重启再验证 | [skills/windows-fresh-setup/SKILL.md](./skills/windows-fresh-setup/SKILL.md) |
 
 ## 环境
 
 - 部分脚本依赖 macOS Vision OCR，**仅 macOS 可用**
 - 依赖：`pyobjc-framework-Vision` `pyobjc-framework-Quartz` `pillow`
-- `skills/win-ai-gaming-setup/` 下的脚本**仅 Windows 可用**，依赖 PowerShell 7+；
+- `skills/windows-fresh-setup/` 下的脚本**仅 Windows 可用**，依赖 PowerShell 7+；
   **但计划任务与登录脚本会用 Windows PowerShell 5.1 调它们** —— 因此该目录的脚本一律 **ASCII-only**
   （5.1 按 ANSI 解码无 BOM 文件，任何中文都会让解析失败且表现为"任务静默失败、退出码 0x1"）。
   **改完该目录任何 `.ps1` 就跑一次 `scripts/check-script-hygiene.ps1`**（双宿主解析，不执行，秒级）

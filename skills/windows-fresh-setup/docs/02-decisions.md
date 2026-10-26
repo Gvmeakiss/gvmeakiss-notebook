@@ -22,7 +22,7 @@
 
 | 项 | 机制 | 预期收益 | 风险 | 本机是否已应用 |
 |---|---|---|---|---|
-| **游戏内帧率上限**，压在实测可持续帧率之前 | 削掉每帧的功耗尖峰：功耗平→boost 稳→帧时间稳。PC-Tuning 的限帧一节就是这个结论——省下的是**每帧几毫秒**，而计时器精度只值几微秒 | 1% low 明显变稳，风扇更安静 | 限得过低直接牺牲响应性，必须按游戏单设 | ✅ 按游戏设，见 [05-games/](./05-games/README.md)（CS2 现成结论是 `fps_max 120`：略高于刷新率，但压在核显满载点之前） |
+| **游戏内帧率上限**，压在实测可持续帧率之前 | 削掉每帧的功耗尖峰：功耗平→boost 稳→帧时间稳。PC-Tuning 的限帧一节就是这个结论——省下的是**每帧几毫秒**，而计时器精度只值几微秒 | 1% low 明显变稳，风扇更安静 | 限得过低直接牺牲响应性，必须按游戏单设 | ✅ 按游戏设，见 [05-games/](../games/README.md)（CS2 现成结论是 `fps_max 120`：略高于刷新率，但压在核显满载点之前） |
 | **电源方案保持 Balanced**，不锁最高性能 | 「高性能」方案原文是「把处理器锁在最高性能状态（含 turbo）、所有核 unpark……热量输出可能很显著」。45 W 的 APU 与 780M 共用同一份功耗/热预算，锁死等于把余量从核显手里拿走 | 给 iGPU 留功耗与散热余量；避免 STAPM 降频 | 突发负载的上升沿略慢（但 `RESP*` 机制本来就在补：DPC 计数超阈值时抬频率地板，默认 enable 10 / disable 5、地板 100%） | ✅ 保持 Balanced，未用 Ultimate Performance；`PROCTHROTTLEMIN` 未单独回读 |
 | **MMCSS `SystemResponsiveness=10`**（`HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile`） | 该值 = 留给低优先级任务的 CPU 百分比。10 既是 10 的整数倍、又不小于 10，所以不被取整也不被 clamp——**真的**把预留从默认 20 降到 10 | 多媒体线程拿到更多 CPU 份额 | 后台任务（含桌面响应）份额变少；没有「提升帧数」的测量 | ✅ 已应用（`verify-env.ps1` 期望值即 10） |
 | **`NetworkThrottlingIndex=0xffffffff`**（同键） | 关掉 MMCSS 对网络收发的节流配额 | 多媒体负载下不再被节流 | 抢占式网络负载时其他流量更难受 | ✅ 已应用 |
@@ -170,4 +170,4 @@
 
 ---
 
-<p align="right"><sub><a href="./README.md">← 目录</a> · <a href="./01-baseline.md">← 01 基线</a> · <a href="./03-system-tweaks.md">03 调优 →</a> · <a href="../README.md">笔记本</a></sub></p>
+<p align="right"><sub><a href="../README.md">← 目录</a> · <a href="./01-baseline.md">← 01 基线</a> · <a href="./03-system-tweaks.md">03 调优 →</a> · <a href="../../../README.md">笔记本</a></sub></p>

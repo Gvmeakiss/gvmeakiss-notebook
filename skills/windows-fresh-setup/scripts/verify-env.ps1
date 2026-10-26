@@ -366,15 +366,87 @@ else {
 }
 Record 'system' 'pagefile' ($pfManaged -or ($pfSetting.Count -gt 0)) $pfDetail
 
-# Desktop integrity label. A Low mandatory-integrity label (typically left behind by a
-# sandbox or agent tooling that confined the workspace) makes the shell refuse to resolve
-# shortcut target icons, so every .lnk under the Desktop shows the generic document icon.
-# Nothing about the icon file is wrong in that state, which is why icon-cache rebuilds and
-# IconLocation edits appear to do nothing. See windows-tuning/reference/pitfalls.md section 6.
-$deskIl = ''
-try { $deskIl = (& icacls.exe "$env:USERPROFILE\Desktop" 2>&1 | Out-String) } catch { }
-$deskLow = $deskIl -match 'Low Mandatory Level'
-Record 'system' 'desktop integrity level' (-not $deskLow) $(if ($deskLow) { 'Low - shell will show generic icons for .lnk files; fix: icacls "%USERPROFILE%\Desktop" /setintegritylevel (OI)(CI)M /t' } else { 'Medium' })
+# Desktop integrity label. A non-Medium label (typically Low, left behind by a sandbox or
+# agent tooling that confined the workspace) makes the shell refuse to resolve shortcut
+# target icons, so every .lnk under the Desktop shows the generic document icon. Nothing
+# about the icon file is wrong in that state, which is why icon-cache rebuilds and
+# IconLocation edits appear to do nothing. See docs/reference/pitfalls.md section 6.
+#
+# Read the label from the security descriptor (LABEL_SECURITY_INFORMATION) rather than
+# parsing `icacls` output: that output is localised, so matching "Low Mandatory Level"
+# silently fails on a non-English Windows. A failed query, a missing folder, or an
+# unparsable descriptor must NEVER be reported as Medium.
+$deskPath = $null
+try { $deskPath = [Environment]::GetFolderPath([Environment+SpecialFolder]::Desktop) } catch { }
+if ([string]::IsNullOrWhiteSpace($deskPath)) {
+    $deskPath = [Environment]::ExpandEnvironmentVariables([string](
+        (Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders' -Name 'Desktop' -ErrorAction SilentlyContinue).Desktop))
+}
+$ilOk = $false
+$ilDetail = ''
+if ([string]::IsNullOrWhiteSpace($deskPath) -or -not (Test-Path -LiteralPath $deskPath)) {
+    $ilDetail = "cannot locate the Desktop folder (resolved: '$deskPath')"
+}
+else {
+    if (-not ('IlLabel' -as [type])) {
+        Add-Type -TypeDefinition ([string]::Join([Environment]::NewLine, @(
+            'using System;',
+            'using System.Runtime.InteropServices;',
+            'public static class IlLabel {',
+            '    [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]',
+            '    static extern uint GetNamedSecurityInfoW(string objectName, int objectType, uint securityInfo,',
+            '        out IntPtr owner, out IntPtr group, out IntPtr dacl, out IntPtr sacl, out IntPtr sd);',
+            '    [DllImport("kernel32.dll")]',
+            '    static extern IntPtr LocalFree(IntPtr handle);',
+            '    public static string Read(string path) {',
+            '        IntPtr owner, group, dacl, sacl, sd;',
+            '        uint rc = GetNamedSecurityInfoW(path, 1, 0x10, out owner, out group, out dacl, out sacl, out sd);',
+            '        if (rc != 0) { return "Error:" + rc; }',
+            '        try {',
+            '            if (sacl == IntPtr.Zero) { return "None"; }',
+            '            int count = Marshal.ReadInt16(sacl, 4);',
+            '            int offset = 8;',
+            '            for (int i = 0; i < count; i++) {',
+            '                byte aceType = Marshal.ReadByte(sacl, offset);',
+            '                int aceSize = (int)Marshal.ReadInt16(sacl, offset + 2);',
+            '                if (aceSize <= 0) { return "Error:badace"; }',
+            '                if (aceType == 0x11) {',
+            '                    IntPtr sid = new IntPtr(sacl.ToInt64() + offset + 8);',
+            '                    int level = Marshal.ReadInt32(sid, 8);',
+            '                    if (level == 0x0000) { return "Untrusted"; }',
+            '                    if (level == 0x1000) { return "Low"; }',
+            '                    if (level == 0x2000) { return "Medium"; }',
+            '                    if (level == 0x3000) { return "High"; }',
+            '                    if (level == 0x4000) { return "System"; }',
+            '                    return "Unknown:" + level;',
+            '                }',
+            '                offset += aceSize;',
+            '            }',
+            '            return "None";',
+            '        } finally { LocalFree(sd); }',
+            '    }',
+            '}'
+        )))
+    }
+    $ilResult = 'Error:threw'
+    try { $ilResult = [IlLabel]::Read($deskPath) } catch { $ilResult = 'Error:exception' }
+    if ($ilResult -eq 'Medium') {
+        $ilOk = $true; $ilDetail = "Medium ('$deskPath')"
+    } elseif ($ilResult -eq 'None') {
+        $ilOk = $true; $ilDetail = "no explicit label - defaults to Medium ('$deskPath')"
+    } elseif ($ilResult -eq 'Low') {
+        $ilDetail = "Low - the shell will show generic icons for .lnk files; fix: icacls `"$deskPath`" /setintegritylevel (OI)(CI)M /t"
+    } elseif ($ilResult -eq 'High') {
+        $ilDetail = 'High - unexpected for the Desktop folder; shortcut icons and drag-and-drop may misbehave'
+    } elseif ($ilResult -eq 'System') {
+        $ilDetail = 'System - unexpected for the Desktop folder; investigate before trusting icon behaviour'
+    } elseif ($ilResult -eq 'Untrusted') {
+        $ilDetail = 'Untrusted - the shell refuses most operations under the Desktop'
+    } else {
+        $ilDetail = "could not determine the integrity label ($ilResult)"
+    }
+}
+Record 'system' 'desktop integrity level' $ilOk $ilDetail
 $startupLeftovers = New-Object System.Collections.Generic.List[string]
 foreach ($hive in @('Registry::HKEY_USERS\S-1-5-19\SOFTWARE\Microsoft\Windows\CurrentVersion\Run',
                     'Registry::HKEY_USERS\S-1-5-20\SOFTWARE\Microsoft\Windows\CurrentVersion\Run')) {

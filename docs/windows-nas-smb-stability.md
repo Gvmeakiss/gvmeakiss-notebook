@@ -229,7 +229,7 @@ wevtutil set-log "Microsoft-Windows-TaskScheduler/Operational" /e:true
 ```
 
 **修法**：脚本**纯 ASCII**（首选）或存成 **UTF-8 with BOM**。
-本仓库所有 `.ps1` 都声明 ASCII-only，并有一个检查器在提交前验证（见 `skills/win-ai-gaming-setup/scripts/check-script-hygiene.ps1`）。
+本仓库所有 `.ps1` 都声明 ASCII-only，并有一个检查器在提交前验证（见 `skills/windows-fresh-setup/scripts/check-script-hygiene.ps1`）。
 
 ### ② 任务的「参数」栏不通过 Shell 执行
 

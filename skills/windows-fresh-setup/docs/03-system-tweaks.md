@@ -1,6 +1,6 @@
 # 系统调优清单
 
-本文是 [win-ai-gaming-setup](../skills/win-ai-gaming-setup/SKILL.md) 中 `tune` 阶段的**状态规范**：一台调优完成的机器上，下面每一项都应当为真。它不叙述改了什么、哪次改的，只回答三件事——正确值是什么、凭什么、怎么验。
+本文是 [win-ai-gaming-setup](../SKILL.md) 中 `tune` 阶段的**状态规范**：一台调优完成的机器上，下面每一项都应当为真。它不叙述改了什么、哪次改的，只回答三件事——正确值是什么、凭什么、怎么验。
 
 注册表写入由 `setup.ps1 -Phase tune` 完成，验收由 `verify-env.ps1` 完成，两者描述的是同一批值：**不一致就是缺陷**，见文末「维护约束」。
 
@@ -189,4 +189,4 @@ pwsh -File skills/win-ai-gaming-setup/scripts/verify-env.ps1          # 验收�
 
 ---
 
-<p align="right"><sub><a href="./README.md">← 目录</a> · <a href="./02-decisions.md">← 02 决策</a> · <a href="./04-dev-and-apps.md">04 环境与软件 →</a> · <a href="../README.md">笔记本</a></sub></p>
+<p align="right"><sub><a href="../README.md">← 目录</a> · <a href="./02-decisions.md">← 02 决策</a> · <a href="./04-dev-and-apps.md">04 环境与软件 →</a> · <a href="../../../README.md">笔记本</a></sub></p>

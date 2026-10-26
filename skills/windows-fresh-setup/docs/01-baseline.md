@@ -1,6 +1,6 @@
 # Windows 基线：起点、环境与工具链
 
-两台真机（`windows-tuning/01-env-setup-win10.md` 的 Win10 非管理员机、`windows-tuning/02-env-audit-win11.md` 的 Win11 管理员机）
+两台真机（`docs/01-env-setup-win10.md` 的 Win10 非管理员机、`docs/02-env-audit-win11.md` 的 Win11 管理员机）
 的环境事实合成一份基线：起点类型 → 最终环境 → 软件清单 → 验收判据 → 边界。
 工具与判据统一取自 [`skills/win-ai-gaming-setup`](https://github.com/Gvmeakiss/gvmeakiss-notebook/tree/main/skills/win-ai-gaming-setup)：
 方法论与陷阱速查在 `SKILL.md`，人读说明在 `README.md`，入口 `scripts/setup.ps1`，七阶段 `check` / `dev` / `apps` / `drivers` / `tune` / `link` / `verify`。
@@ -168,4 +168,4 @@ pwsh -File skills/win-ai-gaming-setup/scripts/verify-env.ps1            # 等价
 
 ---
 
-<p align="right"><sub><a href="./README.md">← 目录</a> · <a href="./README.md">← 目录</a> · <a href="./02-decisions.md">02 决策 →</a> · <a href="../README.md">笔记本</a></sub></p>
+<p align="right"><sub><a href="../README.md">← 目录</a> · <a href="./02-decisions.md">02 决策 →</a> · <a href="../../../README.md">笔记本</a></sub></p>

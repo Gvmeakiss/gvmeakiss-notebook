@@ -297,4 +297,4 @@ pwsh -File scripts/apply-cs2-optimizations.ps1 -Revert
 
 ---
 
-<p align="right"><sub><a href="../../README.md">← 目录</a> · <a href="../README.md">← 各游戏优化</a> · <a href="../../03-system-tweaks.md">系统调优清单</a> · <a href="../../../README.md">笔记本</a></sub></p>
+<p align="right"><sub><a href="../../README.md">← 目录</a> · <a href="../README.md">← 各游戏优化</a> · <a href="../../docs/03-system-tweaks.md">系统调优清单</a> · <a href="../../../../README.md">笔记本</a></sub></p>

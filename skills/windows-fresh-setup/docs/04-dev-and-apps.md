@@ -4,7 +4,7 @@
 要装什么由 [`02-decisions.md`](./02-decisions.md) 的判定决定，条目一律以清单为准；装完怎么证明，由这一段负责。
 全部动作由 `skills/win-ai-gaming-setup` 的 `check → dev → apps → link → verify` 五个阶段完成；`drivers` 与 `tune` 属系统层，见 [`03-system-tweaks.md`](./03-system-tweaks.md)。
 
-命令在仓库根执行，下文 `setup.ps1` 指 [`skills/win-ai-gaming-setup/scripts/setup.ps1`](../skills/win-ai-gaming-setup/scripts/setup.ps1)。
+命令在仓库根执行，下文 `setup.ps1` 指 [`skills/win-ai-gaming-setup/scripts/setup.ps1`](../scripts/setup.ps1)。
 
 <details>
 <summary><b>本页目录</b>（6 节）</summary>
@@ -23,8 +23,8 @@
 | 阶段 | 命令 | 产物 | 成功判据 |
 |---|---|---|---|
 | `check`（前置） | `pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1 -Phase check` | `scoop`、`git`、`7-Zip`、`git core.longpaths=true` | 结果表 `check PASS`；`git config --global core.longpaths` 回读 `true` |
-| `dev` | `setup.ps1 -Phase dev` | `python` `nodejs` `go` `rust` `dotnet` `mingw`/`cmake` `uv`、6 个镜像 + `HF_ENDPOINT`、VS Code / Windows Terminal、`fix-env.ps1` 修复 | [`setup-langs.ps1`](../skills/win-ai-gaming-setup/scripts/setup-langs.ps1) 汇总行 `all requested packages installed and mirrors configured`；结果表 `dev PASS` |
-| `apps` | `setup.ps1 -Phase apps` | `%USERPROFILE%\Apps\<名称>` 下 5 个便携软件 + 8 个 winget 条目 | [`install-portable.ps1`](../skills/win-ai-gaming-setup/scripts/install-portable.ps1) 汇总行 `all selected apps installed and verified (N/M)`，M = 清单条目数 = 13 |
+| `dev` | `setup.ps1 -Phase dev` | `python` `nodejs` `go` `rust` `dotnet` `mingw`/`cmake` `uv`、6 个镜像 + `HF_ENDPOINT`、VS Code / Windows Terminal、`fix-env.ps1` 修复 | [`setup-langs.ps1`](../scripts/setup-langs.ps1) 汇总行 `all requested packages installed and mirrors configured`；结果表 `dev PASS` |
+| `apps` | `setup.ps1 -Phase apps` | `%USERPROFILE%\Apps\<名称>` 下 5 个便携软件 + 8 个 winget 条目 | [`install-portable.ps1`](../scripts/install-portable.ps1) 汇总行 `all selected apps installed and verified (N/M)`，M = 清单条目数 = 13 |
 | `link` | `setup.ps1 -Phase link -RegisterAssociations` | HKCU 关联注册（`Applications` + `Capabilities`/`RegisteredApplications`）、注册表备份、孤儿扫描 | 逐类型"仍需手点"清单 + 孤儿扫描无残留。**结果表 `link` 恒为 PASS，不能当判据** |
 | `verify` | `setup.ps1 -Phase verify` | `verify-env.ps1` + `check-software.ps1` + `diagnose-ime.ps1` 的汇总 | `total: N checks, 0 failed`、`declared apps 13/13 present`、退出码 0 |
 | 预设 | `setup.ps1 -Profile dev` | 以上五段一次跑完 | 结果表 5 行全 `PASS`；退出码 0 |
@@ -54,7 +54,7 @@
 
 ## 便携软件
 
-13 条，全部来自 [`apps.json`](../skills/win-ai-gaming-setup/apps.json)：8 条 `source: winget`、5 条便携归档。
+13 条，全部来自 [`apps.json`](../apps.json)：8 条 `source: winget`、5 条便携归档。
 
 | 名称 | 来源 | 校验 | 关联类型 |
 |---|---|---|---|
@@ -162,4 +162,4 @@ python --version; node --version; go version; rustc -vV; dotnet --version; g++ -
 
 ---
 
-<p align="right"><sub><a href="./README.md">← 目录</a> · <a href="./03-system-tweaks.md">← 03 调优</a> · <a href="./05-games/README.md">05 游戏 →</a> · <a href="../README.md">笔记本</a></sub></p>
+<p align="right"><sub><a href="../README.md">← 目录</a> · <a href="./03-system-tweaks.md">← 03 调优</a> · <a href="../games/README.md">05 游戏 →</a> · <a href="../../../README.md">笔记本</a></sub></p>

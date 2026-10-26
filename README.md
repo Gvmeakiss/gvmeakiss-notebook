@@ -72,7 +72,7 @@
 |---|---|---|---|
 | **shadowrocket** | 分流配置 | Mac / iPhone 通用分流规则：国内外分流、去广告、长连接优化 | [目录](./shadowrocket) · [说明](./shadowrocket/README.md) · [使用指南](./shadowrocket/使用指南.md) |
 | **merlin** | 配置与工具 | 梅林 fancyss 分流名单、节点入口绕过生成工具 | [目录](./merlin) · [说明](./merlin/README.md) · [使用指南](./merlin/使用指南.md) |
-| **Windows 调优** | 装配线 | 按实际配置顺序排列的五步：**起点基线 → 决策 → 43 个系统调优值 → 开发环境与 13 项软件 → 按游戏优化**；另附 38 条陷阱速查与 18 项判定标准，全部对齐 **97 项验收** | [总目录](./windows-tuning/README.md) · [游戏优化](./windows-tuning/05-games/README.md) |
+| **Windows 新装优化** | 项目 + 工具 | **一个项目两层**：能跑的脚本（七阶段 14 个工具）+ 为什么这么改的判据（起点 / 决策 / 43 个调优值 / 13 项软件 / 参数 / 陷阱与判定标准），按游戏可回退优化（当前 CS2），对齐 **98 项验收** | [项目入口](./skills/windows-fresh-setup/README.md) · [游戏优化](./skills/windows-fresh-setup/games/README.md) |
 | **内网 NAS 稳定性记录** | 实践记录 | 把「NAS 不稳」定位到「睡眠唤醒后没有重连」的完整链条：事件时间对齐法、事件触发计划任务、映射的会话/提权隔离、先算链路天花板 | [阅读](./docs/windows-nas-smb-stability.md) |
 | **Skill 自审方法论** | 方法 | 如何把「文档承诺」变成「可验证事实」：5 类真实缺陷、性能优化的等价性证明、环境缺陷与代码缺陷的区分 | [阅读](./docs/skill-self-audit.md) |
 
@@ -84,7 +84,6 @@
 | Skill | 用途 | 入口 |
 |---|---|---|
 | **screenshot-text-edit** | 截图文字 / 数字高保真修改：字形克隆法，保真度远高于字体重绘 | [SKILL.md](./skills/screenshot-text-edit/SKILL.md) · [参数速查](./skills/screenshot-text-edit/README.md) |
-| **win-ai-gaming-setup** | 新装 Windows 一条命令配成「AI 开发 + 游戏」机：七阶段自动装软件、做系统优化、可回滚。含**运行上下文矩阵**与 13 个可单独用的工具脚本 | [SKILL.md](./skills/win-ai-gaming-setup/SKILL.md) · [参数速查](./skills/win-ai-gaming-setup/README.md) |
 
 ### 📖 使用说明
 
@@ -132,19 +131,18 @@
 </details>
 
 <details>
-<summary><b>▸ Windows 调优与 Skill 文档</b>（win-ai-gaming-setup 配套）</summary>
+<summary><b>▸ Windows 新装优化与专题文档</b></summary>
 
 <br>
 
 | 文档 | 内容 |
 |---|---|
-| [Windows 调优总目录](./windows-tuning/README.md) | 五步装配线：起点基线（两台真机）→ 做/不做决策表 → 43 个系统调优值及其判据 → 开发环境与 13 项软件 → 按游戏可回退优化；含 38 条陷阱与 18 项判定标准，与技能的 97 项验收一一对应 |
+| [Windows 新装优化](./skills/windows-fresh-setup/README.md) | 可执行层与原理层同一个项目：七阶段脚本 + 起点基线 / 做不做决策 / 43 个调优值的判据 / 13 项软件 / 参数速查 / 38 条陷阱 / 18 项判定标准，98 项验收一一对应 |
 | [内网 NAS 稳定性记录](./docs/windows-nas-smb-stability.md) | 「NAS 不稳」的真因是唤醒后没有重连：事件时间对齐法、事件触发计划任务、映射的会话/提权隔离、吞吐天花板换算、以及 3 项实测无收益已回滚的尝试 |
 | [Skill 自审方法论](./docs/skill-self-audit.md) | 把文档承诺变成可验证事实：5 类缺陷（描述不符 / 预演不可信 / 退出码失真 / 判定矛盾 / 静默吞错）、性能等价性证明、环境 vs 代码缺陷 |
-| [win-ai-gaming-setup 参数速查](./skills/win-ai-gaming-setup/README.md) | 七阶段参数、依赖与常见坑；含**运行上下文矩阵**（宿主 / 提权 / 会话）与 13 个工具脚本速查 |
 | [screenshot-text-edit 参数速查](./skills/screenshot-text-edit/README.md) | CLI 脚本参数与调用示例 |
 
-关系说明：**Skill 是可执行的方法，`windows-tuning/` 是为什么这么做、证据在哪、以及踩过的坑，`docs/` 是与 Windows 调优无关的专题记录**。
+关系说明：**`skills/windows-fresh-setup/` 是一个项目，里面 `scripts/` 是可执行的方法、`docs/` 是为什么这么做与踩过的坑、`games/` 是按游戏的落地；`docs/`（顶层）是与 Windows 调优无关的专题记录**。
 
 </details>
 
@@ -222,7 +220,7 @@ This repository collects reusable technical configurations, practical notes and 
 |---|---|---|---|
 | **shadowrocket** | Routing config | Mac / iPhone rules: CN / global split, ad-block, long-connection tuning | [Folder](./shadowrocket) · [Readme](./shadowrocket/README.md) · [Guide](./shadowrocket/使用指南.md) |
 | **merlin** | Config and tools | Merlin fancyss routing lists and an endpoint bypass generator | [Folder](./merlin) · [Readme](./merlin/README.md) · [Guide](./merlin/使用指南.md) |
-| **Windows tuning** | Assembly line | An assembly line in real configuration order: baseline -> decisions -> 43 system tweaks with criteria -> dev environment and 13 apps -> per-game optimisation; plus 38 pitfalls and 18 audit criteria, all mapped to 97 acceptance checks | [Index](./windows-tuning/README.md) · [Games](./windows-tuning/05-games/README.md) |
+| **Windows fresh-install optimisation** | Project + tooling | **One project, two layers**: runnable scripts (7 phases, 14 tools) plus the reasoning behind every change (baseline, decisions, 43 tweaks with criteria, 13 apps, parameters, pitfalls and audit criteria), with revertable per-game tuning (CS2 for now) mapped to **98 acceptance checks** | [Entry](./skills/windows-fresh-setup/README.md) · [Games](./skills/windows-fresh-setup/games/README.md) |
 | **NAS stability notes** | Notes | Tracing "the NAS feels unstable" to "nothing remounts it after sleep": event-time correlation, an event-triggered remount task, session/elevation isolation of drive mappings, and calculating the link ceiling before optimizing | [Read](./docs/windows-nas-smb-stability.md) |
 | **Skill self-audit method** | Method | Turning documented promises into verifiable facts: five defect classes, proving an optimization is coverage-equivalent, and telling an environment quirk apart from a code bug | [Read](./docs/skill-self-audit.md) |
 
@@ -233,7 +231,6 @@ This repository collects reusable technical configurations, practical notes and 
 | Skill | Purpose | Entry points |
 |---|---|---|
 | **screenshot-text-edit** | High-fidelity text and digit edits inside screenshots via glyph cloning | [SKILL.md](./skills/screenshot-text-edit/SKILL.md) · [Reference](./skills/screenshot-text-edit/README.md) |
-| **win-ai-gaming-setup** | One command turns a fresh Windows box into an AI-development + gaming machine, with rollback. Includes a **runtime-context matrix** and 14 standalone tool scripts | [SKILL.md](./skills/win-ai-gaming-setup/SKILL.md) · [Reference](./skills/win-ai-gaming-setup/README.md) |
 
 ### 📖 How to use
 
@@ -280,13 +277,13 @@ The public edition excludes local private exceptions; never overwrite your perso
 </details>
 
 <details>
-<summary><b>▸ Windows tuning and skill docs</b></summary>
+<summary><b>▸ Windows fresh-install optimisation and topic notes</b></summary>
 
 <br>
 
 | Document | Content |
 |---|---|
-| [Windows tuning](./windows-tuning/README.md) | Five-step assembly line: baseline, do/don't decision table, 43 system tweaks with criteria, dev environment and 13 apps, per-game revertable optimisation; plus pitfalls and audit criteria tied to 97 acceptance checks |
+| [Windows fresh-install optimisation](./skills/windows-fresh-setup/README.md) | Executable and explanatory layers in one project: 7-phase scripts plus baseline, do/don't decisions, 43 tweaks with criteria, 13 apps, parameters, 38 pitfalls and 18 audit criteria tied to 98 acceptance checks |
 | [NAS stability notes](./docs/windows-nas-smb-stability.md) | "Unstable NAS" traced to a missing remount trigger after sleep: event-time correlation, an event-triggered scheduled task, mapping isolation by session/elevation, link-ceiling math, and three attempts that measured no benefit and were rolled back |
 | [Skill self-audit method](./docs/skill-self-audit.md) | Verifying a skill's own claims: five defect classes, coverage-equivalence proof for performance work, and separating machine policy from code defects |
 
