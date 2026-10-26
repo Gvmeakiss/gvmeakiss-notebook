@@ -203,7 +203,7 @@ pwsh -File scripts/setup.ps1 -Phase tune -WhatIf
 每个阶段做什么、对应哪个脚本，见上文「执行协议」的映射表；
 需要管理员的是 `drivers` 与 `tune`（`check` / `dev` 部分需要）。
 
-其余 16 个工具脚本都能单独调用（`scripts/` 下除入口 `setup.ps1` 之外的全部），参数见 `README.md` 的「工具箱」与「参数」两节。
+其余 17 个工具脚本都能单独调用（`scripts/` 下除入口 `setup.ps1` 之外的全部），参数见 `README.md` 的「工具箱」与「参数」两节。
 改任何 `.ps1` 之前先跑 `check-script-hygiene.ps1`。
 
 ## 三条纪律（违反就会被坑）

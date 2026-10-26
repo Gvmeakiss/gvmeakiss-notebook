@@ -185,6 +185,9 @@ pwsh -File skills/windows-fresh-setup/scripts/verify-env.ps1          # 验收�
 - **结果型检查不许退化成开关检查**：`EnablePeriodicBackup=1` 不等于有备份（26xxx 上任务空壳、SIT 已消失、RegBack 长期 0 字节），所以查 RegBack 字节数；MMCSS 同理查 `sc query` 的 RUNNING，而不是注册表值。
 - **覆盖差额要显式**：tweaks 组共 49 条检查（41 条在 `$tweaks` 表内、1 条经典右键菜单、4 条结果检查）；43 个值里 42 个有逐值检查，`EnablePeriodicBackup` 改查结果——**没有「写了但没人查」的值**。
 - **批量 `.reg` 的两个已知行为**：可写性未知的键不要放在批次中间（`reg import` 会部分写入、exit 1、跳过余下段）；`ContentDeliveryManager` 上实测被静默跳过，已有逐值直写兜底。
+- **单一数据源**：写入清单在 `scripts/lib/tune-writes.ps1`（`$TuneWrites`），验收在 `verify-env.ps1` 的 `$tweaks`，
+  文档是本页。三者的一致性由 `scripts/check-tune-consistency.ps1` 强制：写没有检查、检查没有写、期望值不等，
+  任一情况都直接非零退出；数量的口径由 `scripts/check-counts.ps1` 强制。
 - **改完跑体检**：`scripts/check-script-hygiene.ps1`（该目录 ASCII-only，5.1 也会加载）与 `scripts/test-tune-core.ps1`（DWORD 渲染、build 门控等纯函数）。
 
 ---

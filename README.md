@@ -72,7 +72,7 @@
 |---|---|---|---|
 | **shadowrocket** | 分流配置 | Mac / iPhone 通用分流规则：国内外分流、去广告、长连接优化 | [目录](./shadowrocket) · [说明](./shadowrocket/README.md) · [使用指南](./shadowrocket/使用指南.md) |
 | **merlin** | 配置与工具 | 梅林 fancyss 分流名单、节点入口绕过生成工具 | [目录](./merlin) · [说明](./merlin/README.md) · [使用指南](./merlin/使用指南.md) |
-| **Windows 新装优化** | 项目 + 工具 | **一个项目两层**：能跑的脚本（七阶段 16 个工具）+ 为什么这么改的判据（起点 / 决策 / 43 个调优值 / 13 项软件 / 参数 / 陷阱与判定标准），按游戏可回退优化（当前 CS2），对齐 **98 项验收** | [项目入口](./skills/windows-fresh-setup/README.md) · [游戏优化](./skills/windows-fresh-setup/games/README.md) |
+| **Windows 新装优化** | 项目 + 工具 | **一个项目两层**：能跑的脚本（七阶段 16 个工具）+ 为什么这么改的判据（起点 / 决策 / 45 个调优值 / 13 项软件 / 参数 / 陷阱与判定标准），按游戏可回退优化（当前 CS2），对齐 **98 项验收** | [项目入口](./skills/windows-fresh-setup/README.md) · [游戏优化](./skills/windows-fresh-setup/games/README.md) |
 | **内网 NAS 稳定性记录** | 实践记录 | 把「NAS 不稳」定位到「睡眠唤醒后没有重连」的完整链条：事件时间对齐法、事件触发计划任务、映射的会话/提权隔离、先算链路天花板 | [阅读](./docs/windows-nas-smb-stability.md) |
 | **Skill 自审方法论** | 方法 | 如何把「文档承诺」变成「可验证事实」：5 类真实缺陷、性能优化的等价性证明、环境缺陷与代码缺陷的区分 | [阅读](./docs/skill-self-audit.md) |
 
@@ -137,7 +137,7 @@
 
 | 文档 | 内容 |
 |---|---|
-| [Windows 新装优化](./skills/windows-fresh-setup/README.md) | 可执行层与原理层同一个项目：七阶段脚本 + 起点基线 / 做不做决策 / 43 个调优值的判据 / 13 项软件 / 参数速查 / 38 条陷阱 / 18 项判定标准，98 项验收一一对应 |
+| [Windows 新装优化](./skills/windows-fresh-setup/README.md) | 可执行层与原理层同一个项目：七阶段脚本 + 起点基线 / 做不做决策 / 45 个调优值的判据 / 13 项软件 / 参数速查 / 38 条陷阱 / 18 项判定标准，98 项验收一一对应 |
 | [内网 NAS 稳定性记录](./docs/windows-nas-smb-stability.md) | 「NAS 不稳」的真因是唤醒后没有重连：事件时间对齐法、事件触发计划任务、映射的会话/提权隔离、吞吐天花板换算、以及 3 项实测无收益已回滚的尝试 |
 | [Skill 自审方法论](./docs/skill-self-audit.md) | 把文档承诺变成可验证事实：5 类缺陷（描述不符 / 预演不可信 / 退出码失真 / 判定矛盾 / 静默吞错）、性能等价性证明、环境 vs 代码缺陷 |
 | [screenshot-text-edit 参数速查](./skills/screenshot-text-edit/README.md) | CLI 脚本参数与调用示例 |

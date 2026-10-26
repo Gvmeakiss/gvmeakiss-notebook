@@ -13,12 +13,12 @@ skills/windows-fresh-setup/
 ├── README.md               ← 你在这里：装配线、命令、验收
 ├── apps.json               ← 软件清单（13 项：来源 / 校验 / 关联）
 ├── presets/                ← 预设（TrafficMonitor 配置）
-├── scripts/                ← 可执行层：setup.ps1 + 16 个可单跑的工具
+├── scripts/                ← 可执行层：setup.ps1 + 17 个可单跑的工具
 │   └── lib/tune-core.ps1   ← 纯函数（DWORD 渲染、build 门控），有自测
 ├── docs/                   ← 原理层：按配置顺序编号的四份正文
 │   ├── 01-baseline.md          起点判定与环境事实
 │   ├── 02-decisions.md         哪些改动值得做（证据 → 决定表）
-│   ├── 03-system-tweaks.md     43 个调优值：正确值 / 判据 / 怎么验
+│   ├── 03-system-tweaks.md     45 个调优值：正确值 / 判据 / 怎么验
 │   ├── 04-dev-and-apps.md      开发环境与 13 项软件
 │   ├── 05-params.md            参数速查（七个阶段的参数、脚本用法、依赖）
 │   └── reference/              跨阶段参考
@@ -104,7 +104,7 @@ verify-env.ps1   98 项 / 0 失败 / 1 信息项（SSH 无密钥，属正常）
 
 | 变化 | 要同时改 |
 |---|---|
-| 新增一条调优 | `scripts/setup.ps1` 的 `$changes` + `scripts/verify-env.ps1` 的 `$tweaks` + `docs/03-system-tweaks.md` 一行 |
+| 新增一条调优 | `scripts/lib/tune-writes.ps1` 加一条写入 + `scripts/verify-env.ps1` 的 `$tweaks` 加一条检查 + `docs/03-system-tweaks.md` 一行；三者不同步时 `check-tune-consistency.ps1` 直接失败 |
 | 新增一个软件 | `apps.json` + `docs/04-dev-and-apps.md` 的清单表 |
 | 新增一个游戏 | `games/<game>/`（照 [games 模板](games/README.md)）+ 更新索引 |
 | 发现新的坑 | `docs/reference/pitfalls.md` 一行（症状 / 根因 / 判据 / 做法） |

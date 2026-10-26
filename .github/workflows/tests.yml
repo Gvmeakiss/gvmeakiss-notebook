@@ -115,6 +115,10 @@ jobs:
         shell: pwsh
         run: ./skills/windows-fresh-setup/scripts/test-tune-core.ps1
 
+      - name: Tune writes and acceptance checks agree
+        shell: pwsh
+        run: ./skills/windows-fresh-setup/scripts/check-tune-consistency.ps1
+
       - name: Documented numbers match the files
         shell: pwsh
         run: ./skills/windows-fresh-setup/scripts/check-counts.ps1

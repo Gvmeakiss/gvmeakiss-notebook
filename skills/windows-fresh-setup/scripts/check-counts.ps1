@@ -52,11 +52,30 @@ if (Test-Path -LiteralPath $appsPath) {
 }
 else { $problems.Add("apps.json not found at $appsPath") }
 
-$facts = [ordered]@{ tools = $toolScripts.Count; apps = $appCount }
+function Get-TuneWriteCount {
+    param([string]$File)
+    if (-not (Test-Path -LiteralPath $File)) { return 0 }
+    $tokens = $null; $errors = $null
+    $ast = [System.Management.Automation.Language.Parser]::ParseFile($File, [ref]$tokens, [ref]$errors)
+    $assign = $ast.FindAll({
+            param($n) $n -is [System.Management.Automation.Language.AssignmentStatementAst] -and $n.Left.Extent.Text -eq '$TuneWrites'
+        }, $true) | Select-Object -First 1
+    if (-not $assign) { return 0 }
+    $start = $assign.Extent.StartOffset; $end = $assign.Extent.EndOffset
+    $count = 0
+    foreach ($h in $ast.FindAll({ param($n) $n -is [System.Management.Automation.Language.HashtableAst] }, $true)) {
+        if ($h.Extent.StartOffset -lt $start -or $h.Extent.EndOffset -gt $end) { continue }
+        $keys = @($h.KeyValuePairs | ForEach-Object { $_.Item1.Extent.Text })
+        if (($keys -contains 'Path') -and ($keys -contains 'Name') -and ($keys -contains 'Value')) { $count++ }
+    }
+    return $count
+}
+$tuneWrites = Get-TuneWriteCount (Join-Path $PSScriptRoot 'lib/tune-writes.ps1')
+$facts = [ordered]@{ tools = $toolScripts.Count; apps = $appCount; tweaks = $tuneWrites }
 
 if (-not $Quiet) {
     Say '===== check-counts =====' White
-    Say ("  facts: tools={0} apps={1}" -f $facts.tools, $facts.apps)
+    Say ("  facts: tools={0} apps={1} tweakWrites={2}" -f $facts.tools, $facts.apps, $facts.tweaks)
     Say ''
 }
 
@@ -81,6 +100,7 @@ $rules = @(
     @{ Name = 'tool scripts'; Fact = 'tools'; Rx = '(\d+)\s*(?:tool scripts|standalone tool scripts)' }
     @{ Name = 'tool scripts'; Fact = 'tools'; Rx = '(\d+)\s*(?:\u5de5\u5177\u811a\u672c)' }
     @{ Name = 'tool scripts'; Fact = 'tools'; Rx = '(\d+)\s*\u4e2a\u53ef\u5355(?:\u72ec\u7528|\u8dd1)\u7684?\u5de5\u5177' }
+    @{ Name = 'tune writes';  Fact = 'tweaks'; Rx = '(\d+)\s*(?:\u4e2a\u8c03\u4f18\u503c)' }
     @{ Name = 'apps';         Fact = 'apps';  Rx = '(\d+)\s*(?:apps|applications)' }
     @{ Name = 'apps';         Fact = 'apps';  Rx = '(\d+)\s*(?:\u9879\u8f6f\u4ef6|\u4e2a\u5e94\u7528)' }
 )

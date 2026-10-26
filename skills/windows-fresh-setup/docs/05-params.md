@@ -1,9 +1,9 @@
 # 参数速查与脚本说明
 
-> 这是**执行层的参考手册**：每个阶段的参数、16 个工具脚本的用法、依赖与常见坑。
+> 这是**执行层的参考手册**：每个阶段的参数、17 个工具脚本的用法、依赖与常见坑。
 > 项目入口与装配线见 [../README.md](../README.md)；为什么这么做见 [01-baseline.md](./01-baseline.md) 起的四份文档。
 
-本文覆盖：`check` / `dev` / `apps` / `drivers` / `tune` / `link` / `verify` 七个阶段的参数，16 个工具脚本的用法，依赖与常见坑。
+本文覆盖：`check` / `dev` / `apps` / `drivers` / `tune` / `link` / `verify` 七个阶段的参数，17 个工具脚本的用法，依赖与常见坑。
 
 > **两份文档分工**：本页给人看 —— 做什么、怎么用、出问题怎么办。
 > 想深究或在 AI 里执行，看 [`SKILL.md`](../SKILL.md)：执行协议、判定规则、实测陷阱速查（每条含「症状 → 根因 → 判据」）。
@@ -367,7 +367,7 @@ pnputil /restart-device "<InstanceId>"     # 或 scripts/reset-failed-devices.ps
 
 ## 工具箱
 
-16 个工具脚本（含自举 `bootstrap.ps1` 与自测 `test-tune-core.ps1`），另有入口 `setup.ps1`。
+17 个工具脚本（含自举 `bootstrap.ps1` 与自测 `test-tune-core.ps1`），另有入口 `setup.ps1`。
 全部自包含、支持 `Get-Help`。
 
 | 新东西 | 解决什么 |
