@@ -126,7 +126,9 @@ jobs:
       - name: Bootstrap dry run must not hand over to setup.ps1
         shell: pwsh
         run: |
-          $out = & ./skills/windows-fresh-setup/scripts/bootstrap.ps1 -DryRun 2>&1 | Out-String
+          # *>&1 is required: the script reports through Write-Host (information stream),
+          # which a plain 2>&1 capture does not keep - the marker check below would fail.
+          $out = & ./skills/windows-fresh-setup/scripts/bootstrap.ps1 -DryRun *>&1 | Out-String
           if ($LASTEXITCODE -ne 0) { throw "bootstrap -DryRun exited $LASTEXITCODE" }
           if ($out -notmatch 'dry run: nothing was downloaded') { throw "dry-run marker missing from output" }
           if ($out -match '--- check|--- dev|--- tune') { throw "dry run started a setup phase" }
