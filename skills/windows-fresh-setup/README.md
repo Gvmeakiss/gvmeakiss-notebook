@@ -29,7 +29,7 @@ skills/windows-fresh-setup/
 │   ├── 04-dev-and-apps.md      开发环境与 13 项软件
 │   ├── 05-params.md            参数速查（七个阶段的参数、脚本用法、依赖）
 │   └── reference/              跨阶段参考
-│       ├── pitfalls.md         38+ 条陷阱：症状 / 根因 / 判据 / 做法
+│       ├── pitfalls.md         43 条陷阱：症状 / 根因 / 判据 / 做法
 │       └── audit-criteria.md   判定原则 + 18 项判据 + 只读命令清单
 └── games/                  ← 按游戏的可回退优化（当前 CS2）
     ├── README.md · AGENTS.md

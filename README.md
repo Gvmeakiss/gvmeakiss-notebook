@@ -137,7 +137,7 @@
 
 | 文档 | 内容 |
 |---|---|
-| [Windows 新装优化](./skills/windows-fresh-setup/README.md) | 可执行层与原理层同一个项目：七阶段脚本 + 起点基线 / 做不做决策 / 45 个调优值的判据 / 13 项软件 / 参数速查 / 38 条陷阱 / 18 项判定标准，98 项验收一一对应 |
+| [Windows 新装优化](./skills/windows-fresh-setup/README.md) | 可执行层与原理层同一个项目：七阶段脚本 + 起点基线 / 做不做决策 / 45 个调优值的判据 / 13 项软件 / 参数速查 / 43 条陷阱 / 18 项判定标准，98 项验收一一对应 |
 | [内网 NAS 稳定性记录](./docs/windows-nas-smb-stability.md) | 「NAS 不稳」的真因是唤醒后没有重连：事件时间对齐法、事件触发计划任务、映射的会话/提权隔离、吞吐天花板换算、以及 3 项实测无收益已回滚的尝试 |
 | [Skill 自审方法论](./docs/skill-self-audit.md) | 把文档承诺变成可验证事实：5 类缺陷（描述不符 / 预演不可信 / 退出码失真 / 判定矛盾 / 静默吞错）、性能等价性证明、环境 vs 代码缺陷 |
 | [screenshot-text-edit 参数速查](./skills/screenshot-text-edit/README.md) | CLI 脚本参数与调用示例 |
@@ -220,7 +220,7 @@ This repository collects reusable technical configurations, practical notes and 
 |---|---|---|---|
 | **shadowrocket** | Routing config | Mac / iPhone rules: CN / global split, ad-block, long-connection tuning | [Folder](./shadowrocket) · [Readme](./shadowrocket/README.md) · [Guide](./shadowrocket/使用指南.md) |
 | **merlin** | Config and tools | Merlin fancyss routing lists and an endpoint bypass generator | [Folder](./merlin) · [Readme](./merlin/README.md) · [Guide](./merlin/使用指南.md) |
-| **Windows fresh-install optimisation** | Project + tooling | **One project, two layers**: runnable scripts (7 phases, 14 tools) plus the reasoning behind every change (baseline, decisions, 43 tweaks with criteria, 13 apps, parameters, pitfalls and audit criteria), with revertable per-game tuning (CS2 for now) mapped to **98 acceptance checks** | [Entry](./skills/windows-fresh-setup/README.md) · [Games](./skills/windows-fresh-setup/games/README.md) |
+| **Windows fresh-install optimisation** | Project + tooling | **One project, two layers**: runnable scripts (7 phases, 17 tools) plus the reasoning behind every change (baseline, decisions, 45 tweaks with criteria, 13 apps, parameters, pitfalls and audit criteria), with revertable per-game tuning (CS2 for now) mapped to **98 acceptance checks** | [Entry](./skills/windows-fresh-setup/README.md) · [Games](./skills/windows-fresh-setup/games/README.md) |
 | **NAS stability notes** | Notes | Tracing "the NAS feels unstable" to "nothing remounts it after sleep": event-time correlation, an event-triggered remount task, session/elevation isolation of drive mappings, and calculating the link ceiling before optimizing | [Read](./docs/windows-nas-smb-stability.md) |
 | **Skill self-audit method** | Method | Turning documented promises into verifiable facts: five defect classes, proving an optimization is coverage-equivalent, and telling an environment quirk apart from a code bug | [Read](./docs/skill-self-audit.md) |
 
@@ -283,7 +283,7 @@ The public edition excludes local private exceptions; never overwrite your perso
 
 | Document | Content |
 |---|---|
-| [Windows fresh-install optimisation](./skills/windows-fresh-setup/README.md) | Executable and explanatory layers in one project: 7-phase scripts plus baseline, do/don't decisions, 43 tweaks with criteria, 13 apps, parameters, 38 pitfalls and 18 audit criteria tied to 98 acceptance checks |
+| [Windows fresh-install optimisation](./skills/windows-fresh-setup/README.md) | Executable and explanatory layers in one project: 7-phase scripts plus baseline, do/don't decisions, 45 tweaks with criteria, 13 apps, parameters, 43 pitfalls and 18 audit criteria tied to 98 acceptance checks |
 | [NAS stability notes](./docs/windows-nas-smb-stability.md) | "Unstable NAS" traced to a missing remount trigger after sleep: event-time correlation, an event-triggered scheduled task, mapping isolation by session/elevation, link-ceiling math, and three attempts that measured no benefit and were rolled back |
 | [Skill self-audit method](./docs/skill-self-audit.md) | Verifying a skill's own claims: five defect classes, coverage-equivalence proof for performance work, and separating machine policy from code defects |
 

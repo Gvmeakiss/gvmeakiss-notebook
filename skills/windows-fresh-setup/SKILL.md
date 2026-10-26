@@ -260,7 +260,7 @@ pwsh -File scripts/snapshot-services.ps1 -OutDir C:\backup\before-tweak
 
 ## 陷阱速查（每条都实测过）
 
-> 这里只放最常踩的；**完整 38+ 条**（含判据与正确做法）在 [docs/reference/pitfalls.md](docs/reference/pitfalls.md)。
+> 这里只放最常踩的；**完整 43 条**（含判据与正确做法）在 [docs/reference/pitfalls.md](docs/reference/pitfalls.md)。
 
 | 现象 | 真相 |
 |---|---|

@@ -71,11 +71,20 @@ function Get-TuneWriteCount {
     return $count
 }
 $tuneWrites = Get-TuneWriteCount (Join-Path $PSScriptRoot 'lib/tune-writes.ps1')
-$facts = [ordered]@{ tools = $toolScripts.Count; apps = $appCount; tweaks = $tuneWrites }
+
+# Pitfall rows: table data rows in pitfalls.md, minus the SSH fingerprint table (its rows contain
+# a SHA256: fingerprint rather than a symptom). The docs quote this number, so it is derived here.
+$pitfallRows = 0
+$pitfallDoc = Join-Path $root 'docs/reference/pitfalls.md'
+if (Test-Path -LiteralPath $pitfallDoc) {
+    $pitfallRows = @(Get-Content -LiteralPath $pitfallDoc -Encoding UTF8 |
+            Where-Object { $_ -match '^\| ' -and $_ -notmatch '^\|--' -and $_ -notmatch '^\| \u75c7\u72b6' -and $_ -notmatch 'SHA256:' }).Count
+}
+$facts = [ordered]@{ tools = $toolScripts.Count; apps = $appCount; tweaks = $tuneWrites; pitfalls = $pitfallRows }
 
 if (-not $Quiet) {
     Say '===== check-counts =====' White
-    Say ("  facts: tools={0} apps={1} tweakWrites={2}" -f $facts.tools, $facts.apps, $facts.tweaks)
+    Say ("  facts: tools={0} apps={1} tweakWrites={2} pitfalls={3}" -f $facts.tools, $facts.apps, $facts.tweaks, $facts.pitfalls)
     Say ''
 }
 
@@ -103,6 +112,9 @@ $rules = @(
     @{ Name = 'tune writes';  Fact = 'tweaks'; Rx = '(\d+)\s*(?:\u4e2a\u8c03\u4f18\u503c)' }
     @{ Name = 'apps';         Fact = 'apps';  Rx = '(\d+)\s*(?:apps|applications)' }
     @{ Name = 'apps';         Fact = 'apps';  Rx = '(\d+)\s*(?:\u9879\u8f6f\u4ef6|\u4e2a\u5e94\u7528)' }
+    @{ Name = 'tune writes';  Fact = 'tweaks'; Rx = '(\d+)\s*(?:tweaks)' }
+    @{ Name = 'pitfalls';     Fact = 'pitfalls'; Rx = '(\d+)\s*(?:\u6761\u9677\u9631|pitfalls)' }
+    @{ Name = 'tool scripts'; Fact = 'tools'; Rx = '(\d+)\s*(?:tools)' }
 )
 
 $checked = 0
