@@ -2,9 +2,9 @@
 
 这一段的目标是一个可复现的终态：**新开一个终端，每条命令都能跑出版本号，13 项软件每一项都能在盘上回读到声明的路径**。
 要装什么由 [`02-decisions.md`](./02-decisions.md) 的判定决定，条目一律以清单为准；装完怎么证明，由这一段负责。
-全部动作由 `skills/win-ai-gaming-setup` 的 `check → dev → apps → link → verify` 五个阶段完成；`drivers` 与 `tune` 属系统层，见 [`03-system-tweaks.md`](./03-system-tweaks.md)。
+全部动作由 `skills/windows-fresh-setup` 的 `check → dev → apps → link → verify` 五个阶段完成；`drivers` 与 `tune` 属系统层，见 [`03-system-tweaks.md`](./03-system-tweaks.md)。
 
-命令在仓库根执行，下文 `setup.ps1` 指 [`skills/win-ai-gaming-setup/scripts/setup.ps1`](../scripts/setup.ps1)。
+命令在仓库根执行，下文 `setup.ps1` 指 [`skills/windows-fresh-setup/scripts/setup.ps1`](../scripts/setup.ps1)。
 
 <details>
 <summary><b>本页目录</b>（6 节）</summary>
@@ -22,7 +22,7 @@
 
 | 阶段 | 命令 | 产物 | 成功判据 |
 |---|---|---|---|
-| `check`（前置） | `pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1 -Phase check` | `scoop`、`git`、`7-Zip`、`git core.longpaths=true` | 结果表 `check PASS`；`git config --global core.longpaths` 回读 `true` |
+| `check`（前置） | `pwsh -File skills/windows-fresh-setup/scripts/setup.ps1 -Phase check` | `scoop`、`git`、`7-Zip`、`git core.longpaths=true` | 结果表 `check PASS`；`git config --global core.longpaths` 回读 `true` |
 | `dev` | `setup.ps1 -Phase dev` | `python` `nodejs` `go` `rust` `dotnet` `mingw`/`cmake` `uv`、6 个镜像 + `HF_ENDPOINT`、VS Code / Windows Terminal、`fix-env.ps1` 修复 | [`setup-langs.ps1`](../scripts/setup-langs.ps1) 汇总行 `all requested packages installed and mirrors configured`；结果表 `dev PASS` |
 | `apps` | `setup.ps1 -Phase apps` | `%USERPROFILE%\Apps\<名称>` 下 5 个便携软件 + 8 个 winget 条目 | [`install-portable.ps1`](../scripts/install-portable.ps1) 汇总行 `all selected apps installed and verified (N/M)`，M = 清单条目数 = 13 |
 | `link` | `setup.ps1 -Phase link -RegisterAssociations` | HKCU 关联注册（`Applications` + `Capabilities`/`RegisteredApplications`）、注册表备份、孤儿扫描 | 逐类型"仍需手点"清单 + 孤儿扫描无残留。**结果表 `link` 恒为 PASS，不能当判据** |
@@ -47,7 +47,7 @@
 | uv | scoop `uv` | 未配置（脚本只负责安装） | `uv --version` |
 | Java | scoop `temurin21-jdk`（`java` bucket） | 无 | `javac -version` |
 
-- 默认集是 `-Languages`（`python,nodejs,go,cmake,dotnet-sdk,mingw,uv`）加 Rust（由 `setup-langs.ps1` 的默认集带入，走 rustup 而不是 scoop 的 MSI）；**Java 不在默认集**，要 `-Languages java`，或单独跑 `pwsh -File skills/win-ai-gaming-setup/scripts/setup-langs.ps1 -Packages java`。
+- 默认集是 `-Languages`（`python,nodejs,go,cmake,dotnet-sdk,mingw,uv`）加 Rust（由 `setup-langs.ps1` 的默认集带入，走 rustup 而不是 scoop 的 MSI）；**Java 不在默认集**，要 `-Languages java`，或单独跑 `pwsh -File skills/windows-fresh-setup/scripts/setup-langs.ps1 -Packages java`。
 - 版本号只证明"能启动"。`verify-env.ps1` 对每种生态另做一次真实编译并运行（`run` / `build` 行），那一行才是判据。
 - pip / npm / go / cargo 的镜像写入都以"该工具已在 PATH 上"为前置条件。工具没装上，对应镜像**不会被写**，且不会为此单独报错 —— 只在 `dev` 阶段的 `mirror state` 回读里显示 `NOT configured`。`NuGet.Config` 不受此条件约束，文件不存在就写。
 - `NuGet.Config` 与 `config.toml` 已存在时脚本不覆盖（保留人工调过的值），所以"镜像没变"不等于"没写"。
@@ -89,7 +89,7 @@
 
 ```powershell
 $root = Join-Path $env:USERPROFILE 'Apps'
-$man  = Get-Content '.\skills\win-ai-gaming-setup\apps.json' -Raw -Encoding UTF8 | ConvertFrom-Json
+$man  = Get-Content '.\skills\windows-fresh-setup\apps.json' -Raw -Encoding UTF8 | ConvertFrom-Json
 
 # 逐条回读（与安装器同一判据：winget 看 verifyPath，便携看 exe 相对路径）
 # 本循环不含 altPaths：Notepad++ / TrafficMonitor 常由 winget 装在别处，最终判据看下面的 check-software
@@ -106,7 +106,7 @@ $man.apps | Where-Object { $_.sha256 } | ForEach-Object {
 }
 
 # 含 altPaths 与版本号的完整回读，判据是汇总行 declared apps 13/13 present
-pwsh -File skills/win-ai-gaming-setup/scripts/check-software.ps1 -PortableRoot "$env:USERPROFILE\Apps"
+pwsh -File skills/windows-fresh-setup/scripts/check-software.ps1 -PortableRoot "$env:USERPROFILE\Apps"
 ```
 
 版本号取自 exe 的文件元数据（`(Get-Item <exe>).VersionInfo.FileVersion`），不是清单声明；版本与清单吻合才说明跑的是这一版。

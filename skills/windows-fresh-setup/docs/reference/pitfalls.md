@@ -169,14 +169,15 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search" /v ConnectedSe
 
 ## 6. 文件系统标签与 Shell 显示
 
-| 给商店 / MSIX 应用建桌面快捷方式：`explorer.exe shell:AppsFolder\<AUMID>` 形式点了没反应 | 该机器上 AUMID 激活对脚本发起的启动不生效；而包内真实 exe 直接启动正常 | `Start-Process "shell:AppsFolder\<AUMID>"` 后 20 秒内无新进程，而 `Start-Process "<包目录>\app\<app>.exe"` 立刻起 8–9 个进程 | 快捷方式直接指向包内 exe（`C:\Program Files\WindowsApps\<包全名>\app\<app>.exe`）；注意**路径含版本号，应用更新后会变**，失效时重建。图标用包内 `Assets\*_altform-unplated.png` + 官方 `BackgroundColor` 合成（白 logo 在透明底上、或不带底板时，深色桌面会看成"图标很小/没有"） |
 图标"没了"通常不是图标的问题。桌面快捷方式显示成**空白文档 + 箭头**、改 `IconLocation` 和重建图标缓存都无效时，先查**完整性标签**。
 
 | 症状 | 根因 | 判据（怎么确认） | 正确做法 |
 |---|---|---|---|
+| 给商店 / MSIX 应用建桌面快捷方式：`explorer.exe shell:AppsFolder\<AUMID>` 形式点了没反应 | 该机器上 AUMID 激活对脚本发起的启动不生效；而包内真实 exe 直接启动正常 | `Start-Process "shell:AppsFolder\<AUMID>"` 后 20 秒内无新进程，而 `Start-Process "<包目录>\app\<app>.exe"` 立刻起 8–9 个进程 | 快捷方式直接指向包内 exe（`C:\Program Files\WindowsApps\<包全名>\app\<app>.exe`）；注意**路径含版本号，应用更新后会变**，失效时重建。图标用包内 `Assets\*_altform-unplated.png` + 官方 `BackgroundColor` 合成（白 logo 在透明底上、或不带底板时，深色桌面会看成"图标很小/没有"） |
 | 某目录树下的 `.lnk` 一律显示通用空白文档图标；**同一个文件**复制到 `%TEMP%` 就正常 | 该目录带 **Low 完整性标签**，子项继承。低完整性 `.lnk` 被 Shell 当作不可信内容，拒绝解析目标图标 | 读安全描述符的 `LABEL_SECURITY_INFORMATION` 得到 SID `S-1-16-<级别>`（Low/Medium/High/System/Untrusted）；**不要解析 `icacls` 文本**，它在非英文系统上是本地化字符串。`icacls <x>.lnk /setintegritylevel M` 后图标**立刻**恢复 | 根治：`icacls <目录> /setintegritylevel (OI)(CI)M`，再 `/t /c` 递归修已有文件；改完在桌面新建一个 `.lnk` 验证 |
 | 改了快捷方式图标没反应、重建 iconcache 也没反应 | `IconLocation` 只决定"从哪取图标"，不决定 Shell **是否允许**解析低完整性链接 | 用 `SHGetFileInfo` 取 `.lnk` 图标，统计非白像素：**< 200 = 通用图标**，> 600 = 真实图标 | 同上。**先量图标像素，再猜原因**——这是区分"图标资源缺失"与"Shell 拒绝解析"的唯一硬判据 |
 | 目录 ACL 里出现 `XxxSandboxUsers:(RX)`、`S-1-4-…:(W,D)`、`Everyone:(CI)(DENY)(DC)` | 沙箱 / agent 工具为了限制写入给**工作区祖先目录**加的 ACL 与标签 | 单独断开继承（`icacls <目录> /inheritance:r`）后图标仍空白 → **ACE 不是原因，标签才是** | 只回滚标签，别急着删 ACE；ACE 可能正是沙箱写权限的来源 |
+
 ---
 
-<p align="right"><sub><a href="../../README.md">← 目录</a> · <a href="../03-system-tweaks.md">系统调优清单</a> · <a href="../../README.md">笔记本</a></sub></p>
+<p align="right"><sub><a href="../../README.md">← 目录</a> · <a href="../03-system-tweaks.md">系统调优清单</a> · <a href="../../../../README.md">笔记本</a></sub></p>

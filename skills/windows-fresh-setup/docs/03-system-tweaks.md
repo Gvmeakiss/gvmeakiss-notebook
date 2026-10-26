@@ -1,6 +1,6 @@
 # 系统调优清单
 
-本文是 [win-ai-gaming-setup](../SKILL.md) 中 `tune` 阶段的**状态规范**：一台调优完成的机器上，下面每一项都应当为真。它不叙述改了什么、哪次改的，只回答三件事——正确值是什么、凭什么、怎么验。
+本文是 [windows-fresh-setup](../SKILL.md) 中 `tune` 阶段的**状态规范**：一台调优完成的机器上，下面每一项都应当为真。它不叙述改了什么、哪次改的，只回答三件事——正确值是什么、凭什么、怎么验。
 
 注册表写入由 `setup.ps1 -Phase tune` 完成，验收由 `verify-env.ps1` 完成，两者描述的是同一批值：**不一致就是缺陷**，见文末「维护约束」。
 
@@ -28,8 +28,8 @@
 
 ```powershell
 # 仓库根目录执行
-pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1 -Phase tune   # 写入
-pwsh -File skills/win-ai-gaming-setup/scripts/verify-env.ps1          # 验收：看 --- tune tweaks 段
+pwsh -File skills/windows-fresh-setup/scripts/setup.ps1 -Phase tune   # 写入
+pwsh -File skills/windows-fresh-setup/scripts/verify-env.ps1          # 验收：看 --- tune tweaks 段
 ```
 
 - **怎么读**：每行三列。第一列 = 项 + 正确值（注册表路径照抄代码）+ 落地方式；`可脚本化 · -Phase tune` 表示由 tune 写入，`需手工` 的项全部集中在「手工项」。

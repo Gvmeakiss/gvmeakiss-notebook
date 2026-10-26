@@ -124,13 +124,13 @@ foreach ($ext in '.md','.png','.mp4') {
 }
 
 # 集合验收（tune 存活检查）
-pwsh -File skills/win-ai-gaming-setup/scripts/verify-env.ps1
+pwsh -File skills/windows-fresh-setup/scripts/verify-env.ps1
 ```
 
 **完整性标签**（桌面快捷方式图标空白、或文件被当作"不可信内容"时先查）：
 
 ```powershell
-icacls C:\Users\Aatrox\Desktop        # 期望 Medium；出现 "Low Mandatory Level" 即命中
+icacls "$env:USERPROFILE\Desktop"    # 别写死用户名；期望 Medium，出现 Low 即命中
 icacls <某个>.lnk                     # 子项继承，同样会显示 Low
 icacls <某个>.lnk /setintegritylevel M   # 单文件验证用；根治要改目录并 /t 递归
 ```

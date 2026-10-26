@@ -120,7 +120,7 @@ pwsh -File scripts/verify-env.ps1                   # 5 验收（98 项）
 
 ```powershell
 # 全部（新机器就这一条）
-pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1
+pwsh -File skills/windows-fresh-setup/scripts/setup.ps1
 # 分阶段（-File 模式下逗号列表会被脚本自行拆分）
 pwsh -File ...\setup.ps1 -Phase check
 pwsh -File ...\setup.ps1 -Phase dev,apps
@@ -346,7 +346,7 @@ pwsh -File scripts/snapshot-services.ps1 -OutDir C:\backup\before-tweak
 ## 验收
 
 ```powershell
-pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1 -Phase verify
+pwsh -File skills/windows-fresh-setup/scripts/setup.ps1 -Phase verify
 ```
 
 `setup.ps1` 末尾输出 PASS/FAIL 表；**新开一个终端**再看 PATH 类结果。

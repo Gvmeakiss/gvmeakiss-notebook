@@ -2,7 +2,7 @@
 
 两台真机（`docs/01-env-setup-win10.md` 的 Win10 非管理员机、`docs/02-env-audit-win11.md` 的 Win11 管理员机）
 的环境事实合成一份基线：起点类型 → 最终环境 → 软件清单 → 验收判据 → 边界。
-工具与判据统一取自 [`skills/win-ai-gaming-setup`](https://github.com/Gvmeakiss/gvmeakiss-notebook/tree/main/skills/win-ai-gaming-setup)：
+工具与判据统一取自 [`skills/windows-fresh-setup`](https://github.com/Gvmeakiss/gvmeakiss-notebook/tree/main/skills/windows-fresh-setup)：
 方法论与陷阱速查在 `SKILL.md`，人读说明在 `README.md`，入口 `scripts/setup.ps1`，七阶段 `check` / `dev` / `apps` / `drivers` / `tune` / `link` / `verify`。
 单件脚本（同在 `scripts/`）：`bootstrap.ps1`（无 git 自举）· `audit-env.ps1` · `fix-env.ps1` · `setup-langs.ps1` · `install-portable.ps1` ·
 `snapshot-services.ps1` / `compare-services.ps1` · `set-app-associations.ps1` · `reset-failed-devices.ps1` · `diagnose-ime.ps1` · `check-software.ps1` · `check-script-hygiene.ps1` · `clean-orphan-associations.ps1` · `verify-env.ps1`。
@@ -90,7 +90,7 @@
 
 ## 软件清单
 
-`skills/win-ai-gaming-setup/apps.json` 共 **13 条**：2 个压缩工具 + 5 个便携软件 + 6 个 VC++ 运行库。
+`skills/windows-fresh-setup/apps.json` 共 **13 条**：2 个压缩工具 + 5 个便携软件 + 6 个 VC++ 运行库。
 `-Phase apps` 按清单全量安装：便携条目必需 `sha256`（缺哈希直接拒绝，`-AllowUnverified` 才放行），
 `winget` 条目按 `verifyPath` 回读文件后才算装上 —— `winget` 的退出码本身不算证据。
 
@@ -126,8 +126,8 @@ beddf5548e75c97930d1575ba1c7d113e6e2b33d0a200310e734ca08e225f414  npp.8.9.8.1.po
 ## 验收基线
 
 ```powershell
-pwsh -File skills/win-ai-gaming-setup/scripts/setup.ps1 -Phase verify   # 七阶段之一
-pwsh -File skills/win-ai-gaming-setup/scripts/verify-env.ps1            # 等价单件脚本
+pwsh -File skills/windows-fresh-setup/scripts/setup.ps1 -Phase verify   # 七阶段之一
+pwsh -File skills/windows-fresh-setup/scripts/verify-env.ps1            # 等价单件脚本
 ```
 
 **判据：98 项 / 0 失败，退出码 0。** 输出形态为每组一行 `[OK] <组> <通过>/<总数> checks passed`，
