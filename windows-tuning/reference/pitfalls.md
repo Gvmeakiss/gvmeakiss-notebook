@@ -169,6 +169,7 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search" /v ConnectedSe
 
 ## 6. 文件系统标签与 Shell 显示
 
+| 给商店 / MSIX 应用建桌面快捷方式：`explorer.exe shell:AppsFolder\<AUMID>` 形式点了没反应 | 该机器上 AUMID 激活对脚本发起的启动不生效；而包内真实 exe 直接启动正常 | `Start-Process "shell:AppsFolder\<AUMID>"` 后 20 秒内无新进程，而 `Start-Process "<包目录>\app\<app>.exe"` 立刻起 8–9 个进程 | 快捷方式直接指向包内 exe（`C:\Program Files\WindowsApps\<包全名>\app\<app>.exe`）；注意**路径含版本号，应用更新后会变**，失效时重建。图标用包内 `Assets\*_altform-unplated.png` + 官方 `BackgroundColor` 合成（白 logo 在透明底上、或不带底板时，深色桌面会看成"图标很小/没有"） |
 图标"没了"通常不是图标的问题。桌面快捷方式显示成**空白文档 + 箭头**、改 `IconLocation` 和重建图标缓存都无效时，先查**完整性标签**。
 
 | 症状 | 根因 | 判据（怎么确认） | 正确做法 |
