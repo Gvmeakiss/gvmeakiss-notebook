@@ -250,6 +250,22 @@ function Invoke-Step { param([string]$File, [string[]]$Arguments, [string]$What)
     # really wrote association registrations - while the banner said "nothing will be changed".
     $callArgs = @($Arguments)
     if ($WhatIfPreference -and (Test-ChildSupportsWhatIf $p)) { $callArgs += '-WhatIf' }
+    elseif ($WhatIfPreference) {
+        # The child does not accept -WhatIf. Two very different cases hide here:
+        #   * a read-only probe (audit-env / check-software / diagnose-ime / verify-env /
+        #     compare-services) - running it is safe and makes the dry run informative;
+        #   * a writer (install-portable / setup-langs / fix-env / snapshot-services /
+        #     set-app-associations / clean-orphan-associations) - running it would perform
+        #     the very work the dry run is supposed to preview. Measured: -Phase tune -WhatIf
+        #     really wrote services-snapshot.csv and tasks-snapshot.csv into the snapshot
+        #     folder, because snapshot-services.ps1 has no -WhatIf parameter.
+        # Read-only children are allow-listed by name; everything else is skipped, not run.
+        $readOnlyChildren = @('audit-env.ps1', 'check-software.ps1', 'diagnose-ime.ps1', 'verify-env.ps1', 'compare-services.ps1')
+        if ($readOnlyChildren -notcontains $File) {
+            Write-Host ("     would run {0} {1} (skipped: this child has no -WhatIf support)" -f $File, ($Arguments -join ' ')) -ForegroundColor Cyan
+            return $true
+        }
+    }
     $out = & $pwshExe -NoProfile -File $p @callArgs 2>&1
     $out | ForEach-Object { Write-Host "       $_" -ForegroundColor DarkGray }
     return ($LASTEXITCODE -eq 0)
@@ -596,6 +612,36 @@ if ($phases -contains 'tune') {
     Say '--- tune: restore point + snapshot, then gaming tweaks + turning off useless stuff ---' White
     New-Item -ItemType Directory -Force -Path $SnapshotDir | Out-Null
 
+    # ------------------------------------------------------------------ pre-flight guards
+    # The tune phase writes to the machine. Before the FIRST write it must be able to prove
+    # (a) that it runs in a context where those writes mean anything, and (b) that every piece
+    # of rollback material can exist. Anything unproven aborts the phase with a FAIL record,
+    # which becomes a non-zero exit code: a partially tuned machine with no way back is worse
+    # than an untouched one.
+    $tuneAbort = $null
+    if (-not $isAdmin -and -not $WhatIfPreference) {
+        $tuneAbort = 'not elevated: the tune phase refuses to start (partial writes are worse than none)'
+    }
+    if (-not $tuneAbort -and -not $WhatIfPreference) {
+        # The undo script lands in the snapshot folder, so prove that folder is writable BEFORE
+        # touching the registry - a read-only folder would otherwise only surface at the end,
+        # after every write had already happened.
+        # This probe is skipped under -WhatIf: Set-Content supports ShouldProcess, so a dry run
+        # would suppress the write and the read-back would then look like a failure.
+        $probe = Join-Path $SnapshotDir ('.write-probe-' + [Guid]::NewGuid().ToString('N').Substring(0, 8))
+        try {
+            Set-Content -LiteralPath $probe -Value 'ok' -Encoding Ascii -ErrorAction Stop
+            $probeBack = (Get-Content -LiteralPath $probe -Raw -ErrorAction Stop).Trim()
+            if ($probeBack -ne 'ok') { $tuneAbort = "snapshot folder is not writable: $SnapshotDir" }
+        }
+        catch { $tuneAbort = "snapshot folder is not writable: $SnapshotDir" }
+        finally { Remove-Item -LiteralPath $probe -Force -ErrorAction SilentlyContinue }
+    }
+    elseif (-not $tuneAbort) {
+        Write-Host "     would verify that the snapshot folder is writable: $SnapshotDir" -ForegroundColor Cyan
+    }
+    if ($tuneAbort) { Bad "tune aborted before any write: $tuneAbort" }
+
     # A services snapshot is NOT a rollback path: it records what the services looked like,
     # not the machine. System Restore is the only built-in undo for the registry writes below.
     # Two measured facts force the shape of this block:
@@ -605,27 +651,38 @@ if ($phases -contains 'tune') {
     #   2. Restore points live on the volume, so replacing/restoring the system disk wipes them.
     #      A machine checked after a disk migration had exactly 0 restore points.
     # Hence: drop the frequency to 0, create, read back the list, then restore the guardrail.
-    if ($PSCmdlet.ShouldProcess('system restore point', 'create')) {
+    # If the read-back shows no restore point, the tune phase has no coarse undo and therefore
+    # does not start - the abort below records the failure and skips every write.
+    if (-not $tuneAbort -and $PSCmdlet.ShouldProcess('system restore point', 'create')) {
         $srKey = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore'
         $prevFreq = (Get-ItemProperty -Path $srKey -Name 'SystemRestorePointCreationFrequency' -ErrorAction SilentlyContinue).SystemRestorePointCreationFrequency
         try {
             Enable-ComputerRestore -Drive "$env:SystemDrive\" -ErrorAction SilentlyContinue
             Set-ItemProperty -Path $srKey -Name 'SystemRestorePointCreationFrequency' -Value 0 -Type DWord -ErrorAction SilentlyContinue
-            Checkpoint-Computer -Description "win-ai-gaming-setup tune $(Get-Date -Format 'yyyy-MM-dd HH:mm')" -RestorePointType 'MODIFY_SETTINGS' -ErrorAction Stop
+            Checkpoint-Computer -Description "windows-fresh-setup tune $(Get-Date -Format 'yyyy-MM-dd HH:mm')" -RestorePointType 'MODIFY_SETTINGS' -ErrorAction Stop
             $rpCount = @(Get-ComputerRestorePoint -ErrorAction SilentlyContinue).Count
             if ($rpCount -gt 0) { Ok "restore point created (listed: $rpCount)" }
-            else { Warn 'Checkpoint-Computer returned but Get-ComputerRestorePoint lists none - the tune phase has no undo point' }
+            else { $tuneAbort = 'Checkpoint-Computer returned but no restore point is listed: no coarse undo available' }
         }
-        catch { Warn "restore point failed: $($_.Exception.Message) - continuing without an undo point" }
+        catch { $tuneAbort = "restore point failed: $($_.Exception.Message)" }
         finally {
             if ($null -eq $prevFreq) { Remove-ItemProperty -Path $srKey -Name 'SystemRestorePointCreationFrequency' -ErrorAction SilentlyContinue }
             else { Set-ItemProperty -Path $srKey -Name 'SystemRestorePointCreationFrequency' -Value $prevFreq -Type DWord -ErrorAction SilentlyContinue }
         }
+        if ($tuneAbort) { Bad "tune will not start: $tuneAbort" }
     }
 
-    $ok = Invoke-Step 'snapshot-services.ps1' @('-OutDir', $SnapshotDir) 'snapshot before touching anything'
+    if ($tuneAbort) { $ok = $false }
+    else { $ok = Invoke-Step 'snapshot-services.ps1' @('-OutDir', $SnapshotDir) 'snapshot before touching anything' }
+    if (-not $ok -and -not $WhatIfPreference -and -not $tuneAbort) {
+        $tuneAbort = 'service snapshot failed: no baseline to compare against or roll back to'
+        Bad "tune will not start: $tuneAbort"
+    }
 
-    if ($SkipTweaks) {
+    if ($tuneAbort) {
+        Record 'tune' $false $tuneAbort
+    }
+    elseif ($SkipTweaks) {
         Warn 'SkipTweaks: snapshot taken, no tweak applied'
         Record 'tune' $ok 'snapshot only'
     }
@@ -945,10 +1002,21 @@ if ($phases -contains 'tune') {
         # the system cannot find the file" even though mmcss.sys is present and intact) - it
         # is boot-loaded, so only a reboot brings it back. Report the real state, do not
         # assume the writes took effect.
-        & sc.exe config MMCSS start= auto 2>&1 | Out-Null
-        & sc.exe start MMCSS 2>&1 | Out-Null
-        Start-Sleep -Seconds 2
+        #
+        # sc.exe is an external tool, so it needs its own ShouldProcess guard: -WhatIf must be
+        # a real dry run, not "the registry writes were skipped but the service was configured".
+        if ($PSCmdlet.ShouldProcess('MMCSS service', 'set start= auto and start it')) {
+            & sc.exe config MMCSS start= auto 2>&1 | Out-Null
+            & sc.exe start MMCSS 2>&1 | Out-Null
+            Start-Sleep -Seconds 2
+        }
+        else {
+            Write-Host '     would set MMCSS to start= auto and start it (no change made)' -ForegroundColor Cyan
+        }
         $mmcssLine = ((& sc.exe query MMCSS 2>&1 | Select-String 'STATE') -join ' ').Trim()
+        if ($WhatIfPreference) {
+            Write-Host "     MMCSS current state: $(if ($mmcssLine) { $mmcssLine } else { '(unreadable)' }) - -WhatIf did not touch it" -ForegroundColor Cyan
+        }
         if ($mmcssLine -match 'RUNNING') {
             Ok 'MMCSS RUNNING - the SystemProfile / Tasks\Games values are actually in effect'
         }
@@ -1130,10 +1198,26 @@ if ($phases -contains 'tune') {
 
         # Per-item undo script, written next to the snapshot so it travels with the rollback
         # material. The restore point stays as the coarse net; this is the scalpel.
+        # It is read back, not assumed: a tune phase whose undo script is empty or missing has
+        # silently lost its per-item rollback, and that must show up as a failed phase.
         if (-not $WhatIfPreference) {
             $undoPath = Write-UndoScript -Dir $SnapshotDir
-            if ($undoPath) { Ok "per-item undo script: $undoPath ($($script:undoEntries.Count) item(s))" }
-            else { Warn 'no undo script written (nothing applied, or the snapshot folder is not writable)' }
+            $undoOk = $false
+            if ($undoPath -and (Test-Path -LiteralPath $undoPath)) {
+                $undoSize = (Get-Item -LiteralPath $undoPath).Length
+                $undoText = Get-Content -LiteralPath $undoPath -Raw -ErrorAction SilentlyContinue
+                $undoOk = ($undoSize -gt 0) -and ($undoText -match 'tune-undo') -and ($script:undoEntries.Count -gt 0)
+                if ($undoOk) { Ok "per-item undo script: $undoPath ($($script:undoEntries.Count) item(s), $undoSize bytes)" }
+                else { Bad "undo script at $undoPath failed read-back ($undoSize bytes, $($script:undoEntries.Count) recorded item(s))"; $failed++ }
+            }
+            else {
+                # Nothing applied is legitimate; anything applied without an undo script is not.
+                if ($script:undoEntries.Count -gt 0) {
+                    Bad "no undo script written although $($script:undoEntries.Count) change(s) were applied"
+                    $failed++
+                }
+                else { Warn 'no undo script written (nothing was applied)' }
+            }
         }
 
         Warn 'deliberately NOT done: no service disabled, no UAC change, no DPI change, no update policy change'
