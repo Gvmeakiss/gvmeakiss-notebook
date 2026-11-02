@@ -42,6 +42,7 @@ skills/<name>/
   `skill-self-audit.md`：**方法论** —— 如何把 skill 的「文档承诺」变成「可验证事实」
   （5 类缺陷、性能优化的等价性证明、环境缺陷与代码缺陷的区分），与 `windows-fresh-setup` 配套。
 - `internal-audit-reform/`：AI复用制作内部审计汇报、H5、海报和电脑邮件长图的完整项目包，包含可编辑PPT、逐页口播、结果导向的内容/视觉规范、海报源文件及配图库。使用前阅读其 `README.md` 和项目级 `AGENTS.md`；当前页面中的业务条件和时限只适用于对应示例项目。
+- `任中离任报告撰写规范/`：独立的底稿撰写方法项目，涵盖来源身份、OCR、模板与成熟稿交叉建模、语义保护、来源纠错、建议回对和 Word 验收。先读其 `README.md` 与 `AGENTS.md`；只保留通用规范和空模板，不纳入个案原始材料。
 - `assets/`：根 `README.md` 的横幅素材。`banner.svg` 与 `banner-dark.svg` 是同一版式的浅色 / 深色两套，
   由 README 中的 `<picture>` 按 `prefers-color-scheme` 自动切换；**改动需同步两份**。
   字体走系统字体栈（`PingFang SC, Hiragino Sans GB, Noto Sans SC, Microsoft YaHei`），不内嵌外部字体文件。
