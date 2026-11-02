@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>内部审计整改流程优化与操作详解</title>
+<style>
+:root{--ink:#2f3b40;--body:#626a6e;--muted:#83898b;--orange:#d67640;--line:#eadacb;--peach:#fff5e9}
+*{box-sizing:border-box}html,body{margin:0;padding:0}body{background:#eee;color:var(--ink);font-family:"Hiragino Sans GB","PingFang SC","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}h1,h2,h3,p{margin:0}#poster{width:1440px;overflow:hidden;background:white}.page-one{height:900px;position:relative;background:#fff}.brand{position:absolute;top:37px;left:92px;right:92px;display:flex;align-items:center;justify-content:space-between;padding-bottom:24px;border-bottom:1px solid var(--line)}.brand-name{display:flex;align-items:center;gap:13px;font-size:22px;line-height:1.6;font-weight:600;color:#636a6d}.brand-name:before{content:"";width:4px;height:22px;background:var(--orange)}.year{font-size:23px;line-height:1.6;color:var(--muted);letter-spacing:1px}
+h1{position:absolute;top:142px;left:92px;right:92px;font-size:66px;line-height:1.5;font-weight:700;letter-spacing:.5px;white-space:nowrap}.title-rule{position:absolute;left:94px;top:258px;width:90px;height:3px;background:var(--orange)}.intro{position:absolute;left:94px;top:298px;font-size:29px;line-height:1.9;color:var(--body)}.report-art{position:absolute;right:90px;top:263px;width:172px;height:134px;color:#e7a57d}
+.goals{position:absolute;top:432px;left:0;right:0;height:282px;padding:26px 92px 0;background:var(--peach);border-top:1px solid #f1e8e0;border-bottom:1px solid #f1e8e0}.goals h2{font-size:30px;line-height:1.5;font-weight:600;color:#6c7276}.goal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:43px;margin-top:24px}.goal{position:relative;padding-left:20px}.goal:before{content:"";position:absolute;left:0;top:7px;width:3px;height:29px;background:var(--orange);border-radius:2px}.goal h3{font-size:34px;line-height:1.4;font-weight:700}.goal p{font-size:26px;line-height:1.8;color:var(--body);margin-top:14px}.scope{position:absolute;left:92px;right:92px;top:752px;display:grid;grid-template-columns:145px 1fr;gap:24px;align-items:start}.scope h2{font-size:26px;line-height:1.75;font-weight:600;color:#626a6e}.scope p{font-size:25px;line-height:1.9;color:var(--body)}
+.page-two{height:1200px;position:relative;background:linear-gradient(180deg,#fff 0,#fff 84%,#fffaf6 100%);overflow:hidden}.page-divider{position:absolute;left:92px;right:92px;top:0;height:1px;background:var(--line)}.page-divider:before{content:"";display:block;width:78px;height:3px;position:absolute;left:0;top:-1px;background:var(--orange)}.flow-heading{position:absolute;left:92px;right:92px;top:58px}.flow-heading h2{font-size:44px;line-height:1.5;font-weight:700}.flow-heading p{font-size:26px;line-height:1.8;color:var(--body);margin-top:13px}.path{position:absolute;inset:0;width:1440px;height:1000px;pointer-events:none}.flow-item{position:absolute;width:324px;text-align:center;z-index:1}.number{margin:0 auto;display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;border:1.5px solid #dea47e;background:#fffdfa;font-family:Arial,sans-serif;font-size:25px;font-weight:500;line-height:1;color:#c76c3c}.flow-item h3{font-size:32px;line-height:1.5;font-weight:700;margin-top:24px}.flow-item p{font-size:26px;line-height:1.75;color:var(--body);margin-top:17px}.period-note{position:absolute;left:156px;top:539px;width:716px;text-align:center;font-size:22px;line-height:1.7;color:#9a816e;letter-spacing:.3px}.end-note{position:absolute;left:92px;top:968px;font-size:24px;line-height:1.8;color:#777e82}.bottom-decoration{position:absolute;left:0;bottom:105px;width:1440px;height:90px;pointer-events:none}.footer{position:absolute;bottom:30px;left:92px;right:92px;border-top:1px solid var(--line);padding-top:22px;display:flex;justify-content:space-between;align-items:center}.footer p{font-size:23px;line-height:1.6;color:#6d7478}.footer-mark{display:flex;gap:6px;align-items:center}.footer-mark i{width:4px;height:16px;background:#e2a17b;display:block}.footer-mark i:nth-child(2){height:22px;opacity:.65}.footer-mark i:nth-child(3){height:28px;opacity:.4}
+.page-two{height:1100px}
+/* 视觉丰富版：保留文字与版面顺序，只增加原生矢量、色彩层次与连接线 */
+.page-one{background:#fffefc;overflow:hidden}
+.hero-wash{position:absolute;top:0;left:0;width:1440px;height:432px;pointer-events:none}
+.top-accent{position:absolute;top:0;left:0;width:330px;height:6px;background:linear-gradient(90deg,#d67640,#efbf94)}
+.brand{border-bottom-color:#e6dacf}
+.brand-name{color:#59656b;letter-spacing:.3px}
+.brand-name:before{height:23px;border-radius:2px;background:#d67640}
+.year{font-size:22px;letter-spacing:1.5px;color:#8a8f90}
+h1{color:var(--ink);letter-spacing:.25px}
+.title-rule{width:105px;height:4px;border-radius:2px;background:linear-gradient(90deg,#d67640,#e9b18a)}
+.title-rule:after{content:"";position:absolute;left:115px;top:0;width:7px;height:4px;border-radius:2px;background:#efd8c4}
+.intro{color:#637076}
+.report-art{width:285px;height:180px;right:92px;top:242px}
+.goals{background:linear-gradient(105deg,#fff2e3 0%,#fff8ef 58%,#fff4e9 100%);border-top-color:#edd8c3;border-bottom-color:#edd8c3}
+.goals:before{content:"";position:absolute;left:185px;right:92px;top:49px;height:1px;background:linear-gradient(90deg,#ddbc9d,#eddbca)}
+.goals h2{font-size:28px;color:#8c674c;letter-spacing:1px}
+.goal-grid{gap:48px;margin-top:23px}
+.goal{padding-left:0;padding-right:14px}
+.goal:before{width:1px;height:136px;left:-24px;top:1px;background:#e5ccb6;border-radius:0}
+.goal:first-child:before{display:none}
+.goal h3{display:flex;align-items:center;gap:14px;font-size:33px;line-height:1.45}
+.goal-icon{width:42px;height:42px;flex:none;color:#be7749}
+.goal p{margin-top:16px;color:#647076}
+.scope{top:751px;grid-template-columns:145px 1fr;gap:24px}
+.scope h2{display:flex;align-items:center;gap:10px;font-size:25px;color:#536168}
+.scope-icon{width:28px;height:28px;flex:none;color:#bd8058}
+.scope p{color:#687278}
+.scope strong{font-weight:600;color:#56636a}
+.page-two{background:linear-gradient(180deg,#fffefc 0%,#fff 30%,#fff 76%,#fffaf3 100%)}
+.page-divider{background:#e7d9cb}
+.page-divider:before{width:105px;height:4px;top:-2px;border-radius:2px;background:#d67640}
+.flow-heading{top:53px}
+.flow-heading h2{color:var(--ink)}
+.flow-heading p{margin-top:12px;color:#667177}
+.flow-flourish{position:absolute;right:94px;top:68px;width:184px;height:83px;color:#d6a37e}
+.flow-item .number{width:68px;height:68px;background:linear-gradient(145deg,#fffaf3,#f9e1c7);border:1.5px solid #d9a06f;box-shadow:0 0 0 8px #fffefc;color:#a85e32;font-size:26px;font-weight:600}
+.flow-item h3{display:flex;align-items:center;justify-content:center;gap:11px;margin-top:18px;font-size:32px;line-height:1.5}
+.step-icon{width:31px;height:31px;flex:none;color:#b78056}
+.flow-item p{color:#667177}
+.period-note{color:#9b785b;display:flex;align-items:center;justify-content:center;gap:17px;letter-spacing:.5px;font-size:22px}
+.period-note:before,.period-note:after{content:"";height:1px;flex:1;background:linear-gradient(90deg,transparent,#ead9c7)}
+.period-note:after{transform:rotate(180deg)}
+.bottom-decoration{bottom:94px;height:124px}
+.footer{border-top-color:#e8d9ca}
+.footer p{color:#707b80}
+.footer-mark{gap:7px}
+.footer-mark i{border-radius:2px;background:#d49b6d;width:5px}
+</style>
+</head>
+<body>
+<main id="poster">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="icon-responsibility" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="13" r="5"/><path d="M15 29v-3a9 9 0 0 1 18 0v3M9 37h30M16 29v8m16-8v8M24 29v8"/><circle cx="9" cy="37" r="3" fill="#fff5e9"/><circle cx="24" cy="37" r="3" fill="#fff5e9"/><circle cx="39" cy="37" r="3" fill="#fff5e9"/></g></symbol>
+  <symbol id="icon-process" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="7" width="13" height="12" rx="3"/><rect x="29" y="29" width="13" height="12" rx="3"/><path d="M19 13h15a5 5 0 0 1 5 5v6m-4-4 4 4 4-4M29 35H14a5 5 0 0 1-5-5v-6m-4 4 4-4 4 4"/></g></symbol>
+  <symbol id="icon-standard" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 7h19a4 4 0 0 1 4 4v28H14a4 4 0 0 1-4-4V11a4 4 0 0 1 4-4Z"/><path d="M15 7v32m6-22 3 3 6-7m-9 15h10m-10 5h10M10 39a3 3 0 0 1 3-4h24"/></g></symbol>
+  <symbol id="icon-send" viewBox="0 0 40 40"><g fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="m6 17 28-11-9 28-6-11-13-6Zm13 6L34 6M7 29h6M10 34h7"/></g></symbol>
+  <symbol id="icon-analysis" viewBox="0 0 40 40"><g fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><circle cx="17" cy="17" r="10"/><path d="m25 25 9 9M12 20v-4m5 4v-8m5 8v-6"/></g></symbol>
+  <symbol id="icon-plan" viewBox="0 0 40 40"><g fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="25" height="27" rx="3"/><rect x="15" y="5" width="11" height="6" rx="2" fill="#fffaf4"/><path d="m13 19 2 2 4-5m4 4h5m-15 7 2 2 4-5m4 4h5"/></g></symbol>
+  <symbol id="icon-track" viewBox="0 0 40 40"><g fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="30" height="25" rx="4"/><path d="M5 17h30M12 6v8m16-8v8M12 25h4m8 0h4m-16 5h4m8 0h4"/></g></symbol>
+  <symbol id="icon-check" viewBox="0 0 40 40"><g fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M25 35H10a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3h16a3 3 0 0 1 3 3v9M12 13h12m-12 6h7m-7 6h5"/><circle cx="28" cy="28" r="8"/><path d="m24 28 3 3 5-6"/></g></symbol>
+  <symbol id="icon-collaborate" viewBox="0 0 40 40"><g fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h21v15H16l-6 5v-5H6V7Zm22 8h6v16h-5v5l-6-5h-7v-5M12 13h9m-9 4h6"/></g></symbol>
+  <symbol id="icon-assess" viewBox="0 0 40 40"><g fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M8 33V23h6v10m5 0V16h6v17m5 0V8h6v25M5 34h32M8 15l9-8 6 3 10-6"/></g></symbol>
+</defs></svg>
+<section class="page-one">
+  <svg class="hero-wash" viewBox="0 0 1440 432" fill="none" aria-hidden="true"><defs><linearGradient id="heroTint" x1="1100" y1="20" x2="780" y2="410" gradientUnits="userSpaceOnUse"><stop stop-color="#fbefdf"/><stop offset="1" stop-color="#fffefc"/></linearGradient></defs><path d="M872 0h568v432h-150C1138 388 1084 174 872 0Z" fill="url(#heroTint)"/><path d="M1040-90c121 184 256 138 410 272M1162-77c59 120 159 121 284 196" stroke="#e8d4bf" stroke-width="1" opacity=".55"/><path d="M1185 423c83-40 150-60 255-51" stroke="#ebd5bd" stroke-width="1.2"/><g fill="#dfc3a7" opacity=".45"><circle cx="1330" cy="188" r="2"/><circle cx="1344" cy="188" r="2"/><circle cx="1358" cy="188" r="2"/><circle cx="1330" cy="202" r="2"/><circle cx="1344" cy="202" r="2"/><circle cx="1358" cy="202" r="2"/></g></svg>
+  <div class="top-accent"></div>
+  <header class="brand"><span class="brand-name">稽核监察部专项稽核团队</span><span class="year">2026年</span></header>
+  <h1>内部审计整改流程优化与操作详解</h1>
+  <div class="title-rule"></div>
+  <p class="intro">基于原整改流程逐一细化、完善，<br>督促整改工作扎实落地</p>
+  <svg class="report-art" viewBox="0 0 320 202" fill="none" aria-hidden="true">
+    <ellipse cx="172" cy="108" rx="120" ry="85" fill="#f8e9d7"/>
+    <circle cx="172" cy="108" r="84" stroke="#e6cdb1" stroke-dasharray="3 7" opacity=".8"/>
+    <g stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+      <path d="M143 41h75a7 7 0 0 1 7 7v118h-82V41Z" fill="#f0dcc6" stroke="#d7b38f" transform="rotate(8 184 105)"/>
+      <path d="M109 24h66l26 26v111a7 7 0 0 1-7 7h-85a7 7 0 0 1-7-7V31a7 7 0 0 1 7-7Z" fill="#fffefb" stroke="#bd8b62"/>
+      <path d="M174 25v27h26" stroke="#bd8b62"/>
+      <path d="M123 72h55m-55 13h55m-55 13h32" stroke="#d5b99d"/>
+      <rect x="53" y="99" width="75" height="84" rx="8" fill="#fffaf2" stroke="#c98956"/>
+      <rect x="76" y="94" width="30" height="9" rx="4" fill="#ecd1b3" stroke="#c98956"/>
+      <path d="m66 122 5 5 9-11m9 7h24m-47 22 5 5 9-11m9 7h24m-24 17h16" stroke="#c3824d"/>
+      <path d="M231 125h30a6 6 0 0 1 6 6v27h-36v-33Zm0 6 18 13 18-13" fill="#fffaf3" stroke="#b8a48e"/>
+      <path d="M243 78h12m-6-6v12M57 63h10m-5-5v10M275 174h9m-4-4v9" stroke="#ddbb97"/>
+      <path d="M45 190h231" stroke="#dec6ab"/>
+    </g>
+  </svg>
+  <div class="goals">
+    <h2>目标</h2>
+    <div class="goal-grid">
+      <div class="goal"><h3><svg class="goal-icon" aria-hidden="true"><use href="#icon-responsibility"/></svg>深化整改</h3><p>层层压实责任，进一步提升<br>整改工作重要性</p></div>
+      <div class="goal"><h3><svg class="goal-icon" aria-hidden="true"><use href="#icon-process"/></svg>流程优化</h3><p>在原整改流程基础上，<br>各环节细化、加固</p></div>
+      <div class="goal"><h3><svg class="goal-icon" aria-hidden="true"><use href="#icon-standard"/></svg>标准统一</h3><p>形成标准化、<br>可追踪的作业规范</p></div>
+    </div>
+  </div>
+  <div class="scope"><h2><svg class="scope-icon" viewBox="0 0 32 32" fill="none" aria-hidden="true"><g stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M5 8h8l3 3h11v15H5V8Z"/><path d="M9 8V5h18v6M10 17h12m-12 4h8"/></g></svg>覆盖范围</h2><p><strong>稽核发现问题：</strong>年度专项稽核、常规稽核项目发现的问题；<br><strong>三函涉及事项：</strong>指令函、警示函、知询函涉及的整改事项</p></div>
+</section>
+<section class="page-two">
+  <div class="page-divider"></div>
+  <header class="flow-heading"><h2>整改流程</h2><p>明确各环节责任主体、执行标准、时限等关键信息</p></header>
+  <svg class="flow-flourish" viewBox="0 0 184 83" fill="none" aria-hidden="true"><path d="M10 56h60a16 16 0 0 0 16-16V26a16 16 0 0 1 16-16h68" stroke="#e3ceb8" stroke-width="1.5"/><path d="M36 73h60a16 16 0 0 0 16-16V43a16 16 0 0 1 16-16h42" stroke="#f0dfcc" stroke-width="1.5"/><circle cx="13" cy="56" r="6" fill="#fffaf2" stroke="#d5a77f" stroke-width="1.5"/><circle cx="86" cy="32" r="6" fill="#fffaf2" stroke="#d5a77f" stroke-width="1.5"/><circle cx="164" cy="10" r="6" fill="#eed5b8" stroke="#d5a77f" stroke-width="1.5"/></svg>
+  <svg class="path" viewBox="0 0 1440 1000" fill="none" aria-hidden="true">
+    <defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M1 1l6 3.5L1 8" fill="none" stroke="#c68d60" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+    <path d="M210 250h1137q22 0 22 22v326q0 22-22 22H290" stroke="#f7e9d8" stroke-width="12" stroke-linecap="round"/>
+    <g stroke="#d3a074" stroke-width="1.8">
+      <path d="M251 250H509" marker-end="url(#arrow)"/>
+      <path d="M591 250H849" marker-end="url(#arrow)"/>
+      <path d="M931 250H1189" marker-end="url(#arrow)"/>
+      <path d="M1271 250h76q22 0 22 22v326q0 22-22 22h-76" marker-end="url(#arrow)"/>
+      <path d="M1189 620H801" stroke-dasharray="5 7" marker-end="url(#arrow)"/>
+      <path d="M719 620H331" stroke-dasharray="5 7" marker-end="url(#arrow)"/>
+    </g>
+  </svg>
+  <div class="flow-item" data-step="1" style="left:48px;top:216px"><span class="number">01</span><h3><svg class="step-icon" aria-hidden="true"><use href="#icon-send"/></svg>任务下发</h3><p>按事项来源下发任务，<br>5个工作日内反馈措施</p></div>
+  <div class="flow-item" data-step="2" style="left:388px;top:216px"><span class="number">02</span><h3><svg class="step-icon" aria-hidden="true"><use href="#icon-analysis"/></svg>成因分析</h3><p>业务主导、合规指导，<br>从五个方面分析成因</p></div>
+  <div class="flow-item" data-step="3" style="left:728px;top:216px"><span class="number">03</span><h3><svg class="step-icon" aria-hidden="true"><use href="#icon-plan"/></svg>措施制定</h3><p>责任人提级、分级审批，<br>整改期限原则上<br>不超过3个月</p></div>
+  <div class="flow-item" data-step="4" style="left:1068px;top:216px"><span class="number">04</span><h3><svg class="step-icon" aria-hidden="true"><use href="#icon-track"/></svg>过程追踪</h3><p>按月跟进整改进度，<br>系统定期邮件提醒</p></div>
+  <p class="period-note">业审联动、考核按周期开展</p>
+  <div class="flow-item" data-step="5" style="left:1068px;top:586px"><span class="number">05</span><h3><svg class="step-icon" aria-hidden="true"><use href="#icon-check"/></svg>验收质检</h3><p>业务自验、稽核验收、<br>问责质检，核查结果</p></div>
+  <div class="flow-item" data-step="6" style="left:598px;top:586px"><span class="number">06</span><h3><svg class="step-icon" aria-hidden="true"><use href="#icon-collaborate"/></svg>业审联动</h3><p>业务与稽核定期交流，<br>评估问题整改实效</p></div>
+  <div class="flow-item" data-step="7" style="left:128px;top:586px"><span class="number">07</span><h3><svg class="step-icon" aria-hidden="true"><use href="#icon-assess"/></svg>考核落地</h3><p>完成率和完成质量<br>纳入合规考核</p></div>
+  <svg class="bottom-decoration" viewBox="0 0 1440 124" fill="none" aria-hidden="true"><path d="M0 91c275 0 379-62 661-43s485 55 779-27v103H0V91Z" fill="#f9eddc" opacity=".6"/><path d="M0 91c275 0 379-62 661-43s485 55 779-27" stroke="#e5c8a7" stroke-width="1.3"/><path d="M0 115c278 0 430-53 704-33s461 24 736-27" stroke="#eddbc3" stroke-width="1.2"/><path d="M0 124c329 0 443-33 711-19s430 12 729-23" stroke="#fffaf3" stroke-width="9"/></svg>
+  <footer class="footer"><p>具体要求详见配套PPT及宣导视频</p><span class="footer-mark"><i></i><i></i><i></i></span></footer>
+</section>
+</main>
+</body>
+</html>
