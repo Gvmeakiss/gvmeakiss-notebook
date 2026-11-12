@@ -47,5 +47,10 @@
 # 教训：默认规则会让这类文件"看着提交了、clone 下来却不可用"。
 skills/windows-fresh-setup/presets/*  -text -whitespace
 
+# DSH profile 快照：check-profile.ps1 用 SHA256 比对「当前 profile 与仓库快照」，
+# 任何换行转换都会让 clone 下来的文件与活动 profile 字节不同、报出假漂移。
+# 所以同样用 -text 原样存取（这些文件由 dsh 写入，一律 LF）。
+dsh-plugins/profile/*  -text
+
 # GitHub 语言统计：把 vendored 第三方库排除出统计
 audit-kanban/vendor/* linguist-vendored

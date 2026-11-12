@@ -58,3 +58,8 @@ Fancyss_conf_backup_*.json
 bookmarks_*.html
 *.private.conf
 *.private.json
+
+# MSYS/Git-for-Windows 在无 tty 的 shell 里会把用户名提示写到保留设备名 CON，
+# 在仓库根留下一个 35 字节的 CON 文件；Windows 上 git 无法索引它，`git add -A` 会直接失败。
+# 它不是项目内容，忽略即可。
+CON
