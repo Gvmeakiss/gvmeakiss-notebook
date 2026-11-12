@@ -72,9 +72,10 @@
 |---|---|---|---|
 | **shadowrocket** | 分流配置 | Mac / iPhone 通用分流规则：国内外分流、去广告、长连接优化 | [目录](./shadowrocket) · [说明](./shadowrocket/README.md) · [使用指南](./shadowrocket/使用指南.md) |
 | **merlin** | 配置与工具 | 梅林 fancyss 分流名单、节点入口绕过生成工具 | [目录](./merlin) · [说明](./merlin/README.md) · [使用指南](./merlin/使用指南.md) |
-| **Windows 新装优化** | 项目 + 工具 | **一个项目两层**：能跑的脚本（七阶段 16 个工具）+ 为什么这么改的判据（起点 / 决策 / 45 个调优值 / 13 项软件 / 参数 / 陷阱与判定标准），按游戏可回退优化（当前 CS2），对齐 **98 项验收** | [项目入口](./skills/windows-fresh-setup/README.md) · [游戏优化](./skills/windows-fresh-setup/games/README.md) |
+| **Windows 新装优化** | 项目 + 工具 | **一个项目两层**：能跑的脚本（七阶段 17 个工具）+ 为什么这么改的判据（起点 / 决策 / 45 个调优值 / 13 项软件 / 参数 / 陷阱与判定标准），按游戏可回退优化（当前 CS2），对齐 **98 项验收** | [项目入口](./skills/windows-fresh-setup/README.md) · [游戏优化](./skills/windows-fresh-setup/games/README.md) |
 | **内网 NAS 稳定性记录** | 实践记录 | 把「NAS 不稳」定位到「睡眠唤醒后没有重连」的完整链条：事件时间对齐法、事件触发计划任务、映射的会话/提权隔离、先算链路天花板 | [阅读](./docs/windows-nas-smb-stability.md) |
 | **Skill 自审方法论** | 方法 | 如何把「文档承诺」变成「可验证事实」：5 类真实缺陷、性能优化的等价性证明、环境缺陷与代码缺陷的区分 | [阅读](./docs/skill-self-audit.md) |
+| **DSH 插件配置** | 配置快照 | 这台机器 DeepSeek Harness profile 的插件清单与配置：3 个第三方 bundle（工具 / 主题 / 归档清理）+ 1 个因版本不兼容而禁用的官方插件；含只读核对与导出脚本 | [目录](./dsh-plugins) · [说明](./dsh-plugins/README.md) |
 
 
 #### AI Skills
@@ -223,6 +224,7 @@ This repository collects reusable technical configurations, practical notes and 
 | **Windows fresh-install optimisation** | Project + tooling | **One project, two layers**: runnable scripts (7 phases, 17 tools) plus the reasoning behind every change (baseline, decisions, 45 tweaks with criteria, 13 apps, parameters, pitfalls and audit criteria), with revertable per-game tuning (CS2 for now) mapped to **98 acceptance checks** | [Entry](./skills/windows-fresh-setup/README.md) · [Games](./skills/windows-fresh-setup/games/README.md) |
 | **NAS stability notes** | Notes | Tracing "the NAS feels unstable" to "nothing remounts it after sleep": event-time correlation, an event-triggered remount task, session/elevation isolation of drive mappings, and calculating the link ceiling before optimizing | [Read](./docs/windows-nas-smb-stability.md) |
 | **Skill self-audit method** | Method | Turning documented promises into verifiable facts: five defect classes, proving an optimization is coverage-equivalent, and telling an environment quirk apart from a code bug | [Read](./docs/skill-self-audit.md) |
+| **DSH plugin setup** | Config snapshot | Plugin list and profile config of the DeepSeek Harness profile on this machine: three third-party bundles (tools, theme, archive purge) plus one official plugin disabled by a version gate; with read-only drift check and export scripts | [Folder](./dsh-plugins) · [Readme](./dsh-plugins/README.md) |
 
 #### AI skills
 

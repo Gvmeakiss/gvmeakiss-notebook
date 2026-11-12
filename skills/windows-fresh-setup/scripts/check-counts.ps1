@@ -112,6 +112,7 @@ $rules = @(
     @{ Name = 'tune writes';  Fact = 'tweaks'; Rx = '(\d+)\s*(?:\u4e2a\u8c03\u4f18\u503c)' }
     @{ Name = 'apps';         Fact = 'apps';  Rx = '(\d+)\s*(?:apps|applications)' }
     @{ Name = 'apps';         Fact = 'apps';  Rx = '(\d+)\s*(?:\u9879\u8f6f\u4ef6|\u4e2a\u5e94\u7528)' }
+    @{ Name = 'tool scripts'; Fact = 'tools'; Rx = '(\d+)\s*(?:\u4e2a\u5de5\u5177)' }
     @{ Name = 'tune writes';  Fact = 'tweaks'; Rx = '(\d+)\s*(?:tweaks)' }
     @{ Name = 'pitfalls';     Fact = 'pitfalls'; Rx = '(\d+)\s*(?:\u6761\u9677\u9631|pitfalls)' }
     @{ Name = 'tool scripts'; Fact = 'tools'; Rx = '(\d+)\s*(?:tools)' }

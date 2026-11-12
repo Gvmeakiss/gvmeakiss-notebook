@@ -1,0 +1,25 @@
+{
+  "name": "dsh-profile-desktop",
+  "private": true,
+  "dependencies": {
+    "@deepseek-ai/dsh-subagent-codex": "0.2.1-rc.3",
+    "dsh-claude-style": "0.13.3",
+    "dsh-ops": "^0.5.4",
+    "dsh-purge-archived": "^1.0.1"
+  },
+  "dsh": {
+    "profile": {
+      "bundles": [
+        "@deepseek-ai/dsh-base",
+        "@deepseek-ai/dsh-web-app",
+        "@deepseek-ai/dsh-experimental-terminal-bundle",
+        "@deepseek-ai/dsh-experimental-session-titles-bundle",
+        "@deepseek-ai/dsh-experimental-plugin-market-bundle",
+        "dsh-purge-archived",
+        "dsh-ops",
+        "@deepseek-ai/dsh-experimental-auto-review",
+        "dsh-claude-style"
+      ]
+    }
+  }
+}

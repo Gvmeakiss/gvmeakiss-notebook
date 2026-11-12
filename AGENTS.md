@@ -36,6 +36,10 @@ skills/<name>/
   `games/` 按游戏可回退优化（当前 `cs2/`，`check-<game>-readiness.ps1` + `apply-<game>-optimizations.ps1` 支持 `-WhatIf` / `-Revert`）。
   **硬约定：文档里的值必须与代码一致；只写结果不写过程；每条结论要有判据。**
   新增游戏按 `games/README.md` 模板加子目录；该目录脚本**必须 ASCII-only**（同上）。
+- `dsh-plugins/`：**DeepSeek Harness 插件配置快照**（入口 `README.md`）—— 记录本机 dsh profile 装了哪些插件、怎么配置：
+  `profile/{package.json,cordis.yml,cordis.patch.yml,pnpm-lock.yaml}` 是**配置与清单**（不 vendor 第三方代码、不含 `node_modules`、不含凭据）·
+  `scripts/check-profile.ps1` 只读比对现状与快照（漂移退出 1）· `scripts/export-profile.ps1` 刷新快照（逐文件 SHA256 校验，支持 `-WhatIf`）。
+  装/删/升级插件后必须重新导出并提交，否则核对脚本会报漂移。
 - `docs/`：与 Windows 调优无关的专题记录。`windows-nas-smb-stability.md`：内网 NAS 稳定性专项 ——
   「NAS 不稳」定位到「睡眠唤醒后没有重连」，含事件时间对齐法、事件触发计划任务、**驱动器映射按会话+提权级别隔离**、
   先算链路天花板再优化，以及 3 项实测无收益并已回滚的尝试。
