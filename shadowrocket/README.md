@@ -4,7 +4,7 @@
 
 面向「家庭梅林代理 + 外出大陆热点或蜂窝网络」的同一份分流配置。Mac 与 iPhone 分别导入使用，节点和订阅由各自客户端管理；配置不含订阅地址、账号或节点凭据。本文的“SSR”使用场景指 Shadowrocket 客户端，不表示此文件可导入任意 ShadowsocksR 软件。
 
-- [下载完整配置](./shadowrocket-optimized.conf)
+- [下载完整配置](./shadowrocket_claude.conf)
 - [导入、日常使用、排错与回滚](./使用指南.md)
 - [梅林配套方案](../merlin/README.md) · [梅林使用指南](../merlin/使用指南.md)
 - [改配置的执行协议](./AGENTS.md)（改哪里、9 个测试各守什么、失败怎么定位）
@@ -54,7 +54,7 @@ Shadowrocket 首页“全局路由”必须设为“配置”，并选中本文�
 
 ## 规则来源与更新
 
-公开配置的 `[Rule]` 有 150 个条目：107 个内联规则和 43 个远程引用。远程引用包括：
+公开配置的 `[Rule]` 有 157 个条目：113 个内联规则和 44 个远程引用。远程引用包括：
 
 - [blackmatrix7/ios_rule_script 的 Shadowrocket 原生规则](https://github.com/blackmatrix7/ios_rule_script/tree/master/rule/Shadowrocket)，通过 jsDelivr 分发。
 - [iab0x00/ProxyRules 的 AI.txt](https://github.com/iab0x00/ProxyRules/blob/main/Rule/AI.txt)，补充 AI 服务域名；国内 AI 的显式直连规则先匹配。

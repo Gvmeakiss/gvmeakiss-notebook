@@ -21,12 +21,12 @@
 2. **广告类大类规则必须晚于国内核心 App 与国内 AI** —— 否则会误伤微信、地图、小程序。
 3. **测试不是形式检查** —— 第 5、6、7 个用例断言的就是"顺序正确"，顺序错会红。
 4. **不新增订阅、节点、凭据、书签** —— 公开版只放规则。
-5. **同步改动要成对** —— 动了 `shadowrocket-optimized.conf` 里的梅林公开域名，必须同时跑
+5. **同步改动要成对** —— 动了 `shadowrocket_claude.conf` 里的梅林公开域名，必须同时跑
    `merlin/` 下的一致性与重叠测试。
 
 ## 改哪里
 
-`shadowrocket-optimized.conf` 是分层结构，按需改对应层，不要跨层搬规则：
+`shadowrocket_claude.conf` 是分层结构，按需改对应层，不要跨层搬规则：
 
 | 层 | 位置 | 放什么 |
 | --- | --- | --- |
@@ -45,7 +45,7 @@
 | --- | --- |
 | Only unique routing, DNS, hosts and safe rewrite sections are present | 段不重复、只允许安全段 |
 | DNS is portable between home Wi-Fi and mainland mobile networks | 家庭 Wi-Fi 与大陆蜂窝都能用（不能只依赖家庭 DNS） |
-| All 43 remote references retain their native format, source and policy | 43 条远程引用的格式/来源/策略未被改写 |
+| All 44 remote references retain their native format, source and policy | 44 条远程引用的格式/来源/策略未被改写 |
 | Rules use recognized local syntax and end in GEOIP then FINAL | 本地语法合法，尾部是 `GEOIP,CN` → `FINAL` |
 | Domestic core apps and AI precede ads; OpenAI retains proxy priority | 国内核心与国内 AI 早于广告；OpenAI 仍走代理优先 |
 | Steam download exceptions and AI exceptions precede broader rules | 例外规则早于宽泛规则 |
@@ -60,7 +60,7 @@
 | 「end in GEOIP then FINAL」红 | 把规则追加到了文件末尾 | 移回对应层，保持 `GEOIP,CN` / `FINAL` 在最后 |
 | 「precede ads」红 | 新规则插在广告大类之后 | 上移到第 2/3 层 |
 | 「Merlin public domain lists」红 | 与 `merlin/` 清单重复或重叠 | 改 `merlin/` 与这里任一侧，两边只留一份 |
-| 「43 remote references」红 | 改了远程引用的策略或格式 | 还原该行，只加不改 |
+| 「44 remote references」红 | 改了远程引用的策略或格式 | 还原该行，只加不改 |
 | 「LAN addresses avoid early DNS」红 | 私网规则少了 `no-resolve` | 补上 |
 
 ## 红线

@@ -5,7 +5,7 @@ import test from 'node:test';
 
 // Offline regression checks only: they do not download rules or emulate Shadowrocket.
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
-const config = read('../shadowrocket-optimized.conf');
+const config = read('../shadowrocket_claude.conf');
 const lines = (text) => text.split(/\r?\n/).map((line) => line.trim())
   .filter((line) => line && !line.startsWith('#'));
 const sections = new Map();
@@ -62,20 +62,20 @@ test('DNS is portable between home Wi-Fi and mainland mobile networks', () => {
   assert.ok(sections.get('Host').every((line) => !/server:(?:10\.|172\.|192\.168\.)/.test(line)));
 });
 
-test('All 43 remote references retain their native format, source and policy', () => {
+test('All 44 remote references retain their native format, source and policy', () => {
   const direct = 'Lan WeChat Zhihu DouYin BiliBili NetEaseMusic Baidu DouBan Sina XiaoHongShu SteamCN Microsoft Apple China'.split(' ');
   const proxy = 'OpenAI Gemini Claude Copilot YouTube Netflix Disney HBO Spotify Twitch Pixiv Telegram Twitter Facebook Instagram Whatsapp Discord Reddit Amazon Game GitHub Google TikTok Global'.split(' ');
   const expected = [
     ...direct.map((name) => ruleSet(name, 'DIRECT')),
     ...proxy.map((name) => ruleSet(name, 'PROXY')),
-    ruleSet('Advertising', 'REJECT'),
+    ruleSet('AdvertisingLite', 'REJECT'),
     aiSupplement,
-    ...[['Apple', 'DIRECT'], ['Global', 'PROXY'], ['China', 'DIRECT']]
+    ...[['AdvertisingLite', 'REJECT'], ['Apple', 'DIRECT'], ['Global', 'PROXY'], ['China', 'DIRECT']]
       .map(([name, policy]) => `DOMAIN-SET,${nativeBase}${name}/${name}_Domain.list,${policy}`),
   ];
   const references = rules.filter((rule) => /^(?:RULE|DOMAIN)-SET,/.test(rule));
-  assert.equal(references.length, 43);
-  assert.equal(new Set(references).size, 43);
+  assert.equal(references.length, 44);
+  assert.equal(new Set(references).size, 44);
   assert.deepEqual([...references].sort(), expected.sort());
   for (const reference of references) {
     const url = new URL(reference.split(',')[1]);
@@ -85,7 +85,7 @@ test('All 43 remote references retain their native format, source and policy', (
 });
 
 test('Rules use recognized local syntax and end in GEOIP then FINAL', () => {
-  assert.equal(rules.length, 150);
+  assert.equal(rules.length, 157);
   assert.equal(new Set(rules).size, rules.length);
   const allowed = new Set(['DOMAIN', 'DOMAIN-SUFFIX', 'IP-CIDR', 'RULE-SET', 'DOMAIN-SET', 'GEOIP', 'FINAL']);
   for (const rule of rules) {
@@ -109,7 +109,8 @@ test('Rules use recognized local syntax and end in GEOIP then FINAL', () => {
 });
 
 test('Domestic core apps and AI precede ads; OpenAI retains proxy priority', () => {
-  const advertising = index(ruleSet('Advertising', 'REJECT'));
+  const advertising = index(`DOMAIN-SET,${nativeBase}AdvertisingLite/AdvertisingLite_Domain.list,REJECT`);
+  assert.ok(advertising < index(ruleSet('AdvertisingLite', 'REJECT')));
   for (const name of ['WeChat', 'Zhihu', 'DouYin']) {
     assert.ok(index(ruleSet(name, 'DIRECT')) < advertising);
   }
@@ -120,6 +121,9 @@ test('Domestic core apps and AI precede ads; OpenAI retains proxy priority', () 
     assert.ok(index(`DOMAIN-SUFFIX,${domain},PROXY`) < advertising);
   }
   assert.ok(index('DOMAIN,challenges.cloudflare.com,PROXY') < advertising);
+  for (const domain of ['anthropic.com', 'claude.ai', 'claude.com', 'claudeusercontent.com', 'cubence.ai', 'cubence.com']) {
+    assert.ok(index(`DOMAIN-SUFFIX,${domain},PROXY`) < advertising);
+  }
   assert.ok(index(ruleSet('DouYin', 'DIRECT')) < index(ruleSet('TikTok', 'PROXY')));
 });
 
