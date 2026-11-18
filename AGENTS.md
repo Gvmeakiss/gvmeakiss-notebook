@@ -27,6 +27,8 @@ skills/<name>/
 - `merlin/`：梅林 fancyss 分流名单、使用指南、美国节点入口绕过生成工具；账号与节点备份仅在本地使用。
 - `passwall/`：iStoreOS / OpenWrt Passwall 路由器侧分流记录 —— 大陆白名单、chinadns-ng、可信 DNS 走代理、直连/代理名单合并，
   以及“节点只放行常用端口、不要照抄全端口”的实测边界；只含通用域名与字段说明，不含订阅/节点/路由器备份。
+- `istoreos/`：iStoreOS 24.10 → 25.12 的整机优化记录 —— 跨大版本重装（opkg→apk）、系统分区 2G→16G、Passwall 重装、
+  Docker/dpanel 恢复与 WAN 端口收口；只含方法与通用值，不含 UUID、订阅、节点、MAC 或路由器备份。
 - `mini-app-spec/`：**企业级「AI Agent 驱动轻应用平台」技术规范**（脱敏方法论版，单文件）。含整套框架设计、
   前端约定、数据管理、生命周期控制、接口清单与「依照本规范设计轻应用的标准流程」。
   顶部有「读者路由」表：判断适用性读 §0–§1，要照做读 §7，AI 动手先读 §6 再读 §7。
@@ -90,10 +92,10 @@ skills/<name>/
 
 ## 网络配置检查
 
-修改 `shadowrocket/`、`merlin/` 或 `passwall/` 后运行：
+修改 `shadowrocket/`、`merlin/`、`passwall/` 或 `istoreos/` 后运行：
 
 ```sh
-node --test shadowrocket/tests/*.test.mjs merlin/tests/*.test.mjs passwall/tests/*.test.mjs
+node --test shadowrocket/tests/*.test.mjs merlin/tests/*.test.mjs passwall/tests/*.test.mjs istoreos/tests/*.test.mjs
 git diff --check
 ```
 
