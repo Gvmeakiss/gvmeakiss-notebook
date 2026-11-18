@@ -80,6 +80,21 @@ DNS 侧由 `chinadns-ng` 分组查询：
 
 26.11 的用户名单以 `/etc/passwall/rules` 为准；`/usr/share/passwall/rules` 留作系统默认，升级时会被包覆盖。升级后如果发现分流名单“变短了”，先查这里。
 
+## 25.12 跨版本重装（2026-11-18）
+
+iStoreOS 从 24.10 升级到 25.12 时包管理器由 opkg 换成 apk，官方**不支持保留软件包**，Passwall 必须重装。实测流程：
+
+| 步骤 | 关键点 |
+| --- | --- |
+| 备份 | `sysupgrade -b` 配置包 + `/etc/passwall` + 已装包列表 + Passwall 的 apk 与签名公钥 |
+| 恢复出厂 | `firstboot -y` 后重启，清空 overlay 和软件包 |
+| 刷机 | 必须用 `x86_64_efi/` 的 `*-combined-efi.img.gz`；BIOS 镜像会被 sysupgrade 以「non EFI image」拒绝 |
+| 装 Passwall | 25.12 用 apk：加入 openwrt-passwall-build 的 key 与 `packages-25.12/x86_64` feed，再 `apk add luci-app-passwall` |
+| 恢复配置 | `sysupgrade -n -f` 的配置恢复不一定生效，装完要手工解包 `/etc/config/passwall` 与 `/etc/passwall/rules` |
+| 补依赖 | `xray-core` 需单独安装；大包下载失败时用镜像手动下载 apk 后 `apk add --allow-untrusted` |
+
+25.12 默认自带 Samba4、ttyd、unetd；Docker、易有云完整版、KMS 等自装包会被清空，Docker 数据仍在数据分区（挂载点可能从 `/mnt/data` 变为 `/mnt/sata1-4`）。
+
 ## 名单怎么合并
 
 公开名单拆成「一份底表 + 两份增量」，避免同一批域名在两个项目里各存一份：

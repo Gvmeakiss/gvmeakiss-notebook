@@ -132,6 +132,12 @@ test('26.11 user rule paths and cache caveat are documented', () => {
   assert.match(docs.readme, /26\.11/);
 });
 
+test('25.12 apk reinstall path is documented', () => {
+  assert.match(docs.readme, /25\.12/);
+  assert.match(docs.guide, /apk add luci-app-passwall/);
+  assert.match(docs.guide, /repositories\.d/);
+});
+
 test('Root navigation lists the new project', () => {
   assert.ok(rootReadme.includes('./passwall/README.md'));
   assert.ok(rootReadme.includes('./passwall/使用指南.md'));
