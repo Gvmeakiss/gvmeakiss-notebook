@@ -14,6 +14,15 @@ bad() {
 	fail=$((fail + 1))
 }
 
+check_monitoring() {
+	pgrep -f smartd >/dev/null 2>&1 && ok "smartd running" || bad "smartd not running"
+	if [ -d /mnt/data/logs ]; then
+		ok "persistent log directory present"
+	else
+		bad "/mnt/data/logs missing"
+	fi
+}
+
 check_release() {
 	rel=$(grep -m1 "DISTRIB_RELEASE" /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
 	case "$rel" in
@@ -81,7 +90,7 @@ check_docker() {
 }
 
 check_wan_rules() {
-	leak=$(nft list chain inet fw4 input_wan 2>/dev/null | grep -E "8897|51819|1688|8807")
+	leak=$(nft list chain inet fw4 input_wan 2>/dev/null | grep -E "8897|51819|1688|8807|3200")
 	if [ -z "$leak" ]; then
 		ok "no sensitive WAN accept rules"
 	else
@@ -90,6 +99,7 @@ check_wan_rules() {
 }
 
 check_release
+check_monitoring
 check_overlay
 check_data_mount
 check_passwall

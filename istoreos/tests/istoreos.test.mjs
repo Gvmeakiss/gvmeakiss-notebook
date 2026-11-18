@@ -68,7 +68,7 @@ test('Relative links in the new docs resolve', () => {
 test('The verify script is read-only and checks the key surfaces', () => {
   assert.doesNotMatch(verifyScript, /\b(rm|mkfs\.ext4|sysupgrade|firstboot|reboot|parted)\b/,
     'verify.sh must not modify the system');
-  for (const probe of ['/overlay', '/mnt/data', 'luci-app-passwall', 'input_wan', 'dpanel']) {
+  for (const probe of ['/overlay', '/mnt/data', 'luci-app-passwall', 'input_wan', 'dpanel', 'smartd']) {
     assert.ok(verifyScript.includes(probe), `verify.sh does not check ${probe}`);
   }
 });
