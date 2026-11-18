@@ -25,6 +25,8 @@ skills/<name>/
   它是 `audit-kanban` 的工程版实现，**共用同一入口说明**，在根 `README.md` 中并入「稽核与业务应用」而非单列项目。
 - `shadowrocket/`：Mac / iPhone 通用分流配置、使用指南与离线配置检查。
 - `merlin/`：梅林 fancyss 分流名单、使用指南、美国节点入口绕过生成工具；账号与节点备份仅在本地使用。
+- `passwall/`：iStoreOS / OpenWrt Passwall 路由器侧分流记录 —— 大陆白名单、chinadns-ng、可信 DNS 走代理、直连/代理名单合并，
+  以及“节点只放行常用端口、不要照抄全端口”的实测边界；只含通用域名与字段说明，不含订阅/节点/路由器备份。
 - `mini-app-spec/`：**企业级「AI Agent 驱动轻应用平台」技术规范**（脱敏方法论版，单文件）。含整套框架设计、
   前端约定、数据管理、生命周期控制、接口清单与「依照本规范设计轻应用的标准流程」。
   顶部有「读者路由」表：判断适用性读 §0–§1，要照做读 §7，AI 动手先读 §6 再读 §7。
@@ -88,14 +90,14 @@ skills/<name>/
 
 ## 网络配置检查
 
-修改 `shadowrocket/` 或 `merlin/` 后运行：
+修改 `shadowrocket/`、`merlin/` 或 `passwall/` 后运行：
 
 ```sh
-node --test shadowrocket/tests/*.test.mjs merlin/tests/*.test.mjs
+node --test shadowrocket/tests/*.test.mjs merlin/tests/*.test.mjs passwall/tests/*.test.mjs
 git diff --check
 ```
 
-静态检查不等于设备已加载；客户端导入、路由器应用与实际连通结果应分别说明。公开版不包含本地私有例外，不要用公开名单整体覆盖个人现有名单。
+静态检查不等于设备已加载；客户端导入、路由器应用与实际连通结果应分别说明。公开版不包含本地私有例外，不要用公开名单整体覆盖个人现有名单。Passwall 的端口、节点延迟与 DNS 结果随线路变化，写结论时必须带上适用条件。
 
 ## 更新 Skill 时
 
