@@ -25,9 +25,11 @@
 | 磁盘 | 系统分区只有 2 GiB，数据分区 53.5G | sda3 扩到 **16 GiB**，sda4 重建为 **38.6G** | `/overlay` 可用 15.6G，数据可用 36.2G |
 | 代理 | 升级后 Passwall 和 xray 都被清空 | apk 源重装 Passwall 26.11.11 + xray-core，恢复配置与名单 | 分流、DNS、订阅全部恢复 |
 | DNS/分流 | 见 [`../passwall/`](../passwall/README.md) | 大陆白名单、chinadns-ng、可信 DNS 走代理 | 国内直连、海外走节点 |
-| 安全 | 25.12 默认对 WAN 放行易有云 8897、unetd UDP 51819 | 删 `firewall.linkease`、停用 unetd | WAN 入站只剩 DHCP/ICMP 等基础放行 |
+| 安全 | 25.12 默认对 WAN 放行易有云 8897、unetd UDP 51819；iStore 后台装的 FastNet 还会放行 3200 | 删 `firewall.linkease`、停用 unetd、删 `firewall.fastnet` | WAN 入站只剩 DHCP/ICMP 等基础放行 |
 | 容器 | 升级后 dockerd 与 dpanel 丢失，但数据盘还在 | 装回 docker/dockerman，恢复数据目录与容器 | dpanel 自动恢复，只绑 `192.168.100.1:8807` |
 | 数据 | `/mnt` 是 tmpfs，旧软链接重启即失效 | 用 fstab 把数据分区挂到 `/mnt/data` | 重启后 Docker 数据目录稳定可用 |
+| 软件包 | 25.12.6 自带包落后于软件源，82 个可升级 | `apk upgrade` 后重启验收 | 0 个待升级，LuCI/curl/dnsmasq 等已更新 |
+| 监控 | smartd 已安装但未启用 | 启用 smartd，健康/错误/自检/温度告警写入持久日志 | 开机自启，日志在 `/mnt/data/logs/smartd.log` |
 
 ## 关键结论（复用前先看）
 
@@ -51,6 +53,8 @@
 | 连通性 | Google 204 / 0.23–0.51s、百度 200 / 0.12s、GitHub 200（偶发首连偏慢）、ChatGPT 403（链路可达） |
 | 出口 | IPv4 `loc=HK` |
 | Docker | 29.6.1，dpanel Up，LAN 200，数据约 456 MB |
+| 软件包 | 82 个升级完成，0 个待升级 |
+| 监控 | smartd 运行，S95 自启，日志 `/mnt/data/logs/smartd.log` |
 | 安全 | WAN 无 8897/51819/1688/8807 放行；unetd 停用 |
 
 静态检查不等于设备已加载；上表是 2026-11-18 单次实测，换线路、换固件或换节点后要重新验收。

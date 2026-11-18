@@ -29,7 +29,7 @@ test('Documentation set is complete and keeps the promised sections', () => {
 
 test('Versions and sizes agree with the documented baseline', () => {
   const text = Object.values(docs).join('\n');
-  for (const value of ['24.10.8', '25.12.6', '26.11.11', '16 GiB', '38.6G', '15.6G']) {
+  for (const value of ['24.10.8', '25.12.6', '26.11.11', '16 GiB', '38.6G', '15.6G', '82', 'smartd']) {
     assert.ok(text.includes(value), `docs do not mention ${value}`);
   }
 });
