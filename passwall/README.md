@@ -67,6 +67,19 @@ DNS 侧由 `chinadns-ng` 分组查询：
 | 透明代理 | `tcp_proxy_way=redirect`，`prefer_nft=1` | nftables 重定向 |
 | 本机 / 局域网代理 | `localhost_proxy=1`，`client_proxy=1` | 路由器自身与局域网都按规则分流 |
 
+## 版本差异（26.8 → 26.11）
+
+升级到 26.11.11 时实测到的三处变化，升级前先确认版本：
+
+| 项目 | 26.8.x 及更早 | 26.11.x |
+| --- | --- | --- |
+| 用户名单目录 | `/usr/share/passwall/rules` | `/etc/passwall/rules`（升级会覆盖 `/usr/share` 下的同名文件） |
+| 主节点字段 | `tcp_node` / `udp_node` | `node` / `node_socks_port` |
+| 规则缓存 | 无 | `/tmp/etc/passwall_tmp/user_rules`，带 `_ok` 标记；改名单后需删缓存或重启才会重建 |
+| 自动更新 cron | `lua … rule_update.lua log all cron` | `setsid lua … rule_update.lua log all cron` |
+
+26.11 的用户名单以 `/etc/passwall/rules` 为准；`/usr/share/passwall/rules` 留作系统默认，升级时会被包覆盖。升级后如果发现分流名单“变短了”，先查这里。
+
 ## 名单怎么合并
 
 公开名单拆成「一份底表 + 两份增量」，避免同一批域名在两个项目里各存一份：
@@ -103,7 +116,7 @@ DNS 侧由 `chinadns-ng` 分组查询：
 
 ## 实测记录
 
-2026-11-18，iStoreOS 24.10.8 + `luci-app-passwall` 26.8.12，x86_64；主节点为香港线路；客户端为 Mac（走路由器透明代理）。以下为一次性验收结果，不代表所有网络与时段。
+2026-11-18，iStoreOS 24.10.8 + `luci-app-passwall` 26.8.12（当天升级到 26.11.11 后复测），x86_64；主节点为香港线路；客户端为 Mac（走路由器透明代理）。以下为一次性验收结果，不代表所有网络与时段。
 
 | 检查项 | 结果 |
 | --- | --- |
@@ -141,5 +154,5 @@ DNS 侧由 `chinadns-ng` 分组查询：
 ## 来源
 
 - 参考思路：[shadowrocket](../shadowrocket/README.md) 的规则分层与 [`merlin`](../merlin/README.md) 的参数基线
-- Passwall 规则顺序与 DNS 分组：本机 `/usr/share/passwall/nftables.sh`、`helper_chinadns_add.lua` 与运行中的 `chinadns_ng.conf`（26.8.12）
+- Passwall 规则顺序与 DNS 分组：本机 `/usr/share/passwall/nftables.sh`、`helper_chinadns_add.lua` 与运行中的 `chinadns_ng.conf`（26.8.12 / 26.11.11）
 - 名单来源：[blackmatrix7/ios_rule_script](https://github.com/blackmatrix7/ios_rule_script)、[Loyalsoldier/v2ray-rules-dat](https://github.com/Loyalsoldier/v2ray-rules-dat)、[felixonmars/dnsmasq-china-list](https://github.com/felixonmars/dnsmasq-china-list)

@@ -126,6 +126,12 @@ test('Relative links in the new docs resolve to tracked files', () => {
   }
 });
 
+test('26.11 user rule paths and cache caveat are documented', () => {
+  assert.match(docs.guide, /\/etc\/passwall\/rules\/direct_host/);
+  assert.match(docs.guide, /user_rules/);
+  assert.match(docs.readme, /26\.11/);
+});
+
 test('Root navigation lists the new project', () => {
   assert.ok(rootReadme.includes('./passwall/README.md'));
   assert.ok(rootReadme.includes('./passwall/使用指南.md'));
