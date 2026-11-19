@@ -38,7 +38,7 @@
 
 **内部审计整改汇报复用包**
 
-*一次核对并做完，下次能复用：可编辑 PPT、逐页口播稿、H5/海报设计规范、电脑邮件长图、配图素材库，另附 AI 接手说明*
+*一次核对并做完，下次能复用：可编辑 PPT、逐页口播稿、H5/海报设计规范、电脑邮件长图、配图素材库，另附年度稽核规划方法与 AI 接手说明*
 
 </div>
 
@@ -49,6 +49,7 @@
 | 🎨 **[复用规范](./internal-audit-reform/复用规范)** | [项目导航与结果导向](./internal-audit-reform/复用规范/00_项目导航与结果导向.md) · [配色与视觉设计](./internal-audit-reform/复用规范/01_配色与视觉设计要求.md) · [H5/海报/邮件长图](./internal-audit-reform/复用规范/06_H5海报与邮件长图设计.md) |
 | 🖼️ **[电脑邮件版海报](./internal-audit-reform/交付成果/宣导海报_电脑邮件版/)** | 两页长图、构建源文件和导出说明，保留流程完整性并适配电脑邮件阅读 |
 | 🖼️ **[素材库](./internal-audit-reform/素材库)** | 背景图、页面元素、侧边元素，以及面向 H5、PPT、海报的[可复用矢量组件](./internal-audit-reform/素材库/可复用矢量组件/README.md) |
+| 🧭 **[个人条线年度稽核规划](./internal-audit-reform/个人条线年度稽核规划.md)** | 年度规划的方法与口径：四类立项输入、四步立项法、排序规则、项目卡五问、检查维度清单、整改验收分级（脱敏方法版） |
 | 📘 **[项目说明](./internal-audit-reform/README.md)** · **[AI 接手说明](./internal-audit-reform/AGENTS.md)** | 项目定位、复用边界与交给 AI 继续做的入口 |
 
 <p align="center"><a href="./internal-audit-reform"><b>进入项目 →</b></a></p>
@@ -64,7 +65,7 @@
 | **audit-kanban** | 演示应用 | 离线稽核工作进度看板：同事填报 → 专人汇总 → 经理看板。纯前端，双击 `index.html` 即用 | [目录](./audit-kanban) · [说明](./audit-kanban/README.md) · [使用手册](./audit-kanban/使用说明.md) |
 | **audit-workbench** | 工程项目 | 同主题的 Next.js / React / TypeScript 工程版：团队分区、阶段历史、挽损分批、归档恢复与 SQLite DDL。需 `npm ci` 后构建 | [目录](./audit-workbench) · [说明](./audit-workbench/README.md) · [使用说明](./audit-workbench/docs/使用说明.md) |
 | **mini-app-spec** | 技术规范 | 企业级「AI Agent 驱动轻应用平台」的方法论、接口与开发约定 | [目录](./mini-app-spec) · [说明](./mini-app-spec/README.md) |
-| **internal-audit-reform** | AI 复用项目 | 内部审计整改汇报复用包：可编辑 PPT、逐页口播稿、复用规范与配图素材库 | [目录](./internal-audit-reform) · [说明](./internal-audit-reform/README.md) |
+| **internal-audit-reform** | AI 复用项目 | 内部审计整改汇报复用包：可编辑 PPT、逐页口播稿、复用规范与配图素材库；另含年度稽核规划方法与口径 | [目录](./internal-audit-reform) · [说明](./internal-audit-reform/README.md) |
 
 #### 配置与工具
 
@@ -198,6 +199,7 @@ This repository collects reusable technical configurations, practical notes and 
 | 🎨 **[Reuse standards](./internal-audit-reform/复用规范)** | [Result-first navigation](./internal-audit-reform/复用规范/00_项目导航与结果导向.md) · [Colour & visual requirements](./internal-audit-reform/复用规范/01_配色与视觉设计要求.md) · [H5/poster/email](./internal-audit-reform/复用规范/06_H5海报与邮件长图设计.md) |
 | 🖼️ **[Desktop email poster](./internal-audit-reform/交付成果/宣导海报_电脑邮件版/)** | Two-panel long image, source HTML/CSS and export instructions |
 | 🖼️ **[Asset library](./internal-audit-reform/素材库)** | Backgrounds, page elements and side elements as a coherent asset set |
+| 🧭 **[Personal-lines annual audit plan](./internal-audit-reform/个人条线年度稽核规划.md)** | Planning method and definitions: four inputs, four-step scoping, prioritisation rules, five-question project card, check-dimension checklist, graded rectification acceptance (redacted method edition) |
 | 📘 **[Project readme](./internal-audit-reform/README.md)** · **[AI handoff](./internal-audit-reform/AGENTS.md)** | Scope, reuse boundaries and the entry point for handing this to an agent |
 
 <p align="center"><a href="./internal-audit-reform"><b>Open project →</b></a></p>
@@ -213,7 +215,7 @@ This repository collects reusable technical configurations, practical notes and 
 | **audit-kanban** | Demo app | Offline audit work-progress board: member updates → consolidator merge → manager board. Pure front-end — double-click `index.html` | [Folder](./audit-kanban) · [Readme](./audit-kanban/README.md) · [Manual](./audit-kanban/使用说明.md) |
 | **audit-workbench** | Engineering project | The Next.js / React / TypeScript build: team partitions, stage history, salvage batches, archive restore, SQLite DDL. Needs `npm ci` | [Folder](./audit-workbench) · [Readme](./audit-workbench/README.md) · [Manual](./audit-workbench/docs/使用说明.md) |
 | **mini-app-spec** | Technical spec | Methods, APIs and development conventions for an AI-agent-driven light-app platform | [Folder](./mini-app-spec) · [Readme](./mini-app-spec/README.md) |
-| **internal-audit-reform** | AI-assisted project | Internal audit reform presentation kit: editable deck, page-matched script, reuse standards, image library | [Folder](./internal-audit-reform) · [Readme](./internal-audit-reform/README.md) |
+| **internal-audit-reform** | AI-assisted project | Internal audit reform presentation kit: editable deck, page-matched script, reuse standards, image library; plus the annual audit-planning method | [Folder](./internal-audit-reform) · [Readme](./internal-audit-reform/README.md) |
 
 #### Configurations and tools
 

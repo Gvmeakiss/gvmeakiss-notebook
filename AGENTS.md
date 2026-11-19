@@ -45,7 +45,7 @@ skills/<name>/
   先算链路天花板再优化，以及 3 项实测无收益并已回滚的尝试。
   `skill-self-audit.md`：**方法论** —— 如何把 skill 的「文档承诺」变成「可验证事实」
   （5 类缺陷、性能优化的等价性证明、环境缺陷与代码缺陷的区分），与 `windows-fresh-setup` 配套。
-- `internal-audit-reform/`：AI复用制作内部审计汇报、H5、海报和电脑邮件长图的完整项目包，包含可编辑PPT、逐页口播、结果导向的内容/视觉规范、海报源文件及配图库。使用前阅读其 `README.md` 和项目级 `AGENTS.md`；当前页面中的业务条件和时限只适用于对应示例项目。
+- `internal-audit-reform/`：AI复用制作内部审计汇报、H5、海报和电脑邮件长图的完整项目包，包含可编辑PPT、逐页口播、结果导向的内容/视觉规范、海报源文件及配图库。另含 `个人条线年度稽核规划.md`（年度审计规划的方法与口径：四类立项输入、排序规则、项目卡五问、检查维度清单、整改验收分级）。使用前阅读其 `README.md` 和项目级 `AGENTS.md`；当前页面中的业务条件和时限只适用于对应示例项目。
 - `assets/`：根 `README.md` 的横幅素材。`banner.svg` 与 `banner-dark.svg` 是同一版式的浅色 / 深色两套，
   由 README 中的 `<picture>` 按 `prefers-color-scheme` 自动切换；**改动需同步两份**。
   字体走系统字体栈（`PingFang SC, Hiragino Sans GB, Noto Sans SC, Microsoft YaHei`），不内嵌外部字体文件。
